@@ -1,3 +1,5 @@
+// Cocos Creator resolves authored TypeScript modules without the runtime .js suffix.
+// @ts-ignore Cocos imports authored TypeScript directly; NodeNext expects a runtime .js file.
 import { FpsMonitor } from './FpsMonitor';
 interface CommandTiming {releasedAtMs:number;appliedAtMs:number;feedbackAtMs:number|null;responseMs:number|null}
 /** Passive development telemetry. Clock requires performance.now (no Date fallback). */

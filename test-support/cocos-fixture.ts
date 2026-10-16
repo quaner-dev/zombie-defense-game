@@ -4,7 +4,7 @@ import vm from 'node:vm';
 
 // Only the unavailable cc event/render boundary is doubled. Production controller,
 // HUD, InputManager, DragCommand and bundled core all execute unchanged.
-export function fixture(real=false,platform?:unknown) {
+export function fixture(real=false,platform?:unknown,diagnostics:{console:unknown}={console:{warn(){}}}) {
   const listeners=new Map<string,{fn:Function;owner:any}[]>();
   const input={on(type:string,fn:Function,owner:any){listeners.set(type,[...(listeners.get(type)??[]),{fn,owner}]);},
     off(type:string,fn:Function,owner:any){listeners.set(type,(listeners.get(type)??[]).filter(l=>l.fn!==fn||l.owner!==owner));}};
@@ -36,7 +36,7 @@ export function fixture(real=false,platform?:unknown) {
     sys:{getSafeAreaRect:()=>({x:0,y:0,width:1080,height:2400})}};
   const code=buildSync({stdin:{contents:`export {BattleSceneController} from './assets/scripts/adapter/BattleSceneController'; export {InputManager} from './assets/scripts/adapter/InputManager'; export {HudController} from './assets/scripts/adapter/HudController'; export {UnitView} from './assets/scripts/adapter/UnitView';`,resolveDir:process.cwd()},bundle:true,write:false,format:'cjs',platform:'node',target:'es2020',tsconfigRaw:{compilerOptions:{experimentalDecorators:true}},external:['cc']}).outputFiles[0].text;
   const module={exports:{} as any};let now=1000;
-  vm.runInNewContext(code,{module,require:(id:string)=>{assert.equal(id,'cc');return cc;},wx:platform,performance:{now:()=>now},console:{warn(){}}});
+  vm.runInNewContext(code,{module,require:(id:string)=>{assert.equal(id,'cc');return cc;},wx:platform,performance:{now:()=>now},console:diagnostics.console});
   const exports=module.exports;
   const controller=new exports.BattleSceneController();
   if(real){controller.node=new Node('Battle');controller.onLoad();}

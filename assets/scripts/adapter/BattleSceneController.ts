@@ -10,6 +10,7 @@ import { PerfBudget } from './PerfBudget';
 import { InputManager } from './InputManager';
 import { optionalWeChatVibration, VibrationAdapter } from './VibrationAdapter';
 const {ccclass}=_decorator;
+const diagnosticLog=(...args:unknown[]):void=>globalThis.console?.log?.(...args);
 @ccclass('BattleSceneController')
 export class BattleSceneController extends Component {
   public readonly performance=new PerfBudget();
@@ -20,7 +21,7 @@ export class BattleSceneController extends Component {
   private diagnosticFrames=0;
   public vibration=new VibrationAdapter(optionalWeChatVibration(),()=>performance.now());
   public onLoad():void {
-    console.log('[ZombieDefense] BattleSceneController.onLoad:start',this.node?.name);
+    diagnosticLog('[ZombieDefense] BattleSceneController.onLoad:start',this.node?.name);
     // SHOW_ALL keeps the whole 1080x2400 design visible. The field is contained again
     // within the safe area with HUD reserves; no route is cropped on wide screens.
     view.setDesignResolutionSize(1080,2400,ResolutionPolicy.SHOW_ALL);
@@ -41,7 +42,7 @@ export class BattleSceneController extends Component {
     this.controls=new InputManager(this.session,this.hud,()=>this.frame,this.performance);
     view.on('canvas-resize',this.layout,this);game.on(Game.EVENT_HIDE,this.hide,this);
     this.layout();this.restart();
-    console.log('[ZombieDefense] BattleSceneController.onLoad:complete',{
+    diagnosticLog('[ZombieDefense] BattleSceneController.onLoad:complete',{
       camera:cameraNode.name,
       visible:view.getVisibleSize(),
       frame:this.frame,
@@ -61,7 +62,7 @@ export class BattleSceneController extends Component {
     this.field.setPosition(0,0);
     this.field.setScale(1,1,1);
     this.hud.layout(safe);this.controls?.cancel();
-    console.log('[ZombieDefense] layout',{
+    diagnosticLog('[ZombieDefense] layout',{
       visible:{width:visibleWidth,height:visibleHeight},
       safe,
       frame:this.frame,
@@ -71,7 +72,7 @@ export class BattleSceneController extends Component {
   private hide():void {this.performance.suspend();this.session.paused=true;this.controls.cancel();}
   private restart():void {
     this.performance.reset();this.controls.reset();this.session.restart();this.vibration.reset();this.hud.reset();this.units.clear();this.projectiles.clear();this.draw();
-    console.log('[ZombieDefense] restart',{
+    diagnosticLog('[ZombieDefense] restart',{
       result:this.session.snapshot.result,
       deployment:this.session.deploymentRemaining,
       units:this.session.battle.getUnits().length,
@@ -80,7 +81,7 @@ export class BattleSceneController extends Component {
   public update(dt:number):void {
     if(this.diagnosticFrames<3){
       this.diagnosticFrames++;
-      console.log('[ZombieDefense] update',{
+      diagnosticLog('[ZombieDefense] update',{
         frame:this.diagnosticFrames,
         dt,
         result:this.session.snapshot.result,
