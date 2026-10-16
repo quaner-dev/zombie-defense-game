@@ -17,8 +17,10 @@ export class BattleSceneController extends Component {
   private root!:Node;private field!:Node;private map!:MapView;private units!:UnitView;
   private projectiles!:ProjectileViewPool;private hud!:HudController;private controls!:InputManager;private preview!:Graphics;
   private frame!:Frame;
+  private diagnosticFrames=0;
   public vibration=new VibrationAdapter(optionalWeChatVibration(),()=>performance.now());
   public onLoad():void {
+    console.log('[ZombieDefense] BattleSceneController.onLoad:start',this.node?.name);
     // SHOW_ALL keeps the whole 1080x2400 design visible. The field is contained again
     // within the safe area with HUD reserves; no route is cropped on wide screens.
     view.setDesignResolutionSize(1080,2400,ResolutionPolicy.SHOW_ALL);
@@ -39,6 +41,12 @@ export class BattleSceneController extends Component {
     this.controls=new InputManager(this.session,this.hud,()=>this.frame,this.performance);
     view.on('canvas-resize',this.layout,this);game.on(Game.EVENT_HIDE,this.hide,this);
     this.layout();this.restart();
+    console.log('[ZombieDefense] BattleSceneController.onLoad:complete',{
+      camera:cameraNode.name,
+      visible:view.getVisibleSize(),
+      frame:this.frame,
+      deployment:this.session.deploymentRemaining,
+    });
   }
   private layout():void {
     const visible=view.getVisibleSize();
@@ -53,10 +61,33 @@ export class BattleSceneController extends Component {
     this.field.setPosition(0,0);
     this.field.setScale(1,1,1);
     this.hud.layout(safe);this.controls?.cancel();
+    console.log('[ZombieDefense] layout',{
+      visible:{width:visibleWidth,height:visibleHeight},
+      safe,
+      frame:this.frame,
+      field:{x:this.field.position.x,y:this.field.position.y,scale:this.field.scale.x},
+    });
   }
   private hide():void {this.performance.suspend();this.session.paused=true;this.controls.cancel();}
-  private restart():void {this.performance.reset();this.controls.reset();this.session.restart();this.vibration.reset();this.hud.reset();this.units.clear();this.projectiles.clear();this.draw();}
+  private restart():void {
+    this.performance.reset();this.controls.reset();this.session.restart();this.vibration.reset();this.hud.reset();this.units.clear();this.projectiles.clear();this.draw();
+    console.log('[ZombieDefense] restart',{
+      result:this.session.snapshot.result,
+      deployment:this.session.deploymentRemaining,
+      units:this.session.battle.getUnits().length,
+    });
+  }
   public update(dt:number):void {
+    if(this.diagnosticFrames<3){
+      this.diagnosticFrames++;
+      console.log('[ZombieDefense] update',{
+        frame:this.diagnosticFrames,
+        dt,
+        result:this.session.snapshot.result,
+        deployment:this.session.deploymentRemaining,
+        visible:view.getVisibleSize(),
+      });
+    }
     const measuring=!this.session.paused&&this.session.snapshot.result==='running';
     if(!measuring)this.performance.suspend();
     const start=this.performance.now();
