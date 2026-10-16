@@ -1,4 +1,4 @@
-import { FpsMonitor } from './FpsMonitor.js';
+import { FpsMonitor } from './FpsMonitor';
 interface CommandTiming {releasedAtMs:number;appliedAtMs:number;feedbackAtMs:number|null;responseMs:number|null}
 /** Passive development telemetry. Clock requires performance.now (no Date fallback). */
 export class PerfBudget {
