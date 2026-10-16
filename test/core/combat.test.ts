@@ -107,6 +107,36 @@ test('melee requires breach and <=28px, stops movement, and deals 10 damage ever
   assert.equal(human.hp, 80);
 });
 
+test('breached zombies pursue and melee humans above the defense line', () => {
+  const { store, combat } = setup();
+  const human = store.spawn('rifleman', { x: 540, y: 1100 }, 'B');
+  human.state = 'Moving';
+  const zombie = store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');
+  zombie.breached = true;
+  combat.update(0.05, 0.05);
+  assert.equal(zombie.position.y, 1197);
+  ticks(combat, 43);
+  assert.equal(zombie.position.y, 1128);
+  assert.equal(human.hp, 90);
+  assert.equal(zombie.state, 'Attacking');
+});
+
+test('a rifleman killed by an earlier inserted zombie cannot fire later in the frame', () => {
+  const { store, combat } = setup();
+  const zombie = store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');
+  const human = store.spawn('rifleman', { x: 540, y: 1228 }, 'B');
+  zombie.breached = true;
+  zombie.attackElapsed_s = 0.95;
+  human.hp = 10;
+  human.attackElapsed_s = 0.45;
+  const events = combat.update(0.05, 0.05);
+  assert.equal(human.hp, 0);
+  assert.equal(events.filter(e => e.type === 'unit_died').length, 1);
+  assert.equal(events.filter(e => e.type === 'projectile_spawned').length, 0);
+  assert.deepEqual(combat.drainShots(), []);
+  assert.equal(human.state, 'Dead');
+});
+
 test('pursuit stops in inclusive melee range even for diagonal floating point coordinates', () => {
   const { store, combat } = setup();
   const human = store.spawn('rifleman', { x: 550, y: 1300 }, 'B');

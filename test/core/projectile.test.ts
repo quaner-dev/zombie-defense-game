@@ -42,6 +42,28 @@ test('maximum flight time is 0.35s and resolves exactly once even short of targe
   assert.deepEqual(projectiles.update(10, 10.35), []);
 });
 
+for (const { distance, terminalX, terminalTime } of [
+  { distance: 900, terminalX: 855, terminalTime: 2.35 },
+  { distance: 180, terminalX: 720, terminalTime: 2.2 },
+]) {
+  test(`large updates stop flight at the earlier arrival/lifetime boundary for ${distance}px shots`, () => {
+    const { projectiles, human, zombie } = setup(distance);
+    projectiles.spawn(human, zombie, 2);
+    projectiles.update(0.1, 2.1);
+    const events = projectiles.update(0.9, 3);
+    const hit = events.find(e => e.type === 'projectile_hit');
+    assert.deepEqual((hit?.data as { position: { x: number; y: number } }).position,
+      { x: terminalX, y: 1370 });
+    assert.equal(hit?.time_s, terminalTime);
+    assert.equal(events.filter(e => e.type === 'projectile_hit').length, 1);
+    assert.equal(events.filter(e => e.type === 'projectile_expired').length, 1);
+    assert.ok(events.every(e => e.time_s === terminalTime));
+    assert.equal(zombie.hp, 30);
+    assert.deepEqual(projectiles.getProjectiles(), []);
+    assert.deepEqual(projectiles.update(1, 4), []);
+  });
+}
+
 test('dead targets still produce visual arrival but no further authoritative damage', () => {
   const { store, projectiles, human, zombie } = setup();
   projectiles.spawn(human, zombie, 0);

@@ -58,6 +58,8 @@ export class CombatSystem {
     const events: BattleEvent[] = [];
     // Generate attacks before projectile damage and final result evaluation.
     for (const unit of this.store.living()) {
+      // Earlier melee attacks may have killed a unit in this living snapshot.
+      if (!unit.active || unit.hp <= 0 || unit.state === 'Dead') continue;
       if (unit.unitType === 'rifleman') this.rifle(unit, dt, time_s, events);
       else this.zombie(unit, dt, time_s, events);
     }
@@ -134,7 +136,7 @@ export class CombatSystem {
       const dx = (target.position.x - unit.position.x) / distance;
       const dy = (target.position.y - unit.position.y) / distance;
       unit.position.x += dx * step;
-      unit.position.y = Math.max(this.map.defense_line_y, unit.position.y + dy * step);
+      unit.position.y += dy * step;
       unit.velocity = { x: dx * unit.speed_px_per_s, y: dy * unit.speed_px_per_s };
       return;
     }
