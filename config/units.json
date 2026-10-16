@@ -1,4 +1,12 @@
 {
+  "rifleman": {
+    "hitPoints": 100,
+    "speed_px_per_s": 120
+  },
+  "movement": {
+    "arrival_tolerance_px": 12,
+    "formation_spacing_px": 20
+  },
   "normal_zombie": {
     "hitPoints": 100,
     "speed_px_per_s": 40,
