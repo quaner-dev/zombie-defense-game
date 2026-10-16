@@ -125,7 +125,7 @@ test('harness deploys 50 riflemen, moves a group, preserves public snapshot, and
   assert.ok(harness.getUnits().some(u => u.state === 'Moving' && u.position.x < 500));
   assert.equal(harness.getSnapshot().time_s, 0);
   harness.advance(20);
-  assert.ok(harness.getUnits().filter(u => u.faction === 'human').every(u => u.state === 'Idle'));
+  assert.ok(harness.getUnits().filter(u => u.faction === 'human').every(u => u.state !== 'Moving' && u.moveTarget === null));
   harness.start('LV01_zombie_wave', 1);
   assert.equal(harness.getUnits().length, 50);
   assert.deepEqual(harness.getEvents(), []);

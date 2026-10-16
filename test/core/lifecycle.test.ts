@@ -45,10 +45,10 @@ test('pool reuse resets every field and assigns a new identity to prevent stale 
   assert.equal(store.kill(oldId), false);
   assert.equal(reused.unitType, 'normal_zombie');
   assert.equal(reused.faction, 'zombie');
-  // Preserve the reviewed Task 2 config rather than silently rebalance zombies.
-  assert.equal(reused.hp, 100);
-  assert.equal(reused.maxHp, 100);
-  assert.equal(reused.speed_px_per_s, 40);
+  // Task 4 reconciles ordinary zombie defaults with the authoritative combat spec.
+  assert.equal(reused.hp, 40);
+  assert.equal(reused.maxHp, 40);
+  assert.equal(reused.speed_px_per_s, 60);
   assert.equal(reused.state, 'Advancing');
   assert.equal(reused.routeId, 'B');
   assert.deepEqual(reused.position, { x: 540, y: 260 });
@@ -86,6 +86,8 @@ test('harness consumes wave spawns into living units on the configured routes', 
   assert.equal(zombies.filter(unit => unit.routeId === 'C').length, 110);
   assert.ok(zombies.every(unit => unit.unitType === 'normal_zombie' && unit.active));
   assert.equal(new Set(harness.getUnits().map(unit => unit.id)).size, 352);
-  assert.equal(harness.getSnapshot().aliveHumans, 2);
-  assert.equal(harness.getSnapshot().aliveZombies, 350);
+  assert.equal(harness.getSnapshot().aliveHumans,
+    harness.getUnits().filter(u => u.faction === 'human' && u.hp > 0).length);
+  assert.equal(harness.getSnapshot().aliveZombies, zombies.filter(u => u.hp > 0).length);
+  assert.equal(harness.getSnapshot().spawnedZombies, 350);
 });

@@ -31,7 +31,7 @@ test('harness retains loaded map and validates all scheduled spawn routes', () =
   const map = harness.getMapModel();
   assert.ok(map instanceof MapModel);
   harness.advance(23);
-  for (const event of harness.getEvents()) {
+  for (const event of harness.getEvents().filter(e => e.type === 'wave_spawn')) {
     for (const spawn of (event.data as { spawns: { route: string }[] }).spawns) {
       assert.ok(map.getRoute(spawn.route));
     }

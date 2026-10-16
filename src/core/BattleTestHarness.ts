@@ -4,6 +4,9 @@ import { WaveManager, type WaveSpawnEventData } from './WaveManager.js';
 import { UnitStore } from './UnitStore.js';
 import { CommandSystem, formationPositions } from './CommandSystem.js';
 import { MovementSystem } from './MovementSystem.js';
+import { CombatSystem } from './CombatSystem.js';
+import { ProjectileSystem } from './ProjectileSystem.js';
+import { ResultSystem } from './ResultSystem.js';
 import type { BattleConfig, BattleEvent, BattleSnapshot, Unit, UnitType } from './types.js';
 
 export class BattleTestHarness {
@@ -18,6 +21,9 @@ export class BattleTestHarness {
   private readonly units = new UnitStore();
   private readonly movement = new MovementSystem(this.units);
   private commands: CommandSystem | null = null;
+  private combat: CombatSystem | null = null;
+  private projectiles: ProjectileSystem | null = null;
+  private results: ResultSystem | null = null;
 
   public constructor(config: BattleConfig = DEFAULT_BATTLE_CONFIG) {
     this.config = config;
@@ -34,6 +40,9 @@ export class BattleTestHarness {
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
+    this.combat = new CombatSystem(this.units, this.mapModel);
+    this.projectiles = new ProjectileSystem(this.units, this.combat);
+    this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = ['A', 'B', 'C'];
     for (const [index, routeId] of routes.entries()) {
@@ -67,10 +76,23 @@ export class BattleTestHarness {
       seconds -= consumed;
     }
 
-    this.battleTime_s += seconds;
-    this.snapshot.time_s = this.battleTime_s;
-    this.events.push(...this.movement.update(seconds, this.battleTime_s));
     this.runWaves();
+    const start = this.battleTime_s;
+    const end = start + seconds;
+    // Harness advances real elapsed time as bounded logic frames, never as one teleport.
+    const frames = Math.ceil(seconds / 0.05);
+    for (let i = 1; i <= frames && this.snapshot.result === 'running'; i++) {
+      const next = i === frames ? end : start + i * 0.05;
+      const dt = next - this.battleTime_s;
+      this.battleTime_s = next;
+      this.snapshot.time_s = next;
+      this.events.push(...this.combat!.update(dt, next));
+      this.events.push(...this.movement.update(dt, next));
+      this.events.push(...this.projectiles!.update(dt, next));
+      this.runWaves();
+      this.resolveFrame();
+    }
+    if (frames === 0) this.resolveFrame();
   }
 
   public issueMoveAt(x: number, y: number, targetX: number, targetY: number): void {
@@ -111,6 +133,19 @@ export class BattleTestHarness {
       }
       this.snapshot.waveIndex = data.waveIndex + 1;
     }
+  }
+
+  private resolveFrame(): void {
+    const living = this.units.living();
+    this.snapshot.aliveHumans = living.filter(unit => unit.faction === 'human').length;
+    this.snapshot.aliveZombies = living.filter(unit => unit.faction === 'zombie').length;
+    for (const unit of this.units.all()) {
+      if (unit.breached && !this.snapshot.breachedRoutes.includes(unit.routeId)) {
+        this.snapshot.breachedRoutes.push(unit.routeId);
+      }
+    }
+    this.events.push(...this.results!.update(this.waveManager!.allWavesSpawned(), this.battleTime_s));
+    this.snapshot.result = this.results!.getResult();
   }
 
   private initialSnapshot(): BattleSnapshot {

@@ -68,6 +68,10 @@ export class WaveManager {
     }
   }
 
+  public allWavesSpawned(): boolean {
+    return this.nextWaveIndex === this.level.waves.length;
+  }
+
   public getWaveIndex(): number {
     return this.nextWaveIndex;
   }

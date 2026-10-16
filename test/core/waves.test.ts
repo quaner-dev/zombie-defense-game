@@ -14,7 +14,7 @@ for (const [index, time] of [0, 7, 20].entries()) {
     const harness = new BattleTestHarness();
     harness.start('LV01_zombie_wave', 1);
     harness.advance(3 + time);
-    const event = harness.getEvents()[index];
+    const event = harness.getEvents().filter(e => e.type === 'wave_spawn')[index];
     assert.deepEqual((event.data as WaveSpawnEventData).spawns, expectedSpawns[index]);
     assert.equal(event.time_s, time);
     assert.equal(harness.getSnapshot().spawnedZombies, [50, 150, 350][index]);
@@ -75,7 +75,9 @@ test('waves fire at thresholds, not before, without clearing previous waves', ()
   const harness = new BattleTestHarness();
   harness.start('LV01_zombie_wave', 1);
   harness.advance(23);
-  assert.equal(harness.getSnapshot().aliveZombies, 350);
+  assert.equal(harness.getSnapshot().spawnedZombies, 350);
+  assert.equal(harness.getSnapshot().aliveZombies,
+    harness.getUnits().filter(u => u.faction === 'zombie' && u.hp > 0).length);
   assert.equal(harness.getSnapshot().result, 'running');
 });
 
@@ -86,7 +88,7 @@ test('late updates retain scheduled timestamps for every emitted wave', () => {
   const harness = new BattleTestHarness();
   harness.start('LV01_zombie_wave', 1);
   harness.advance(28);
-  assert.deepEqual(harness.getEvents().map(event => event.time_s), [0, 7, 20]);
+  assert.deepEqual(harness.getEvents().filter(e => e.type === 'wave_spawn').map(event => event.time_s), [0, 7, 20]);
   assert.equal(harness.getSnapshot().time_s, 25);
 });
 
