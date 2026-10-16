@@ -1,0 +1,7 @@
+{
+  "normal_zombie": {
+    "hitPoints": 100,
+    "speed_px_per_s": 40,
+    "damagePerHit": 1
+  }
+}

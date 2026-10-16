@@ -1,0 +1,65 @@
+import levelsJson from '../../config/levels.json' with { type: 'json' };
+import type { BattleEvent } from './types.js';
+
+export interface WaveSpawn {
+  unitType: string;
+  route: string;
+  count: number;
+}
+
+export interface WaveDefinition {
+  battleTime_s: number;
+  spawns: WaveSpawn[];
+}
+
+export interface LevelDefinition {
+  mapId: string;
+  waves: WaveDefinition[];
+}
+
+export interface WaveSpawnEventData {
+  waveIndex: number;
+  battleTime_s: number;
+  spawns: WaveSpawn[];
+}
+
+const LEVEL_DEFINITIONS: Record<string, LevelDefinition> =
+  levelsJson as unknown as Record<string, LevelDefinition>;
+
+/**
+ * Emits each scheduled wave exactly once when battle time reaches its time.
+ * Previously spawned waves do not need to be cleared for later waves to fire.
+ */
+export class WaveManager {
+  private nextWaveIndex = 0;
+
+  public constructor(private readonly level: LevelDefinition) {}
+
+  /** Emits all waves whose battle time is due at or before battleTime. */
+  public update(battleTime: number): BattleEvent[] {
+    const events: BattleEvent[] = [];
+    while (this.nextWaveIndex < this.level.waves.length) {
+      const wave = this.level.waves[this.nextWaveIndex];
+      if (wave.battleTime_s > battleTime) break;
+      events.push({
+        type: 'wave_spawn',
+        time_s: battleTime,
+        data: {
+          waveIndex: this.nextWaveIndex,
+          battleTime_s: wave.battleTime_s,
+          spawns: wave.spawns.map((spawn) => ({ ...spawn })),
+        } satisfies WaveSpawnEventData,
+      });
+      this.nextWaveIndex += 1;
+    }
+    return events;
+  }
+
+  public getWaveIndex(): number {
+    return this.nextWaveIndex;
+  }
+
+  public static load(levelId: string): WaveManager {
+    return new WaveManager(LEVEL_DEFINITIONS[levelId] ?? LEVEL_DEFINITIONS['LV01_zombie_wave']);
+  }
+}

@@ -11,11 +11,16 @@ test('reads an initial battle snapshot', () => {
   assert.deepEqual(harness.getSnapshot(), {
     time_s: 0,
     aliveHumans: 50,
-    aliveZombies: 0,
-    spawnedZombies: 0,
-    waveIndex: 0,
+    // Task 2: battle time 0s spawns the first wave (50 center zombies).
+    aliveZombies: 50,
+    spawnedZombies: 50,
+    waveIndex: 1,
     breachedRoutes: [],
     result: 'running',
   });
-  assert.deepEqual(harness.getEvents(), []);
+  // Task 2: the first wave (battle time 0s) spawns once deployment ends.
+  assert.deepEqual(
+    harness.getEvents().map((e) => e.type),
+    ['wave_spawn'],
+  );
 });
