@@ -1,4 +1,4 @@
-import { _decorator, Camera, Canvas, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
+import { _decorator, Camera, Canvas, Color, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
 import { BattleSession } from '../generated/core.js';
 import { fitMap, type Frame } from './contracts';
 import { arrow, graphics, uiNode } from './drawing';
@@ -25,6 +25,7 @@ export class BattleSceneController extends Component {
     this.root=uiNode('BattleCanvas',this.node);
     const cameraNode=new Node('UICamera');cameraNode.parent=this.node;cameraNode.setPosition(540,1200,1000);
     const camera=cameraNode.addComponent(Camera);camera.projection=Camera.ProjectionType.ORTHO;camera.orthoHeight=1200;
+    camera.clearColor=new Color(11,11,15,255);
     camera.near=1;camera.far=2000;camera.visibility=Layers.Enum.UI_2D;
     const canvas=this.root.addComponent(Canvas);canvas.cameraComponent=camera;canvas.alignCanvasWithScreen=true;
     this.field=uiNode('Battlefield',this.root);this.map=new MapView(this.field);this.units=new UnitView(this.field);
