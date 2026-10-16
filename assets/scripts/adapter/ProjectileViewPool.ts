@@ -1,5 +1,5 @@
 import { Graphics, Node } from 'cc';
-import { unitConfig, type BattleEvent } from '../generated/core';
+import { unitConfig, type BattleEvent } from '../generated/core.js';
 import { ProjectileTracks } from './contracts';
 import { color, graphics, line } from './drawing';
 /** Reuses one engine mesh stream. Core owns hit timing/damage; this pool only draws. */

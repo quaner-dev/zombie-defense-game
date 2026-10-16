@@ -1,5 +1,5 @@
 import { _decorator, Camera, Canvas, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
-import { BattleSession } from '../generated/core';
+import { BattleSession } from '../generated/core.js';
 import { fitMap, type Frame } from './contracts';
 import { arrow, graphics, uiNode } from './drawing';
 import { MapView } from './MapView';

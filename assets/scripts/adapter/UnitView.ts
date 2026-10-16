@@ -1,5 +1,5 @@
 import { Graphics, Node } from 'cc';
-import type { Unit } from '../generated/core';
+import type { Unit } from '../generated/core.js';
 import { arrow, color, graphics, palette } from './drawing';
 /** One shared Graphics stream avoids a component/node allocation per entity per frame. */
 export class UnitView {

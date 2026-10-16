@@ -1,5 +1,5 @@
 import { EventTouch, Input, input } from 'cc';
-import { mapConfig, type BattleSession } from '../generated/core';
+import { mapConfig, type BattleSession } from '../generated/core.js';
 import { DragCommand, screenToMap, type Frame, type Point } from './contracts';
 import type { PerfBudget } from './PerfBudget';
 import type { HudController, HitBox } from './HudController';

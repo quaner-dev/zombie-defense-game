@@ -1,5 +1,5 @@
 import { Graphics, Label, Node, view } from 'cc';
-import type { BattleSession } from '../generated/core';
+import type { BattleSession } from '../generated/core.js';
 import type { Point } from './contracts';
 import { color, graphics, palette, uiNode } from './drawing';
 export interface HitBox {x:number;y:number;width:number;height:number;action:()=>void}

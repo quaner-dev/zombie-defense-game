@@ -1,5 +1,5 @@
 import { Graphics, Node } from 'cc';
-import { mapConfig } from '../generated/core';
+import { mapConfig } from '../generated/core.js';
 import { color, graphics, line, palette } from './drawing';
 export class MapView {
   private readonly base:Graphics;
