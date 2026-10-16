@@ -1,5 +1,6 @@
 import levelsJson from '../../config/levels.json' with { type: 'json' };
 import type { BattleEvent } from './types.js';
+import type { MapModel } from './MapModel.js';
 
 export interface WaveSpawn {
   unitType: string;
@@ -43,7 +44,7 @@ export class WaveManager {
       if (wave.battleTime_s > battleTime) break;
       events.push({
         type: 'wave_spawn',
-        time_s: battleTime,
+        time_s: wave.battleTime_s,
         data: {
           waveIndex: this.nextWaveIndex,
           battleTime_s: wave.battleTime_s,
@@ -53,6 +54,18 @@ export class WaveManager {
       this.nextWaveIndex += 1;
     }
     return events;
+  }
+
+  public getMapId(): string {
+    return this.level.mapId;
+  }
+
+  public validateMap(map: MapModel): void {
+    for (const wave of this.level.waves) {
+      for (const spawn of wave.spawns) {
+        if (!map.getRoute(spawn.route)) throw new Error(`Unknown spawn route: ${spawn.route}`);
+      }
+    }
   }
 
   public getWaveIndex(): number {

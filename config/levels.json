@@ -5,7 +5,7 @@
       {
         "battleTime_s": 0,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "center", "count": 50 }
+          { "unitType": "normal_zombie", "route": "B", "count": 50 }
         ]
       },
       {
@@ -18,8 +18,8 @@
       {
         "battleTime_s": 20,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "A", "count": 80 },
-          { "unitType": "normal_zombie", "route": "B", "count": 60 },
+          { "unitType": "normal_zombie", "route": "A", "count": 60 },
+          { "unitType": "normal_zombie", "route": "B", "count": 80 },
           { "unitType": "normal_zombie", "route": "C", "count": 60 }
         ]
       }
