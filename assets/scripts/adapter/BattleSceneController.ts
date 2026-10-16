@@ -23,8 +23,11 @@ export class BattleSceneController extends Component {
     // within the safe area with HUD reserves; no route is cropped on wide screens.
     view.setDesignResolutionSize(1080,2400,ResolutionPolicy.SHOW_ALL);
     this.root=uiNode('BattleCanvas',this.node);
-    const cameraNode=new Node('UICamera');cameraNode.parent=this.node;cameraNode.setPosition(540,1200,1000);
-    const camera=cameraNode.addComponent(Camera);camera.projection=Camera.ProjectionType.ORTHO;camera.orthoHeight=1200;
+    // Map drawing uses bottom-left design coordinates and flips y to -0..-2400.
+    // Keep the camera in that same coordinate space; otherwise the whole field
+    // is outside the camera and Creator shows only its preview clear color.
+    const cameraNode=new Node('UICamera');cameraNode.parent=this.node;cameraNode.setPosition(540,-1200,1000);
+    const camera=cameraNode.addComponent(Camera);camera.projection=Camera.ProjectionType.ORTHO;camera.orthoHeight=2400;
     camera.clearColor=new Color(11,11,15,255);
     camera.near=1;camera.far=2000;camera.visibility=Layers.Enum.UI_2D;
     const canvas=this.root.addComponent(Canvas);canvas.cameraComponent=camera;canvas.alignCanvasWithScreen=true;
@@ -39,14 +42,16 @@ export class BattleSceneController extends Component {
   }
   private layout():void {
     const visible=view.getVisibleSize();
+    const visibleWidth=Number.isFinite(visible.width)&&visible.width>0?visible.width:1080;
+    const visibleHeight=Number.isFinite(visible.height)&&visible.height>0?visible.height:2400;
     const reportedSafe=sys.getSafeAreaRect();
-    const safe=reportedSafe.width>0&&reportedSafe.height>0
+    const safe=Number.isFinite(reportedSafe.width)&&Number.isFinite(reportedSafe.height)&&reportedSafe.width>0&&reportedSafe.height>0
       ? reportedSafe
-      : {x:0,y:0,width:visible.width,height:visible.height};
+      : {x:0,y:0,width:visibleWidth,height:visibleHeight};
     const bottomReserve=150,topReserve=220;
     this.frame=fitMap({x:safe.x+20,y:safe.y+bottomReserve,width:Math.max(1,safe.width-40),height:Math.max(1,safe.height-topReserve-bottomReserve)},1080,2400);
-    this.field.setPosition(this.frame.x-540,this.frame.y+this.frame.height*this.frame.scale-1200);
-    this.field.setScale(this.frame.scale,this.frame.scale,1);
+    this.field.setPosition(0,0);
+    this.field.setScale(1,1,1);
     this.hud.layout(safe);this.controls?.cancel();
   }
   private hide():void {this.performance.suspend();this.session.paused=true;this.controls.cancel();}
