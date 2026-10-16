@@ -1,0 +1,19 @@
+{
+  "level_id": "LV01_zombie_wave",
+  "seed": 1,
+  "result": "running",
+  "first_casualty_time_s": null,
+  "human_alive_at_end": 50,
+  "zombie_alive_at_end": 0,
+  "wave_spawn_times_s": [],
+  "breached_routes": [],
+  "assertions_failed": [],
+  "game_time_s": 0,
+  "real_runtime_ms": 0,
+  "human_losses_before_wave_3": 0,
+  "combat_diagnostics": {
+    "rifle_shots": 0,
+    "effective_rifle_hits": 0,
+    "rifle_hits_without_damage": 0
+  }
+}

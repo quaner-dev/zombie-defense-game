@@ -1,5 +1,7 @@
 # Zombie Defense MVP Implementation Plan
 
+> 历史实现计划：保留原任务与当时环境记录，未勾选清单不代表当前完成度。下文“无 Git”、旧工程文件路径和早期数值是当时假设，不作为当前环境或命令依据。当前状态见 [文档索引](README.md)、[实际架构](architecture.md) 与 [发布清单](release-checklist.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a testable MVP of the three-route zombie-defense battle, with fixed-time waves, group movement, ordinary zombies, projectile trajectories, simplified breach damage, and a Cocos/WeChat integration boundary.

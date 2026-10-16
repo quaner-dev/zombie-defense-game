@@ -2,11 +2,26 @@
   "name": "zombie-defense-game",
   "private": true,
   "type": "module",
+  "creator": { "version": "3.8.8" },
+  "uuid": "3c1ac77e-fcf8-4ec5-90ec-eb7e02acc046",
   "scripts": {
-    "test": "node --import tsx --test"
+    "pretest": "npm run sync:core",
+    "test": "node --import tsx --test",
+    "pretest:adapter": "npm run sync:core",
+    "test:acceptance": "node --import tsx --test test/acceptance/*.test.mjs test/acceptance/*.test.ts",
+    "acceptance:report": "node --import tsx scripts/run-acceptance.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:performance": "npm run sync:core && node --import tsx --test test/performance/*.test.ts",
+    "test:adapter": "node --import tsx --test test/adapter/*.test.ts",
+    "test-adapter": "npm run test:adapter",
+    "sync:core": "node scripts/sync-cocos-core.mjs",
+    "typecheck:cocos": "npm run sync:core && tsc -p tsconfig.cocos.json",
+    "check:cocos-bundle": "node scripts/check-cocos-bundle.mjs"
   },
   "devDependencies": {
+    "@cocos/creator-types": "3.8.8",
     "@types/node": "^26.6.5",
+    "esbuild": "0.28.1",
     "tsx": "^4.23.0",
     "typescript": "^5.0.0"
   }

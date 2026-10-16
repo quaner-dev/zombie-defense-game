@@ -1,2 +1,10 @@
 node_modules/
 dist/
+# Creator generates these; authored .scene/.meta remain versioned.
+library/
+local/
+temp/
+build/
+profiles/
+assets/scripts/generated/core.js
+assets/scripts/generated/core.d.ts

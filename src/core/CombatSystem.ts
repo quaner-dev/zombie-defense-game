@@ -1,3 +1,4 @@
+import { cloneData } from './cloneData.js';
 import config from '../../config/units.json' with { type: 'json' };
 import type { MapModel } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
@@ -30,7 +31,7 @@ export class CombatSystem {
       spawnedAt_s: time_s, elapsed_s: 0,
     };
     this.shots.push(shot);
-    return { type: 'projectile_spawned', time_s, data: structuredClone(shot) };
+    return { type: 'projectile_spawned', time_s, data: cloneData(shot) };
   }
 
   public drainShots(): Projectile[] {
@@ -61,7 +62,14 @@ export class CombatSystem {
       // Earlier melee attacks may have killed a unit in this living snapshot.
       if (!unit.active || unit.hp <= 0 || unit.state === 'Dead') continue;
       if (unit.unitType === 'rifleman') this.rifle(unit, dt, time_s, events);
-      else this.zombie(unit, dt, time_s, events);
+      else {
+        this.zombie(unit, dt, time_s, events);
+        // Crossing is a one-time spatial warning, never a combat phase/gate.
+        if (!unit.breached && unit.position.y >= this.map.defense_line_y) {
+          unit.breached = true;
+          events.push({ type: 'route_breached', time_s, data: { routeId: unit.routeId, unitId: unit.id } });
+        }
+      }
     }
     return events;
   }
@@ -108,30 +116,19 @@ export class CombatSystem {
   }
 
   private zombie(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
-    if (!unit.breached) {
-      const before = unit.position.y;
-      unit.position.y = before >= this.map.defense_line_y ? before :
-        Math.min(this.map.defense_line_y, before + unit.speed_px_per_s * dt);
-      unit.velocity = { x: 0, y: unit.speed_px_per_s };
-      if (unit.position.y < this.map.defense_line_y) return;
-      unit.breached = true;
-      this.state(unit, 'Breached', time_s, events);
-      events.push({ type: 'route_breached', time_s, data: { routeId: unit.routeId, unitId: unit.id } });
-      if (before < this.map.defense_line_y) return;
-    }
     const target = this.nearest(unit, 'human');
     unit.targetId = target?.id ?? null;
     unit.velocity = { x: 0, y: 0 };
     if (!target) {
       unit.attackElapsed_s = 0;
-      this.state(unit, 'Breached', time_s, events);
+      this.state(unit, 'Idle', time_s, events);
       return;
     }
     const distance = this.distance(unit, target);
     // Normalize roundoff from diagonal stop-at-range movement, not gameplay range.
     if (distance > config.normal_zombie.attack_range_px + 1e-9) {
       unit.attackElapsed_s = 0;
-      this.state(unit, 'Breached', time_s, events);
+      this.state(unit, 'Advancing', time_s, events);
       const step = Math.min(distance - config.normal_zombie.attack_range_px, unit.speed_px_per_s * dt);
       const dx = (target.position.x - unit.position.x) / distance;
       const dy = (target.position.y - unit.position.y) / distance;

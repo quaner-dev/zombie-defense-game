@@ -6,6 +6,22 @@ import { CommandSystem } from '../../src/core/CommandSystem.js';
 import { MovementSystem } from '../../src/core/MovementSystem.js';
 import { MapModel } from '../../src/core/MapModel.js';
 
+test('identity commands filter dead, missing, enemy and duplicate IDs and still require a living group', () => {
+  const {store,commands}=setup();
+  const a=store.spawn('rifleman',{x:300,y:400},'A');
+  const b=store.spawn('rifleman',{x:320,y:400},'A');
+  const dead=store.spawn('rifleman',{x:310,y:400},'A');store.kill(dead.id);
+  const enemy=store.spawn('normal_zombie',{x:300,y:400},'A');
+  const ids=[a.id,a.id,dead.id,'missing',enemy.id];
+  assert.equal(commands.issueMoveGroup(ids,600,800,1),null);
+  assert.equal(a.state,'Idle');
+  assert.equal(commands.issueMoveGroup([a.id,b.id],NaN,800,1),null);
+  const event=commands.issueMoveGroup([...ids,b.id],600,800,1)!;
+  assert.deepEqual(event.data.unitIds,[a.id,b.id]);
+  assert.equal(dead.state,'Dead');assert.equal(enemy.state,'Advancing');
+  store.kill(b.id);assert.equal(commands.issueMoveGroup([a.id,b.id],800,900,2),null);
+});
+
 function setup() {
   const store = new UnitStore();
   const commands = new CommandSystem(store, MapModel.load());

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import config from '../../config/units.json' with { type: 'json' };
 import assert from 'node:assert/strict';
 import { UnitStore } from '../../src/core/UnitStore.js';
 import { ResultSystem } from '../../src/core/ResultSystem.js';
@@ -82,7 +83,7 @@ test('in-flight lethal hit and final melee death in one frame resolve as lose', 
   const zombie = store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');
   human.hp = 10;
   zombie.hp = 10;
-  zombie.attackElapsed_s = 0.95;
+  zombie.attackElapsed_s = config.normal_zombie.attack_interval_s - 0.05;
   projectiles.spawn(human, zombie, 0);
   combat.update(0.05, 0.05);
   projectiles.update(0.05, 0.05);

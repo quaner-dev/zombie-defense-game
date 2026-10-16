@@ -1,4 +1,5 @@
 import test from 'node:test';
+import config from '../../config/units.json' with { type: 'json' };
 import assert from 'node:assert/strict';
 import { UnitStore } from '../../src/core/UnitStore.js';
 import { MovementSystem } from '../../src/core/MovementSystem.js';
@@ -48,7 +49,7 @@ test('pool reuse resets every field and assigns a new identity to prevent stale 
   // Task 4 reconciles ordinary zombie defaults with the authoritative combat spec.
   assert.equal(reused.hp, 40);
   assert.equal(reused.maxHp, 40);
-  assert.equal(reused.speed_px_per_s, 60);
+  assert.equal(reused.speed_px_per_s, config.normal_zombie.speed_px_per_s);
   assert.equal(reused.state, 'Advancing');
   assert.equal(reused.routeId, 'B');
   assert.deepEqual(reused.position, { x: 540, y: 260 });

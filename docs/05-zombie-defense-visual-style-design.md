@@ -1,9 +1,13 @@
 # 视觉风格设计（终版 v1.0）
 
+> 当前MVP口径：A/B/C是出生区域，不是固定路径；僵尸从出生即全场最近索敌、直线追击，28px内攻击，防线只警告且无伤害门槛。强制3秒布阵，无跳过。可选微信短振动已实现并1000ms限频，物理效果未验证；墙侧阴影和复杂场景确认延期，其余未实现视觉项不自动扩展。Creator/构建/触控/FPS/内存待用户手测，发布与许可证暂缓。当前41.9px/s、0.13s及六命令配对证据见 [战斗模型](08-combat-numeric-model.md)；[手测表](testing/cocos-manual-checklist.md)。
+
 > 适用范围：微信小游戏版《50步枪兵 VS 3波僵尸》
 > 风格关键词：**极简圆点 · 柔和亮色 · 透亮发光 · 黑底灰墙**
 > 目标：一眼可读的阵营区分 + 干净的信息密度，复刻原作"色块点阵"气质
 > 状态：**MVP 视觉规格**（柔和亮色 + 双层透亮 + 方向箭头 + 子弹轨迹）
+
+> Task 6 review scope clarification: AI target crosshairs in §§3/5 are **read-only** indicators of core-selected targets; they do not contradict docs/04's explicit MVP omission of **clickable manual** focus crosshairs. The adapter now authors these indicators, a 0.5s scale-pop wave banner and a full-visible-viewport result dimmer. This is not full visual-spec acceptance: pressed-button highlights, curved preview/cancel fade, 8px movement arrows, melee pulse remain deviations; wall side shading and complex scenes are explicitly deferred; optional rate-limited WeChat vibration is implemented but physically unverified. Creator rendering/import/build validation is still unverified; see `README-cocos.md` and the Task 6 fix report.
 
 ---
 

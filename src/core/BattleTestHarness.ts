@@ -1,3 +1,4 @@
+import { cloneData } from './cloneData.js';
 import { DEFAULT_BATTLE_CONFIG } from './config.js';
 import { MapModel } from './MapModel.js';
 import { WaveManager, type WaveSpawnEventData } from './WaveManager.js';
@@ -15,6 +16,10 @@ export class BattleTestHarness {
   private events: BattleEvent[] = [];
   private deploymentTime_s = 0;
   private battleTime_s = 0;
+  private pendingTime_s = 0;
+  private battleTick = 0;
+  private deploymentTick = 0;
+  private static readonly STEP = 0.05;
   private started = false;
   private waveManager: WaveManager | null = null;
   private mapModel: MapModel | null = null;
@@ -35,6 +40,9 @@ export class BattleTestHarness {
     this.events = [];
     this.deploymentTime_s = 0;
     this.battleTime_s = 0;
+    this.pendingTime_s = 0;
+    this.battleTick = 0;
+    this.deploymentTick = 0;
     // Load level config; battle time stays at zero until deployment ends.
     this.waveManager = WaveManager.load(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
@@ -65,34 +73,36 @@ export class BattleTestHarness {
   public advance(seconds: number): void {
     if (!this.started || !Number.isFinite(seconds) || seconds < 0 || this.snapshot.result !== 'running') return;
 
-    // Deployment consumes time first; battle time only starts once it ends.
-    const remainingDeployment = this.config.deploymentDuration_s - this.deploymentTime_s;
-    if (remainingDeployment > 0) {
-      const consumed = Math.min(seconds, remainingDeployment);
-      this.deploymentTime_s += consumed;
-      this.events.push(...this.movement.update(consumed, 0));
-      if (this.deploymentTime_s < this.config.deploymentDuration_s) return;
-      // Deployment has just ended; battle time starts at zero.
-      seconds -= consumed;
-    }
-
-    this.runWaves();
-    const start = this.battleTime_s;
-    const end = start + seconds;
-    // Harness advances real elapsed time as bounded logic frames, never as one teleport.
-    const frames = Math.ceil(seconds / 0.05);
-    for (let i = 1; i <= frames && this.snapshot.result === 'running'; i++) {
-      const next = i === frames ? end : start + i * 0.05;
-      const dt = next - this.battleTime_s;
-      this.battleTime_s = next;
-      this.snapshot.time_s = next;
-      this.events.push(...this.combat!.update(dt, next));
-      this.events.push(...this.movement.update(dt, next));
-      this.events.push(...this.projectiles!.update(dt, next));
+    // Caller intervals only add elapsed time. Systems observe identical 50ms ticks,
+    // including deployment movement; no caller endpoint creates a partial frame.
+    this.pendingTime_s += seconds;
+    const step = BattleTestHarness.STEP;
+    while (this.snapshot.result === 'running') {
+      const deploying = this.deploymentTime_s < this.config.deploymentDuration_s;
+      const dt = deploying ? Math.min(step, this.config.deploymentDuration_s - this.deploymentTime_s) : step;
+      // This epsilon only absorbs accumulator roundoff, never changes system dt.
+      if (this.pendingTime_s + 1e-10 < dt) break;
+      this.pendingTime_s = Math.max(0, this.pendingTime_s - dt);
+      if (deploying) {
+        this.deploymentTick++;
+        this.deploymentTime_s = Math.min(this.config.deploymentDuration_s, this.deploymentTick / 20);
+        this.events.push(...this.movement.update(dt, 0));
+        if (this.deploymentTime_s === this.config.deploymentDuration_s) this.runWaves();
+        continue;
+      }
+      this.runWaves();
+      this.battleTime_s = ++this.battleTick / 20;
+      this.snapshot.time_s = this.battleTime_s;
+      this.events.push(...this.combat!.update(step, this.battleTime_s));
+      this.events.push(...this.movement.update(step, this.battleTime_s));
+      this.events.push(...this.projectiles!.update(step, this.battleTime_s));
       this.runWaves();
       this.resolveFrame();
     }
-    if (frames === 0) this.resolveFrame();
+    if (this.deploymentTime_s >= this.config.deploymentDuration_s) {
+      this.runWaves();
+      this.resolveFrame();
+    }
   }
 
   public issueMoveAt(x: number, y: number, targetX: number, targetY: number): void {
@@ -101,8 +111,16 @@ export class BattleTestHarness {
     if (event) this.events.push(event);
   }
 
+  public issueMoveGroup(unitIds: readonly string[], targetX: number, targetY: number): boolean {
+    if (!this.started || this.snapshot.result !== 'running') return false;
+    const event = this.commands?.issueMoveGroup(unitIds, targetX, targetY, this.battleTime_s);
+    if (!event) return false;
+    this.events.push(event);
+    return true;
+  }
+
   public getUnits(): Unit[] {
-    return structuredClone(this.units.all());
+    return cloneData(this.units.all());
   }
 
   public getSnapshot(): BattleSnapshot {
@@ -115,7 +133,15 @@ export class BattleTestHarness {
   }
 
   public getEvents(): BattleEvent[] {
-    return structuredClone(this.events);
+    return cloneData(this.events);
+  }
+
+  /** Cursor is scoped to this battle lifetime. Copies only unseen events. */
+  public readEvents(cursor: number): { cursor: number; events: BattleEvent[] } {
+    if (!Number.isInteger(cursor) || cursor < 0 || cursor > this.events.length) {
+      throw new RangeError('Invalid battle event cursor');
+    }
+    return { cursor: this.events.length, events: cloneData(this.events.slice(cursor)) };
   }
 
   private runWaves(): void {
@@ -124,9 +150,8 @@ export class BattleTestHarness {
       this.events.push(event);
       const data = event.data as WaveSpawnEventData;
       for (const spawn of data.spawns) {
-        const route = this.mapModel!.getRoute(spawn.route)!;
-        for (let i = 0; i < spawn.count; i++) {
-          this.units.spawn(spawn.unitType as UnitType, route.spawn, spawn.route);
+        for (const position of this.mapModel!.spawnPositions(spawn.route, spawn.count)) {
+          this.units.spawn(spawn.unitType as UnitType, position, spawn.route);
         }
         this.snapshot.spawnedZombies += spawn.count;
         this.snapshot.aliveZombies += spawn.count;

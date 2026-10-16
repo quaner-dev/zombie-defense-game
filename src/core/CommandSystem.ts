@@ -29,7 +29,16 @@ export class CommandSystem {
     if (![x, y, targetX, targetY, time_s].every(Number.isFinite)) return null;
     const selected = this.store.living().filter(unit => unit.unitType === 'rifleman' &&
       Math.hypot(unit.position.x - x, unit.position.y - y) <= mapConfig.unit_selection_radius);
-    // A lone rifleman cannot be individually selected.
+    return this.issueMoveGroup(selected.map(unit => unit.id), targetX, targetY, time_s);
+  }
+
+  /** Only unique living riflemen from the captured selection may receive a replacement. */
+  public issueMoveGroup(unitIds: readonly string[], targetX: number, targetY: number,
+    time_s: number): GroupCommandEvent | null {
+    if (![targetX, targetY, time_s].every(Number.isFinite)) return null;
+    const ids = new Set(unitIds);
+    const selected = this.store.living().filter(unit => unit.unitType === 'rifleman' && ids.has(unit.id));
+    // Preserve the public group-only rule after deaths/invalid IDs are removed.
     if (selected.length < 2) return null;
     const { left, top, right, bottom } = this.map.battle_bounds;
     const target = {

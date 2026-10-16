@@ -4,7 +4,7 @@
     "speed_px_per_s": 120,
     "damagePerHit": 10,
     "attack_interval_s": 0.5,
-    "attack_range_px": 300
+    "attack_range_px": 400
   },
   "movement": {
     "arrival_tolerance_px": 12,
@@ -12,9 +12,9 @@
   },
   "normal_zombie": {
     "hitPoints": 40,
-    "speed_px_per_s": 60,
+    "speed_px_per_s": 41.9,
     "damagePerHit": 10,
-    "attack_interval_s": 1.0,
+    "attack_interval_s": 0.13,
     "attack_range_px": 28
   },
   "projectile": {

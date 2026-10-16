@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"noEmit":false,"declaration":true,"emitDeclarationOnly":true,"outDir":"dist/cocos-types","rootDir":".","resolveJsonModule":true},"include":["src/**/*.ts","config/**/*.json"],"exclude":["test"]}

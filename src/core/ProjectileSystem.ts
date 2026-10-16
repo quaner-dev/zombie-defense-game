@@ -1,3 +1,4 @@
+import { cloneData } from './cloneData.js';
 import config from '../../config/units.json' with { type: 'json' };
 import type { CombatSystem, Projectile } from './CombatSystem.js';
 import type { UnitStore } from './UnitStore.js';
@@ -14,7 +15,7 @@ export class ProjectileSystem {
   }
 
   public getProjectiles(): Projectile[] {
-    return structuredClone([...this.projectiles.values()]);
+    return cloneData([...this.projectiles.values()]);
   }
 
   public update(seconds: number, time_s: number): BattleEvent[] {
