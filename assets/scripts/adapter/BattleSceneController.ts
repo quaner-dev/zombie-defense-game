@@ -38,7 +38,11 @@ export class BattleSceneController extends Component {
     this.layout();this.restart();
   }
   private layout():void {
-    const safe=sys.getSafeAreaRect();
+    const visible=view.getVisibleSize();
+    const reportedSafe=sys.getSafeAreaRect();
+    const safe=reportedSafe.width>0&&reportedSafe.height>0
+      ? reportedSafe
+      : {x:0,y:0,width:visible.width,height:visible.height};
     const bottomReserve=150,topReserve=220;
     this.frame=fitMap({x:safe.x+20,y:safe.y+bottomReserve,width:Math.max(1,safe.width-40),height:Math.max(1,safe.height-topReserve-bottomReserve)},1080,2400);
     this.field.setPosition(this.frame.x-540,this.frame.y+this.frame.height*this.frame.scale-1200);
