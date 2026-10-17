@@ -4,13 +4,15 @@ import type { BattleEvent } from '../core/types.js';
 /** Engine clock/pause bridge; all rules and results stay in core. */
 export class BattleSession {
   public readonly battle=new BattleTestHarness();
+  private levelId='LV01_zombie_wave';
   public paused=false;
   public deploymentRemaining=DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
   public events:BattleEvent[]=[];
   private cursor=0;
   public get snapshot(){return this.battle.getSnapshot();}
-  public restart():void {
-    this.battle.start('LV01_zombie_wave',1);this.paused=false;
+  public get waveCount(){return this.battle.getWaveCount();}
+  public restart(levelId=this.levelId):void {
+    this.levelId=levelId;this.battle.start(this.levelId,1);this.paused=false;
     this.deploymentRemaining=DEFAULT_BATTLE_CONFIG.deploymentDuration_s;this.cursor=0;this.events=[];
   }
   public tick(dt:number):void {

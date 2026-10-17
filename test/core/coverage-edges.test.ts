@@ -95,6 +95,26 @@ test('wave index advances once per scheduled wave and unknown levels use the def
   assert.equal(manager.allWavesSpawned(), true);
 });
 
+test('registered levels and maps can select multiple configured spawn routes', () => {
+  const map = definition();
+  map.routes.push({ id: 'B', waypoints: [{ x: 80, y: 100 }],
+    spawn: { x: 80, y: 0 }, defend: { x: 80, y: 90 }, width: 40 });
+  map.spawnPoints.push({ id: 'B', x: 80, y: 0 });
+  MapModel.register('two-route-fixture', map);
+  WaveManager.register('two-route-level-fixture', {
+    mapId: 'two-route-fixture',
+    waves: [{ battleTime_s: 0, spawns: [{ unitType: 'normal_zombie', route: 'B', count: 2 }] }],
+  });
+
+  const harness = new BattleTestHarness();
+  harness.start('two-route-level-fixture', 1);
+  assert.equal(harness.getWaveCount(), 1);
+  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'A').length, 25);
+  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'B').length, 25);
+  harness.advance(3.05);
+  assert.deepEqual(harness.getUnits().filter(unit => unit.faction === 'zombie').map(unit => unit.routeId), ['B', 'B']);
+});
+
 // Regression target: terminal commands must not spawn waves or change simulation state.
 test('ending deployment after defeat leaves the terminal battle frozen', () => {
   const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 0 });

@@ -21,7 +21,7 @@ Cocos 版本锁定 3.8.8，声明依赖也是 `@cocos/creator-types@3.8.8`。esb
 | `npm run test-adapter` | 上一命令的兼容别名 |
 | `npm run test:acceptance` | 直接使用源码核心的验收测试，不依赖生成包 |
 | `npm run acceptance:report` | 默认覆盖已保存的 JSON 报告；场景断言失败也写报告并返回非零 |
-| `npm run test:performance` | 先同步；七项时钟/生命周期回归含 20 局，历史约两分钟，不是设备基准 |
+| `npm run test:performance` | 先同步；时钟/生命周期回归含一次完整战斗和 19 次快速重开，不是设备基准 |
 | `npm run typecheck` | ES2022/NodeNext 严格检查 src 与 TS 测试，不发出文件 |
 | `npm run typecheck:cocos` | 先同步，再按 tsconfig.cocos.json 用真实 3.8.8 声明检查 assets |
 | `npm run check:cocos-bundle` | 内部同步；浏览器 realm 执行核心，检查适配包仅外部引用 cc、场景引用和脚本 UUID |
@@ -61,7 +61,7 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 - `test/core`：单位、命令、波次、移动、战斗、结果与生命周期边界。
 - `test/acceptance`：W1–W7、整局、报告及固定本路后撤。
 - `test/adapter`：坐标/手势契约、真实 controller/input/view 结合 cc 边界替身、固定步进分段等价及移动组选中 ID。
-- `test/performance`：统计与实际适配流程的 20 局清理；不含真实渲染器、堆或 GPU。
+- `test/performance`：统计、一次实际适配战斗和 19 次快速重开清理；不含真实渲染器、堆或 GPU。
 - [source-workflows.test.mjs](../test/workflows/source-workflows.test.mjs)：复制无 Git/依赖/生成物的源码，真实 npm ci，验证入口自动再生、损坏产物替换、含空格路径及 foreign cwd；会下载依赖。
 
 快速定位示例：

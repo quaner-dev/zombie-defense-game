@@ -10,9 +10,9 @@ function replay(cadence:number[], tactical:boolean) {
       const dt=Math.min(remaining,cadence[i++%cadence.length]);s.tick(dt);remaining-=dt;
     }
   }
-  elapsed(3);elapsed(24);
-  assert.equal(s.snapshot.time_s,24);
-  if(tactical)for(const stage of [{time:24,y:1550},{time:35,y:1750}]){
+  elapsed(3);elapsed(28);
+  assert.equal(s.snapshot.time_s,28);
+  if(tactical)for(const stage of [{time:28,y:1550},{time:52,y:1750}]){
     elapsed(stage.time-s.snapshot.time_s);
     for(const [i,route] of ['A','B','C'].entries()){
       const group=s.battle.getUnits().filter(u=>u.faction==='human'&&u.hp>0&&u.routeId===route);
@@ -23,7 +23,7 @@ function replay(cadence:number[], tactical:boolean) {
   const result={snapshot:s.snapshot,units:s.battle.getUnits(),events:s.battle.getEvents()};
   s.tick(100);assert.deepEqual(s.snapshot,result.snapshot);assert.deepEqual(s.battle.getEvents(),result.events);
   assert.deepEqual(result.events.filter(e=>e.type==='wave_spawn').map(e=>e.time_s),[0,7,20]);
-  if(tactical)assert.deepEqual(result.events.filter(e=>e.type==='group_command').map(e=>e.time_s),[24,24,24,35,35,35]);
+  if(tactical)assert.deepEqual(result.events.filter(e=>e.type==='group_command').map(e=>e.time_s),[28,28,28,52,52,52]);
   return result;
 }
 for(const tactical of [false,true])test(`exact authoritative replay across single, 50ms, 60fps and jitter (${tactical?'fallback':'idle'})`,()=>{

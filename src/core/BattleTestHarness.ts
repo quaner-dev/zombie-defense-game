@@ -1,7 +1,7 @@
 import { cloneData } from './cloneData.js';
 import { DEFAULT_BATTLE_CONFIG } from './config.js';
 import { MapModel } from './MapModel.js';
-import { WaveManager, type WaveSpawnEventData } from './WaveManager.js';
+import { WaveManager, type WaveScheduler, type WaveSpawnEventData } from './WaveManager.js';
 import { UnitStore } from './UnitStore.js';
 import { CommandSystem, formationPositions } from './CommandSystem.js';
 import { MovementSystem } from './MovementSystem.js';
@@ -21,7 +21,7 @@ export class BattleTestHarness {
   private deploymentTick = 0;
   private static readonly STEP = 0.05;
   private started = false;
-  private waveManager: WaveManager | null = null;
+  private waveManager: WaveScheduler | null = null;
   private mapModel: MapModel | null = null;
   private readonly units = new UnitStore();
   private readonly movement = new MovementSystem(this.units);
@@ -30,7 +30,10 @@ export class BattleTestHarness {
   private projectiles: ProjectileSystem | null = null;
   private results: ResultSystem | null = null;
 
-  public constructor(config: BattleConfig = DEFAULT_BATTLE_CONFIG) {
+  public constructor(
+    config: BattleConfig = DEFAULT_BATTLE_CONFIG,
+    private readonly createWaveScheduler: (levelId: string) => WaveScheduler = WaveManager.load,
+  ) {
     this.config = config;
     this.snapshot = this.initialSnapshot();
   }
@@ -44,7 +47,7 @@ export class BattleTestHarness {
     this.battleTick = 0;
     this.deploymentTick = 0;
     // Load level config; battle time stays at zero until deployment ends.
-    this.waveManager = WaveManager.load(levelId);
+    this.waveManager = this.createWaveScheduler(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
@@ -52,10 +55,11 @@ export class BattleTestHarness {
     this.projectiles = new ProjectileSystem(this.units, this.combat);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
-    const routes = ['A', 'B', 'C'];
+    const routes = this.mapModel.routeIds();
+    if (!routes.length) throw new Error('Map must define at least one route');
     for (const [index, routeId] of routes.entries()) {
-      const count = Math.floor(this.config.initialHumans / 3) +
-        (index < this.config.initialHumans % 3 ? 1 : 0);
+      const count = Math.floor(this.config.initialHumans / routes.length) +
+        (index < this.config.initialHumans % routes.length ? 1 : 0);
       const route = this.mapModel.getRoute(routeId)!;
       for (const position of formationPositions(count, route.defend, this.mapModel)) {
         this.units.spawn('rifleman', position, routeId);
@@ -131,6 +135,8 @@ export class BattleTestHarness {
     if (!this.mapModel) throw new Error('Battle has not started');
     return this.mapModel;
   }
+
+  public getWaveCount(): number { return this.waveManager?.getWaveCount() ?? 0; }
 
   public getEvents(): BattleEvent[] {
     return cloneData(this.events);

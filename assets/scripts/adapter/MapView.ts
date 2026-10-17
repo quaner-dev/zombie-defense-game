@@ -22,9 +22,14 @@ export class MapView {
   public render(breached:string[],time:number):void {
     const g=this.warning;g.clear();g.lineWidth=4;
     for(const r of mapConfig.routes){
-      g.strokeColor=color(breached.includes(r.id)?palette.warning:palette.wall,breached.includes(r.id)?(Math.floor(time*5)%2?100:255):220);
-      for(let x=r.defend.x-r.width/2;x<r.defend.x+r.width/2;x+=20)
-        line(g,{x,y:mapConfig.defense_line_y},{x:x+12,y:mapConfig.defense_line_y});
+      const isBreached=breached.includes(r.id);
+      const phase=time%0.8;
+      const flash=phase<0.08||(phase>=0.16&&phase<0.24);
+      g.strokeColor=color(isBreached?palette.warning:palette.wall,isBreached?(flash?255:80):220);
+      for(let index=0,x=r.defend.x-r.width/2;x<r.defend.x+r.width/2;x+=20,index++){
+        const jitter=isBreached&&phase<0.4?Math.sin(time*42+index*1.7)*3:0;
+        line(g,{x:x+jitter,y:mapConfig.defense_line_y+jitter*.35},{x:x+12+jitter,y:mapConfig.defense_line_y+jitter*.35});
+      }
     }
   }
 }

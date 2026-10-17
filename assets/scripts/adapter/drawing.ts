@@ -8,12 +8,13 @@ export function uiNode(name:string,parent:Node,width=1080,height=2400):Node {
 }
 export function graphics(name:string,parent:Node):Graphics{return uiNode(name,parent).addComponent(Graphics);}
 export function line(g:Graphics,a:Point,b:Point):void {g.moveTo(a.x,-a.y);g.lineTo(b.x,-b.y);g.stroke();}
-export function arrow(g:Graphics,a:Point,b:Point,dashed=false):void {
+export function arrow(g:Graphics,a:Point,b:Point,dashed=false,headSize=8):void {
   const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<1)return;
   g.strokeColor=color(palette.command);g.fillColor=g.strokeColor;g.lineWidth=2;
   if(dashed){for(let s=0;s<d;s+=10)line(g,{x:a.x+dx*s/d,y:a.y+dy*s/d},{x:a.x+dx*Math.min(s+6,d)/d,y:a.y+dy*Math.min(s+6,d)/d});}
   else line(g,a,b);
   const ux=dx/d,uy=dy/d;
-  g.moveTo(b.x,-b.y);g.lineTo(b.x-ux*12+uy*6,-(b.y-uy*12-ux*6));
-  g.lineTo(b.x-ux*12-uy*6,-(b.y-uy*12+ux*6));g.close();g.fill();
+  const side=headSize*.5;
+  g.moveTo(b.x,-b.y);g.lineTo(b.x-ux*headSize+uy*side,-(b.y-uy*headSize-ux*side));
+  g.lineTo(b.x-ux*headSize-uy*side,-(b.y-uy*headSize+ux*side));g.close();g.fill();
 }

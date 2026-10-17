@@ -108,7 +108,7 @@ export class BattleSceneController extends Component {
     const visibleUnits=this.session.battle.getUnits().filter(u=>
       (s.result==='running'||u.hp>0)&&u.position.x>=0&&u.position.x<=this.frame.width&&
       u.position.y>=0&&u.position.y<=this.frame.height);
-    this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??null,time);
+    this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??null,time,this.session.events);
     this.projectiles.render(this.session.events,s.time_s);
     if(s.result!=='running'){this.projectiles.clear();this.units.releaseTransient();}
     const pools=this.projectiles.counts;

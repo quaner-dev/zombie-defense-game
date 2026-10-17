@@ -27,6 +27,16 @@ export interface MapDefinition {
   routes: RouteDefinition[];
   spawnPoints: SpawnPointDefinition[];
   spawn_layout?: { columns: number; spacing_px: number };
+  /** Reserved map data for future terrain, cover and movement rules. */
+  terrain?: TerrainDefinition[];
+}
+
+export interface TerrainDefinition {
+  id: string;
+  kind: string;
+  bounds: { left: number; top: number; right: number; bottom: number };
+  blocksMovement?: boolean;
+  speedMultiplier?: number;
 }
 
 const MAP_DEFINITIONS: Record<string, MapDefinition> = {
@@ -41,11 +51,13 @@ export class MapModel {
   public readonly battle_bounds: MapDefinition['battle_bounds'];
   public readonly defense_line_y: number;
   public readonly spawn_top: number;
+  public readonly terrain: readonly TerrainDefinition[];
 
   public constructor(private readonly definition: MapDefinition) {
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
     this.spawn_top = definition.spawn_bounds === undefined ? this.battle_bounds.top : definition.spawn_bounds.top;
+    this.terrain = (definition.terrain ?? []).map(item => ({...item,bounds:{...item.bounds}}));
     const { left, top, right, bottom } = this.battle_bounds;
     if (!Number.isFinite(this.spawn_top) || this.spawn_top > top) {
       throw new Error('Map spawn bounds top must be finite and at or above battlefield top');
@@ -81,6 +93,11 @@ export class MapModel {
     return new MapModel(MAP_DEFINITIONS[mapId] ?? MAP_DEFINITIONS['default']);
   }
 
+  public static register(mapId: string, definition: MapDefinition): void {
+    if (!mapId.trim()) throw new Error('Map ID must not be empty');
+    MAP_DEFINITIONS[mapId] = definition;
+  }
+
   public spawnPositions(routeId: string, count: number): Waypoint[] {
     const route = this.routes.get(routeId)!;
     const layout = route.spawn_layout ?? this.definition.spawn_layout ?? { columns: 1, spacing_px: 0 };
@@ -99,6 +116,8 @@ export class MapModel {
   public getRoute(id: string): RouteDefinition | undefined {
     return this.routes.get(id);
   }
+
+  public routeIds(): string[] { return [...this.routes.keys()]; }
 
   public getSpawnPoint(id: string): SpawnPointDefinition | undefined {
     return this.spawnPoints.get(id);

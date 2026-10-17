@@ -71,9 +71,12 @@ var MapModel = class _MapModel {
     __publicField(this, "battle_bounds");
     __publicField(this, "defense_line_y");
     __publicField(this, "spawn_top");
+    __publicField(this, "terrain");
+    var _a;
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
     this.spawn_top = definition.spawn_bounds === void 0 ? this.battle_bounds.top : definition.spawn_bounds.top;
+    this.terrain = ((_a = definition.terrain) != null ? _a : []).map((item) => ({ ...item, bounds: { ...item.bounds } }));
     const { left, top, right, bottom } = this.battle_bounds;
     if (!Number.isFinite(this.spawn_top) || this.spawn_top > top) {
       throw new Error("Map spawn bounds top must be finite and at or above battlefield top");
@@ -105,6 +108,10 @@ var MapModel = class _MapModel {
     var _a;
     return new _MapModel((_a = MAP_DEFINITIONS[mapId]) != null ? _a : MAP_DEFINITIONS["default"]);
   }
+  static register(mapId, definition) {
+    if (!mapId.trim()) throw new Error("Map ID must not be empty");
+    MAP_DEFINITIONS[mapId] = definition;
+  }
   spawnPositions(routeId, count) {
     var _a, _b;
     const route = this.routes.get(routeId);
@@ -120,6 +127,9 @@ var MapModel = class _MapModel {
   }
   getRoute(id) {
     return this.routes.get(id);
+  }
+  routeIds() {
+    return [...this.routes.keys()];
   }
   getSpawnPoint(id) {
     return this.spawnPoints.get(id);
@@ -198,9 +208,16 @@ var WaveManager = class _WaveManager {
   getWaveIndex() {
     return this.nextWaveIndex;
   }
+  getWaveCount() {
+    return this.level.waves.length;
+  }
   static load(levelId) {
     var _a;
     return new _WaveManager((_a = LEVEL_DEFINITIONS[levelId]) != null ? _a : LEVEL_DEFINITIONS["LV01_zombie_wave"]);
+  }
+  static register(levelId, definition) {
+    if (!levelId.trim()) throw new Error("Level ID must not be empty");
+    LEVEL_DEFINITIONS[levelId] = definition;
   }
 };
 
@@ -588,7 +605,8 @@ var ResultSystem = class {
 
 // src/core/BattleTestHarness.ts
 var _BattleTestHarness = class _BattleTestHarness {
-  constructor(config = DEFAULT_BATTLE_CONFIG) {
+  constructor(config = DEFAULT_BATTLE_CONFIG, createWaveScheduler = WaveManager.load) {
+    __publicField(this, "createWaveScheduler", createWaveScheduler);
     __publicField(this, "config");
     __publicField(this, "snapshot");
     __publicField(this, "events", []);
@@ -617,7 +635,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.pendingTime_s = 0;
     this.battleTick = 0;
     this.deploymentTick = 0;
-    this.waveManager = WaveManager.load(levelId);
+    this.waveManager = this.createWaveScheduler(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
@@ -625,9 +643,10 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.projectiles = new ProjectileSystem(this.units, this.combat);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
-    const routes = ["A", "B", "C"];
+    const routes = this.mapModel.routeIds();
+    if (!routes.length) throw new Error("Map must define at least one route");
     for (const [index, routeId] of routes.entries()) {
-      const count = Math.floor(this.config.initialHumans / 3) + (index < this.config.initialHumans % 3 ? 1 : 0);
+      const count = Math.floor(this.config.initialHumans / routes.length) + (index < this.config.initialHumans % routes.length ? 1 : 0);
       const route = this.mapModel.getRoute(routeId);
       for (const position of formationPositions(count, route.defend, this.mapModel)) {
         this.units.spawn("rifleman", position, routeId);
@@ -694,6 +713,10 @@ var _BattleTestHarness = class _BattleTestHarness {
     if (!this.mapModel) throw new Error("Battle has not started");
     return this.mapModel;
   }
+  getWaveCount() {
+    var _a, _b;
+    return (_b = (_a = this.waveManager) == null ? void 0 : _a.getWaveCount()) != null ? _b : 0;
+  }
   getEvents() {
     return cloneData(this.events);
   }
@@ -750,6 +773,7 @@ var BattleTestHarness = _BattleTestHarness;
 var BattleSession = class {
   constructor() {
     __publicField(this, "battle", new BattleTestHarness());
+    __publicField(this, "levelId", "LV01_zombie_wave");
     __publicField(this, "paused", false);
     __publicField(this, "deploymentRemaining", DEFAULT_BATTLE_CONFIG.deploymentDuration_s);
     __publicField(this, "events", []);
@@ -758,8 +782,12 @@ var BattleSession = class {
   get snapshot() {
     return this.battle.getSnapshot();
   }
-  restart() {
-    this.battle.start("LV01_zombie_wave", 1);
+  get waveCount() {
+    return this.battle.getWaveCount();
+  }
+  restart(levelId = this.levelId) {
+    this.levelId = levelId;
+    this.battle.start(this.levelId, 1);
     this.paused = false;
     this.deploymentRemaining = DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
     this.cursor = 0;

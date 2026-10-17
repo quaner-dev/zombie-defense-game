@@ -15,7 +15,10 @@ export class ProjectileViewPool {
       const dx=p.position.x-p.origin.x,dy=p.position.y-p.origin.y,d=Math.hypot(dx,dy);
       line(g,{x:p.position.x-(d?dx/d*Math.min(d,18):0),y:p.position.y-(d?dy/d*Math.min(d,18):0)},p.position);
     }
-    g.fillColor=color('#FFFFFF');
-    for(const h of this.tracks.hits){g.circle(h.position.x,-h.position.y,4);g.fill();}
+    for(const h of this.tracks.hits){
+      const age=Math.max(0,time-h.time),progress=Math.min(1,age/.12);
+      g.fillColor=color('#FFFFFF',Math.round(255*(1-progress)));
+      g.circle(h.position.x,-h.position.y,3+progress*7);g.fill();
+    }
   }
 }

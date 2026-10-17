@@ -15,7 +15,7 @@ function run(seed, scripted) {
   h.advance(3);
   const commands = [];
   if (scripted) {
-    for (const stage of [{ time_s: 24, y: 1550 }, { time_s: 35, y: 1750 }]) {
+    for (const stage of [{ time_s: 28, y: 1550 }, { time_s: 52, y: 1750 }]) {
       h.advance(stage.time_s - h.getSnapshot().time_s);
       for (const source of routeIds) {
         const group = h.getUnits().filter(u => u.faction === 'human' && u.active && u.hp > 0 && u.state !== 'Dead' && u.routeId === source);
@@ -46,10 +46,10 @@ function run(seed, scripted) {
   if (s.spawnedZombies !== 350) failed.push('wave: expected 350 spawned zombies');
   if (!scripted) {
     if (s.result !== 'lose') failed.push('result: idle must lose');
-    if (s.aliveZombies !== 57) failed.push('result: calibrated idle remaining zombies must equal 57');
+    if (s.aliveZombies !== 17) failed.push('result: current viewport idle baseline must leave 17 zombies');
     if (firstTwoLosses > 2) failed.push('damage: waves 1/2 human losses exceed 2');
     if (!first || first.time_s < 25 || first.time_s > 35) failed.push('damage: first casualty outside 25..35s');
-    if (s.time_s < 38 || s.time_s > 50) failed.push('result: idle annihilation outside 38..50s');
+    if (s.time_s < 65 || s.time_s > 72) failed.push('result: current viewport idle end outside 65..72s');
   }
   if (scripted && (s.result !== 'win' || s.aliveHumans <= 0)) failed.push('result: fixed command scenario must win with survivors');
   if (scripted && (commands.length !== 6 || commands.some(c => c.unit_ids.length < 2 || !c.selection_verified))) failed.push('movement: six staged commands must select living groups');

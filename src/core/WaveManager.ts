@@ -18,6 +18,19 @@ export interface LevelDefinition {
   waves: WaveDefinition[];
 }
 
+/**
+ * Scheduling boundary for level content. The MVP implementation below is a
+ * fixed-time wave list; a future interval or continuous-spawn scheduler can
+ * preserve the same update/allWavesSpawned contract without touching combat.
+ */
+export interface WaveScheduler {
+  update(battleTime: number): BattleEvent[];
+  allWavesSpawned(): boolean;
+  getMapId(): string;
+  getWaveCount(): number;
+  validateMap(map: MapModel): void;
+}
+
 export interface WaveSpawnEventData {
   waveIndex: number;
   battleTime_s: number;
@@ -31,7 +44,7 @@ const LEVEL_DEFINITIONS: Record<string, LevelDefinition> =
  * Emits each scheduled wave exactly once when battle time reaches its time.
  * Previously spawned waves do not need to be cleared for later waves to fire.
  */
-export class WaveManager {
+export class WaveManager implements WaveScheduler {
   private nextWaveIndex = 0;
 
   public constructor(private readonly level: LevelDefinition) {}
@@ -76,7 +89,14 @@ export class WaveManager {
     return this.nextWaveIndex;
   }
 
+  public getWaveCount(): number { return this.level.waves.length; }
+
   public static load(levelId: string): WaveManager {
     return new WaveManager(LEVEL_DEFINITIONS[levelId] ?? LEVEL_DEFINITIONS['LV01_zombie_wave']);
+  }
+
+  public static register(levelId: string, definition: LevelDefinition): void {
+    if (!levelId.trim()) throw new Error('Level ID must not be empty');
+    LEVEL_DEFINITIONS[levelId] = definition;
   }
 }

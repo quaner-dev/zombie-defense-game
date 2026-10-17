@@ -18,11 +18,11 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
     getChildByName(name:string){return this.children.find(n=>n.name===name);}
   }
   class Graphics {
-    calls:any[]=[];fillColor:any;strokeColor:any;
+    calls:any[]=[];fillColor:any;strokeColor:any;lineWidth=1;
     clear(){this.calls=[];} rect(...args:any[]){this.calls.push({kind:'rect',args,color:this.fillColor});}
     roundRect(...args:any[]){this.calls.push({kind:'roundRect',args,color:this.fillColor});}
-    fill(){} stroke(){}
-    circle(...args:any[]){this.calls.push({kind:'circle',args});} moveTo(x:number,y:number){this.calls.push({kind:'moveTo',args:[x,y]});}
+    fill(){} stroke(){this.calls.push({kind:'stroke',color:this.strokeColor,width:this.lineWidth});}
+    circle(...args:any[]){this.calls.push({kind:'circle',args,fill:this.fillColor,stroke:this.strokeColor});} moveTo(x:number,y:number){this.calls.push({kind:'moveTo',args:[x,y]});}
     lineTo(x:number,y:number){this.calls.push({kind:'lineTo',args:[x,y]});} close(){}
   }
   class Color {a=255;hex='';static fromHEX(c:Color,h:string){c.hex=h;}}

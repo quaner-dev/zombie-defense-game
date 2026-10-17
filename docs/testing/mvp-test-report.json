@@ -33,9 +33,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -47,13 +47,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 4956.212445,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 5087.91949,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -89,9 +89,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -103,13 +103,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 4948.6945860000005,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4977.621032999999,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -145,9 +145,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -159,13 +159,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 6651.480541999999,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4961.207097,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -201,9 +201,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -215,13 +215,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 6386.559429000001,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 5392.2822689999975,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -257,9 +257,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -271,13 +271,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 6333.495126000002,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4922.326315000002,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -313,9 +313,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -327,13 +327,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 4959.871089999997,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4962.552809999997,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -369,9 +369,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -383,13 +383,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 5677.955465999999,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4922.0312300000005,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -425,9 +425,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -439,13 +439,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 5323.489415999997,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 5421.399642000004,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -481,9 +481,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -495,13 +495,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 5277.766432000004,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4916.325188999996,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     },
     {
@@ -537,9 +537,9 @@
           "spacing_px": 5
         }
       },
-      "first_casualty_time_s": 25.7,
+      "first_casualty_time_s": 33.55,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 57,
+      "zombie_alive_at_end": 17,
       "wave_spawn_times_s": [
         0,
         7,
@@ -551,13 +551,13 @@
         "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 49.55,
-      "real_runtime_ms": 5372.364588000004,
+      "game_time_s": 68.65,
+      "real_runtime_ms": 4947.536421999997,
       "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2245,
-        "effective_rifle_hits": 1207,
-        "rifle_hits_without_damage": 1038
+        "rifle_shots": 2511,
+        "effective_rifle_hits": 1344,
+        "rifle_hits_without_damage": 1167
       }
     }
   ],
@@ -594,8 +594,8 @@
         "spacing_px": 5
       }
     },
-    "first_casualty_time_s": 53.85,
-    "human_alive_at_end": 4,
+    "first_casualty_time_s": 44.2,
+    "human_alive_at_end": 22,
     "zombie_alive_at_end": 0,
     "wave_spawn_times_s": [
       0,
@@ -604,23 +604,23 @@
     ],
     "breached_routes": [
       "B",
-      "C",
-      "A"
+      "A",
+      "C"
     ],
     "assertions_failed": [],
-    "game_time_s": 74.85,
-    "real_runtime_ms": 7236.434586000003,
+    "game_time_s": 68.05,
+    "real_runtime_ms": 5650.162968000004,
     "human_losses_before_wave_3": 0,
     "combat_diagnostics": {
-      "rifle_shots": 2681,
+      "rifle_shots": 2716,
       "effective_rifle_hits": 1400,
-      "rifle_hits_without_damage": 1280
+      "rifle_hits_without_damage": 1314
     },
     "commands": [
       {
-        "time_s": 24,
-        "event_time_s": 24,
-        "issued_at_s": 24,
+        "time_s": 28,
+        "event_time_s": 28,
+        "issued_at_s": 28,
         "source_route": "A",
         "target_route": "A",
         "centroid": {
@@ -672,9 +672,9 @@
         "selection_verified": true
       },
       {
-        "time_s": 24,
-        "event_time_s": 24,
-        "issued_at_s": 24,
+        "time_s": 28,
+        "event_time_s": 28,
+        "issued_at_s": 28,
         "source_route": "B",
         "target_route": "B",
         "centroid": {
@@ -726,9 +726,9 @@
         "selection_verified": true
       },
       {
-        "time_s": 24,
-        "event_time_s": 24,
-        "issued_at_s": 24,
+        "time_s": 28,
+        "event_time_s": 28,
+        "issued_at_s": 28,
         "source_route": "C",
         "target_route": "C",
         "centroid": {
@@ -778,21 +778,20 @@
         "selection_verified": true
       },
       {
-        "time_s": 35,
-        "event_time_s": 35,
-        "issued_at_s": 35,
+        "time_s": 52,
+        "event_time_s": 52,
+        "issued_at_s": 52,
         "source_route": "A",
         "target_route": "A",
         "centroid": {
-          "x": 176.47058823529412,
-          "y": 1532.7058823529412
+          "x": 180,
+          "y": 1538
         },
         "target": {
           "x": 180,
           "y": 1750
         },
         "intended_ids": [
-          "unit-1",
           "unit-10",
           "unit-11",
           "unit-12",
@@ -801,8 +800,6 @@
           "unit-15",
           "unit-16",
           "unit-17",
-          "unit-2",
-          "unit-3",
           "unit-4",
           "unit-5",
           "unit-6",
@@ -811,7 +808,6 @@
           "unit-9"
         ],
         "unit_ids": [
-          "unit-1",
           "unit-10",
           "unit-11",
           "unit-12",
@@ -820,8 +816,6 @@
           "unit-15",
           "unit-16",
           "unit-17",
-          "unit-2",
-          "unit-3",
           "unit-4",
           "unit-5",
           "unit-6",
@@ -832,9 +826,9 @@
         "selection_verified": true
       },
       {
-        "time_s": 35,
-        "event_time_s": 35,
-        "issued_at_s": 35,
+        "time_s": 52,
+        "event_time_s": 52,
+        "issued_at_s": 52,
         "source_route": "B",
         "target_route": "B",
         "centroid": {
@@ -886,9 +880,9 @@
         "selection_verified": true
       },
       {
-        "time_s": 35,
-        "event_time_s": 35,
-        "issued_at_s": 35,
+        "time_s": 52,
+        "event_time_s": 52,
+        "issued_at_s": 52,
         "source_route": "C",
         "target_route": "C",
         "centroid": {

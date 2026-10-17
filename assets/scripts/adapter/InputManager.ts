@@ -16,7 +16,7 @@ export class InputManager {
     const id=e.getID();if(id===null)return;
     const p=this.point(e),button=this.hud.buttonAt(p);
     // A HUD touch cannot steal an already-owned map gesture (or another button).
-    if(button){if(!this.drag.preview&&!this.button)this.button={id,box:button};return;}
+    if(button){if(!this.drag.preview&&!this.button){this.button={id,box:button};this.hud.setButtonPressed(button,true);}return;}
     if(this.button)return;
     const m=this.map(e),f=this.frame();
     const inside=p.x>=f.x&&p.x<=f.x+f.width*f.scale&&p.y>=f.y&&p.y<=f.y+f.height*f.scale;
@@ -26,7 +26,7 @@ export class InputManager {
   private move(e:EventTouch):void {const id=e.getID();if(id!==null)this.drag.move(id,this.point(e),this.map(e));}
   private end(e:EventTouch):void {
     const id=e.getID();if(id===null)return;
-    if(this.button?.id===id){const b=this.button;this.button=null;if(this.hud.buttonAt(this.point(e))===b.box){this.metrics?.suspend();b.box.action();}return;}
+    if(this.button?.id===id){const b=this.button;this.button=null;this.hud.setButtonPressed(b.box,false);if(this.hud.buttonAt(this.point(e))===b.box){this.metrics?.suspend();b.box.action();}return;}
     if(this.hud.excludes(this.point(e))){this.drag.cancel(id);return;}
     const releasedAtMs=performance.now();
     const command=this.drag.end(id,this.point(e),this.map(e),releasedAtMs);
@@ -37,9 +37,9 @@ export class InputManager {
   }
   private cancelTouch(e:EventTouch):void {
     const id=e.getID();if(id===null)return;this.drag.cancel(id);
-    if(this.button?.id===id)this.button=null;
+    if(this.button?.id===id){this.hud.setButtonPressed(this.button.box,false);this.button=null;}
   }
-  public cancel():void {this.drag.cancel();this.button=null;}
+  public cancel():void {this.drag.cancel();if(this.button)this.hud.setButtonPressed(this.button.box,false);this.button=null;}
   public cancelBattlefield():void {this.drag.cancel();}
   public reset():void {this.cancel();this.drag.reset();}
   public destroy():void {

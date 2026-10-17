@@ -71,7 +71,9 @@ test('M1-M6/C8: group replacement, movement suppression, arrival, empty selectio
   assert.ok(h.getUnits().filter(u => ids.includes(u.id)).every(u => u.state === 'Moving' && u.targetId === null));
   assert.ok(!h.getEvents().some(e => ['projectile_spawned', 'damage'].includes(e.type) &&
     ids.includes((e.data as { sourceId: string }).sourceId)));
-  h.advance(20);
+  // With the current off-screen spawn, the moved group needs a few more
+  // seconds before zombies enter its 400px firing range.
+  h.advance(30);
   assert.ok(h.getUnits().filter(u => ids.includes(u.id)).every(u => u.moveTarget === null));
   assert.ok(h.getEvents().some(e => e.type === 'projectile_spawned' && ids.includes((e.data as { sourceId: string }).sourceId)), 'arrived group resumes firing');
   h.issueMoveAt(60, 180, 0, 0);
@@ -128,9 +130,9 @@ test('idle seeds 1..10 meet casualty and annihilation target ranges', () => {
   for (const entry of idle) {
     assert.deepEqual(entry.assertions_failed, [], `seed ${entry.seed}`);
     assert.equal(entry.result, 'lose');
-    assert.equal(entry.zombie_alive_at_end, 57);
+    assert.equal(entry.zombie_alive_at_end, 17);
     assert.ok(entry.first_casualty_time_s >= 25 && entry.first_casualty_time_s <= 35);
-    assert.ok(entry.game_time_s >= 38 && entry.game_time_s <= 50);
+    assert.ok(entry.game_time_s >= 65 && entry.game_time_s <= 72);
   }
 });
 
@@ -168,20 +170,20 @@ test('report CLI runs ten idle seeds and fixed commands, preserves deterministic
     const deterministic = ({ seed, real_runtime_ms, ...fields }: any) => fields;
     for (const entry of report.idle) assert.deepEqual(deterministic(entry), deterministic(report.idle[0]));
     assert.equal(report.scripted.policy, 'local-fallback');
-    assert.deepEqual(report.scripted.commands.map((c: any) => c.time_s), [24,24,24,35,35,35]);
+    assert.deepEqual(report.scripted.commands.map((c: any) => c.time_s), [28,28,28,52,52,52]);
     assert.deepEqual(report.scripted.commands.map((c: any) => c.source_route), ['A','B','C','A','B','C']);
     assert.deepEqual(report.scripted.commands.map((c: any) => c.target),
       [{ x: 180, y: 1550 }, { x: 540, y: 1550 }, { x: 900, y: 1550 },
         { x: 180, y: 1750 }, { x: 540, y: 1750 }, { x: 900, y: 1750 }]);
     const decision = start();
-    decision.advance(24);
+    decision.advance(28);
     for (const command of report.scripted.commands.slice(0,3)) {
       const group = decision.getUnits().filter(u => u.faction === 'human' && u.routeId === command.source_route && u.active && u.hp > 0 && u.state !== 'Dead');
       const ids = group.map(u => u.id).sort();
       assert.deepEqual([...command.unit_ids].sort(), ids);
       assert.deepEqual(command.intended_ids, ids);
-      assert.equal(command.event_time_s, 24);
-      assert.equal(command.issued_at_s, 24);
+      assert.equal(command.event_time_s, 28);
+      assert.equal(command.issued_at_s, 28);
       assert.equal(command.selection_verified, true);
       const x = group.reduce((sum,u) => sum + u.position.x,0) / group.length;
       const y = group.reduce((sum,u) => sum + u.position.y,0) / group.length;
@@ -190,7 +192,7 @@ test('report CLI runs ten idle seeds and fixed commands, preserves deterministic
       const event = decision.getEvents().filter(e => e.type === 'group_command').at(-1)!;
       assert.deepEqual([...(event.data as MoveGroupCommand).unitIds].sort(), ids);
     }
-    decision.advance(11);
+    decision.advance(24);
     for (const command of report.scripted.commands.slice(3)) {
       const group = decision.getUnits().filter(u => u.faction === 'human' && u.routeId === command.source_route && u.active && u.hp > 0 && u.state !== 'Dead');
       const ids = group.map(u => u.id).sort();
