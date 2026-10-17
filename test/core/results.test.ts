@@ -70,7 +70,7 @@ test('harness subdivides elapsed time so late-spawned waves do not move retroact
   harness.start('LV01_zombie_wave', 1);
   harness.advance(7);
   const a = harness.getUnits().find(u => u.faction === 'zombie' && u.routeId === 'A')!;
-  assert.equal(a.position.y, 260);
+  assert.equal(a.position.y, -40);
   assert.equal(harness.getSnapshot().time_s, 7);
 });
 

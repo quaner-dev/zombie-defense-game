@@ -25,36 +25,37 @@ var map_default = {
   map_id: "LV01_three_routes",
   design_size: { width: 1080, height: 2400 },
   battle_bounds: { left: 60, top: 180, right: 1020, bottom: 2160 },
+  spawn_bounds: { top: -180 },
   defense_line_y: 1200,
   unit_selection_radius: 72,
   spawn_layout: { columns: 9, spacing_px: 5 },
   routes: [
     {
       id: "A",
-      spawn: { x: 180, y: 260 },
+      spawn: { x: 180, y: -40 },
       defend: { x: 180, y: 1370 },
       width: 240,
-      waypoints: [{ x: 180, y: 260 }, { x: 180, y: 1370 }]
+      waypoints: [{ x: 180, y: -40 }, { x: 180, y: 1370 }]
     },
     {
       id: "B",
-      spawn: { x: 540, y: 260 },
+      spawn: { x: 540, y: -40 },
       defend: { x: 540, y: 1370 },
       width: 240,
-      waypoints: [{ x: 540, y: 260 }, { x: 540, y: 1370 }]
+      waypoints: [{ x: 540, y: -40 }, { x: 540, y: 1370 }]
     },
     {
       id: "C",
-      spawn: { x: 900, y: 260 },
+      spawn: { x: 900, y: -40 },
       defend: { x: 900, y: 1370 },
       width: 240,
-      waypoints: [{ x: 900, y: 260 }, { x: 900, y: 1370 }]
+      waypoints: [{ x: 900, y: -40 }, { x: 900, y: 1370 }]
     }
   ],
   spawnPoints: [
-    { id: "A", x: 180, y: 260 },
-    { id: "B", x: 540, y: 260 },
-    { id: "C", x: 900, y: 260 }
+    { id: "A", x: 180, y: -40 },
+    { id: "B", x: 540, y: -40 },
+    { id: "C", x: 900, y: -40 }
   ]
 };
 
@@ -69,16 +70,26 @@ var MapModel = class _MapModel {
     __publicField(this, "spawnPoints", /* @__PURE__ */ new Map());
     __publicField(this, "battle_bounds");
     __publicField(this, "defense_line_y");
+    __publicField(this, "spawn_top");
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
+    this.spawn_top = definition.spawn_bounds === void 0 ? this.battle_bounds.top : definition.spawn_bounds.top;
     const { left, top, right, bottom } = this.battle_bounds;
-    const validatePoint = (point) => {
-      if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < left || point.x > right || point.y < top || point.y > bottom) {
-        throw new Error("Map point outside battlefield bounds");
+    if (!Number.isFinite(this.spawn_top) || this.spawn_top > top) {
+      throw new Error("Map spawn bounds top must be finite and at or above battlefield top");
+    }
+    const validatePoint = (point, spawn = false) => {
+      const minimumY = spawn ? this.spawn_top : top;
+      if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < left || point.x > right || point.y < minimumY || point.y > bottom) {
+        throw new Error(spawn ? "Map spawn point outside battlefield bounds or configured spawn bounds" : "Map point outside battlefield bounds");
       }
     };
     for (const route of definition.routes) {
-      for (const point of [...route.waypoints, route.spawn, route.defend]) validatePoint(point);
+      for (const [index, point] of route.waypoints.entries()) {
+        validatePoint(point, index === 0);
+      }
+      validatePoint(route.spawn, true);
+      validatePoint(route.defend);
       const end = route.waypoints[route.waypoints.length - 1];
       if (!end || end.y < this.defense_line_y) {
         throw new Error(`Route ${route.id} must reach the defense line`);
@@ -86,7 +97,7 @@ var MapModel = class _MapModel {
       this.routes.set(route.id, route);
     }
     for (const point of definition.spawnPoints) {
-      validatePoint(point);
+      validatePoint(point, true);
       this.spawnPoints.set(point.id, point);
     }
   }
@@ -103,7 +114,8 @@ var MapModel = class _MapModel {
     const { left, top, right, bottom } = this.battle_bounds;
     return Array.from({ length: count }, (_, i) => ({
       x: Math.max(left, Math.min(right, route.spawn.x + (i % columns - (columns - 1) / 2) * spacing)),
-      y: Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(i / columns) * spacing))
+      // Offscreen entries fan upward; legacy in-bounds entries retain downward rows.
+      y: route.spawn.y < top ? Math.max(this.spawn_top, Math.min(bottom, route.spawn.y - Math.floor(i / columns) * spacing)) : Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(i / columns) * spacing))
     }));
   }
   getRoute(id) {

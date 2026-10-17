@@ -17,7 +17,7 @@ export class MapView {
       const right=routes[i+1].spawn.x-routes[i+1].width/2;
       if(right>left){g.rect(left,-mapConfig.defense_line_y,right-left,mapConfig.defense_line_y-180);g.fill();}
     }
-    for(const r of routes){g.fillColor=color(palette.zombie,50);g.circle(r.spawn.x,-r.spawn.y,36);g.fill();}
+
   }
   public render(breached:string[],time:number):void {
     const g=this.warning;g.clear();g.lineWidth=4;

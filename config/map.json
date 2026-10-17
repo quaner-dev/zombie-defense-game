@@ -2,35 +2,36 @@
   "map_id": "LV01_three_routes",
   "design_size": { "width": 1080, "height": 2400 },
   "battle_bounds": { "left": 60, "top": 180, "right": 1020, "bottom": 2160 },
+  "spawn_bounds": { "top": -180 },
   "defense_line_y": 1200,
   "unit_selection_radius": 72,
   "spawn_layout": { "columns": 9, "spacing_px": 5 },
   "routes": [
     {
       "id": "A",
-      "spawn": { "x": 180, "y": 260 },
+      "spawn": { "x": 180, "y": -40 },
       "defend": { "x": 180, "y": 1370 },
       "width": 240,
-      "waypoints": [{ "x": 180, "y": 260 }, { "x": 180, "y": 1370 }]
+      "waypoints": [{ "x": 180, "y": -40 }, { "x": 180, "y": 1370 }]
     },
     {
       "id": "B",
-      "spawn": { "x": 540, "y": 260 },
+      "spawn": { "x": 540, "y": -40 },
       "defend": { "x": 540, "y": 1370 },
       "width": 240,
-      "waypoints": [{ "x": 540, "y": 260 }, { "x": 540, "y": 1370 }]
+      "waypoints": [{ "x": 540, "y": -40 }, { "x": 540, "y": 1370 }]
     },
     {
       "id": "C",
-      "spawn": { "x": 900, "y": 260 },
+      "spawn": { "x": 900, "y": -40 },
       "defend": { "x": 900, "y": 1370 },
       "width": 240,
-      "waypoints": [{ "x": 900, "y": 260 }, { "x": 900, "y": 1370 }]
+      "waypoints": [{ "x": 900, "y": -40 }, { "x": 900, "y": 1370 }]
     }
   ],
   "spawnPoints": [
-    { "id": "A", "x": 180, "y": 260 },
-    { "id": "B", "x": 540, "y": 260 },
-    { "id": "C", "x": 900, "y": 260 }
+    { "id": "A", "x": 180, "y": -40 },
+    { "id": "B", "x": 540, "y": -40 },
+    { "id": "C", "x": 900, "y": -40 }
   ]
 }

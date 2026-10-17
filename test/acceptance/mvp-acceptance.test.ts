@@ -54,7 +54,7 @@ test('frame boundaries: off-grid calls cannot postpone a scheduled wave', () => 
   // Only completed 50ms ticks advance systems: total 7.09s publishes 7.05s.
   assert.equal(h.getSnapshot().time_s, 7.05);
   const left = h.getUnits().find(u => u.faction === 'zombie' && u.routeId === 'A')!;
-  assert.ok(Math.abs(Math.hypot(left.position.x - 160, left.position.y - 260) - 41.9 * 0.05) < 1e-8, `late wave position ${left.position.y}`);
+  assert.ok(Math.abs(Math.hypot(left.position.x - 160, left.position.y - (-40)) - 41.9 * 0.05) < 1e-8, `late wave position ${left.position.y}`);
 });
 
 test('M1-M6/C8: group replacement, movement suppression, arrival, empty selection and bounds', () => {
