@@ -40,7 +40,7 @@ test('lose wins a same-frame tie and terminal result is immutable', () => {
 });
 
 test('harness integrates movement, projectile hits, breach statistics, deaths and terminal freeze', () => {
-  const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 2 });
+  const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 50 });
   harness.start('LV01_zombie_wave', 1);
   for (let i = 0; i < 2000 && harness.getSnapshot().result === 'running'; i++) harness.advance(0.05);
   const snapshot = harness.getSnapshot();
@@ -70,7 +70,8 @@ test('harness subdivides elapsed time so late-spawned waves do not move retroact
   harness.start('LV01_zombie_wave', 1);
   harness.advance(7);
   const a = harness.getUnits().find(u => u.faction === 'zombie' && u.routeId === 'A')!;
-  assert.equal(a.position.y, -40);
+  assert.deepEqual(a.position, { x: 276, y: 180 });
+  assert.equal(a.spawnPointId, 'north');
   assert.equal(harness.getSnapshot().time_s, 7);
 });
 

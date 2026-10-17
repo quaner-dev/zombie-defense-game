@@ -8,7 +8,7 @@
   },
   "movement": {
     "arrival_tolerance_px": 12,
-    "formation_spacing_px": 20
+    "formation_spacing_px": 24
   },
   "normal_zombie": {
     "hitPoints": 40,

@@ -4,20 +4,28 @@ import type { MapModel } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
 import type { BattleEvent, GroupCommandEvent, Point } from './types.js';
 
-/** Deterministic centered rows; translate the whole formation inside bounds. */
+/** Deterministic irregular deployment, without rows or shared destinations. */
 export function formationPositions(count: number, target: Point, map: MapModel): Point[] {
-  const columns = Math.ceil(Math.sqrt(count));
-  const rows = Math.ceil(count / columns);
   const spacing = unitConfig.movement.formation_spacing_px;
+  const points = Array.from({ length: count }, (_, index) => {
+    const angle = index * 2.399963229728653 + Math.sin(index * 7.13) * .12;
+    const radius = Math.sqrt(index) * spacing * .68;
+    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  });
+  return translatedPositions(points, target, map);
+}
+
+/** Move the captured shape as a whole, including when constrained at an edge. */
+export function translatedPositions(points: readonly Point[], target: Point, map: MapModel): Point[] {
+  if (!points.length) return [];
+  const center = { x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+    y: points.reduce((sum, p) => sum + p.y, 0) / points.length };
   const { left, top, right, bottom } = map.battle_bounds;
-  const width = Math.min((columns - 1) * spacing, right - left);
-  const height = Math.min((rows - 1) * spacing, bottom - top);
-  const centerX = Math.max(left + width / 2, Math.min(right - width / 2, target.x));
-  const centerY = Math.max(top + height / 2, Math.min(bottom - height / 2, target.y));
-  return Array.from({ length: count }, (_, i) => ({
-    x: centerX - width / 2 + (columns > 1 ? (i % columns) * width / (columns - 1) : 0),
-    y: centerY - height / 2 + (rows > 1 ? Math.floor(i / columns) * height / (rows - 1) : 0),
-  }));
+  const minX = Math.min(...points.map(p => p.x)), maxX = Math.max(...points.map(p => p.x));
+  const minY = Math.min(...points.map(p => p.y)), maxY = Math.max(...points.map(p => p.y));
+  const dx = Math.max(left - minX, Math.min(right - maxX, target.x - center.x));
+  const dy = Math.max(top - minY, Math.min(bottom - maxY, target.y - center.y));
+  return points.map(p => ({ x: p.x + dx, y: p.y + dy }));
 }
 
 export class CommandSystem {
@@ -38,14 +46,14 @@ export class CommandSystem {
     if (![targetX, targetY, time_s].every(Number.isFinite)) return null;
     const ids = new Set(unitIds);
     const selected = this.store.living().filter(unit => unit.unitType === 'rifleman' && ids.has(unit.id));
-    // Preserve the public group-only rule after deaths/invalid IDs are removed.
-    if (selected.length < 2) return null;
+    // A captured single survivor remains controllable after the rest of the selection dies.
+    if (selected.length < 1) return null;
     const { left, top, right, bottom } = this.map.battle_bounds;
     const target = {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY)),
     };
-    const positions = formationPositions(selected.length, target, this.map);
+    const positions = translatedPositions(selected.map(unit => unit.position), target, this.map);
     selected.forEach((unit, i) => {
       const from = unit.state;
       unit.moveTarget = positions[i];

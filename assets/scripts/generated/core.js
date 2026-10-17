@@ -22,13 +22,13 @@ var DEFAULT_BATTLE_CONFIG = {
 
 // config/map.json
 var map_default = {
-  map_id: "LV01_three_routes",
+  map_id: "LV01_four_sides",
   design_size: { width: 1080, height: 2400 },
   battle_bounds: { left: 60, top: 180, right: 1020, bottom: 2160 },
   spawn_bounds: { top: -180 },
   defense_line_y: 1200,
-  unit_selection_radius: 72,
-  spawn_layout: { columns: 9, spacing_px: 5 },
+  unit_selection_radius: 112,
+  spawn_layout: { columns: 25, spacing_px: 22 },
   routes: [
     {
       id: "A",
@@ -55,7 +55,17 @@ var map_default = {
   spawnPoints: [
     { id: "A", x: 180, y: -40 },
     { id: "B", x: 540, y: -40 },
-    { id: "C", x: 900, y: -40 }
+    { id: "C", x: 900, y: -40 },
+    { id: "north", x: 540, y: 180, side: "north", width: 900 },
+    { id: "south", x: 540, y: 2160, side: "south", width: 900 },
+    { id: "east", x: 1020, y: 1170, side: "east", width: 1800 },
+    { id: "west", x: 60, y: 1170, side: "west", width: 1800 }
+  ],
+  terrain: [
+    { id: "west-barricade", kind: "wall", bounds: { left: 350, top: 900, right: 390, bottom: 1260 }, blocksMovement: true, stackRequired: 3 },
+    { id: "east-barricade", kind: "wall", bounds: { left: 690, top: 900, right: 730, bottom: 1260 }, blocksMovement: true, stackRequired: 3 },
+    { id: "north-barricade", kind: "wall", bounds: { left: 420, top: 1060, right: 660, bottom: 1100 }, blocksMovement: true, stackRequired: 3 },
+    { id: "south-barricade", kind: "wall", bounds: { left: 260, top: 1600, right: 360, bottom: 1640 }, blocksMovement: true, stackRequired: 3 }
   ]
 };
 
@@ -101,7 +111,16 @@ var MapModel = class _MapModel {
     }
     for (const point of definition.spawnPoints) {
       validatePoint(point, true);
+      if (point.width !== void 0 && (!Number.isFinite(point.width) || point.width < 0)) {
+        throw new Error(`Map spawn point ${point.id} has invalid width`);
+      }
       this.spawnPoints.set(point.id, point);
+    }
+    for (const terrain of this.terrain) {
+      const b = terrain.bounds;
+      if (![b.left, b.top, b.right, b.bottom].every(Number.isFinite) || b.left > b.right || b.top > b.bottom || b.left < left || b.right > right || b.top < top || b.bottom > bottom || terrain.stackRequired !== void 0 && (!Number.isInteger(terrain.stackRequired) || terrain.stackRequired < 1)) {
+        throw new Error(`Map terrain ${terrain.id} has invalid bounds or stack requirement`);
+      }
     }
   }
   static load(mapId = "default") {
@@ -112,8 +131,13 @@ var MapModel = class _MapModel {
     if (!mapId.trim()) throw new Error("Map ID must not be empty");
     MAP_DEFINITIONS[mapId] = definition;
   }
-  spawnPositions(routeId, count) {
+  spawnPositions(routeId, count, spawnPointId) {
     var _a, _b;
+    if (spawnPointId) {
+      const point = this.spawnPoints.get(spawnPointId);
+      if (!point) throw new Error(`Unknown spawn point: ${spawnPointId}`);
+      return this.edgeSpawnPositions(point, count);
+    }
     const route = this.routes.get(routeId);
     const layout = (_b = (_a = route.spawn_layout) != null ? _a : this.definition.spawn_layout) != null ? _b : { columns: 1, spacing_px: 0 };
     const columns = Math.min(count, Math.max(1, Math.floor(layout.columns)));
@@ -124,6 +148,116 @@ var MapModel = class _MapModel {
       // Offscreen entries fan upward; legacy in-bounds entries retain downward rows.
       y: route.spawn.y < top ? Math.max(this.spawn_top, Math.min(bottom, route.spawn.y - Math.floor(i / columns) * spacing)) : Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(i / columns) * spacing))
     }));
+  }
+  edgeSpawnPositions(point, count) {
+    var _a, _b, _c;
+    const layout = (_a = this.definition.spawn_layout) != null ? _a : { columns: 1, spacing_px: 0 };
+    const side = (_b = point.side) != null ? _b : this.inferSpawnSide(point);
+    const { left, top, right, bottom } = this.battle_bounds;
+    const available = side === "north" || side === "south" ? right - left : bottom - top;
+    const width = Math.min((_c = point.width) != null ? _c : available, available);
+    const columns = Math.min(count, Math.max(1, Math.floor(layout.columns)));
+    const spacing = Math.min(Math.max(0, layout.spacing_px), columns > 1 ? width / (columns - 1) : Infinity);
+    return Array.from({ length: count }, (_, index) => {
+      const offset = (index % columns - (columns - 1) / 2) * spacing;
+      const depth = Math.floor(index / columns) * spacing;
+      if (side === "north") return {
+        x: Math.max(left, Math.min(right, point.x + offset)),
+        y: Math.max(top, Math.min(bottom, point.y + depth))
+      };
+      if (side === "south") return {
+        x: Math.max(left, Math.min(right, point.x + offset)),
+        y: Math.max(top, Math.min(bottom, point.y - depth))
+      };
+      if (side === "west") return {
+        x: Math.max(left, Math.min(right, point.x + depth)),
+        y: Math.max(top, Math.min(bottom, point.y + offset))
+      };
+      return {
+        x: Math.max(left, Math.min(right, point.x - depth)),
+        y: Math.max(top, Math.min(bottom, point.y + offset))
+      };
+    });
+  }
+  inferSpawnSide(point) {
+    const { left, top, right, bottom } = this.battle_bounds;
+    const distances = [
+      ["west", Math.abs(point.x - left)],
+      ["east", Math.abs(point.x - right)],
+      ["north", Math.abs(point.y - top)],
+      ["south", Math.abs(point.y - bottom)]
+    ];
+    return distances.sort((a, b) => a[1] - b[1])[0][0];
+  }
+  /** First terrain rectangle crossed by a swept circular unit. */
+  firstBlockingTerrain(start, end, radius = 0) {
+    let first = null;
+    for (const terrain of this.terrain) {
+      if (!terrain.blocksMovement) continue;
+      const b = terrain.bounds;
+      const bounds = {
+        left: b.left - radius,
+        top: b.top - radius,
+        right: b.right + radius,
+        bottom: b.bottom + radius
+      };
+      const startsInside = start.x >= bounds.left && start.x <= bounds.right && start.y >= bounds.top && start.y <= bounds.bottom;
+      const endsInside = end.x >= bounds.left && end.x <= bounds.right && end.y >= bounds.top && end.y <= bounds.bottom;
+      if (startsInside) {
+        const exits = [
+          { distance: start.x - bounds.left, outward: end.x < start.x },
+          { distance: bounds.right - start.x, outward: end.x > start.x },
+          { distance: start.y - bounds.top, outward: end.y < start.y },
+          { distance: bounds.bottom - start.y, outward: end.y > start.y }
+        ];
+        const closest = Math.min(...exits.map((exit) => exit.distance));
+        if (!exits.some((exit) => exit.distance <= closest + 1e-8 && exit.outward)) {
+          if (!first || first.fraction > 0) first = { terrain, fraction: 0, point: { ...start } };
+        } else if (endsInside && closest > 1e-8) {
+          if (!first || first.fraction > 0) first = { terrain, fraction: 0, point: { ...start } };
+        }
+        continue;
+      }
+      const hit = this.segmentRectFraction(start, end, bounds);
+      if (hit === null || first && hit >= first.fraction) continue;
+      first = { terrain, fraction: hit, point: {
+        x: start.x + (end.x - start.x) * hit,
+        y: start.y + (end.y - start.y) * hit
+      } };
+    }
+    return first;
+  }
+  terrainContains(point, terrain, radius = 0) {
+    const b = terrain.bounds;
+    return point.x >= b.left - radius && point.x <= b.right + radius && point.y >= b.top - radius && point.y <= b.bottom + radius;
+  }
+  hasCrossedDefense(point, side) {
+    const centerX = (this.battle_bounds.left + this.battle_bounds.right) / 2;
+    if (side === "north") return point.y >= this.defense_line_y;
+    if (side === "south") return point.y <= this.defense_line_y;
+    if (side === "west") return point.x >= centerX;
+    if (side === "east") return point.x <= centerX;
+    return point.y >= this.defense_line_y;
+  }
+  segmentRectFraction(start, end, bounds) {
+    let enter = 0;
+    let exit = 1;
+    for (const [origin, delta, minimum, maximum] of [
+      [start.x, end.x - start.x, bounds.left, bounds.right],
+      [start.y, end.y - start.y, bounds.top, bounds.bottom]
+    ]) {
+      if (Math.abs(delta) < 1e-12) {
+        if (origin < minimum || origin > maximum) return null;
+        continue;
+      }
+      let near = (minimum - origin) / delta;
+      let far = (maximum - origin) / delta;
+      if (near > far) [near, far] = [far, near];
+      enter = Math.max(enter, near);
+      exit = Math.min(exit, far);
+      if (enter > exit) return null;
+    }
+    return enter >= 0 && enter <= 1 ? enter : null;
   }
   getRoute(id) {
     return this.routes.get(id);
@@ -144,22 +278,36 @@ var levels_default = {
       {
         battleTime_s: 0,
         spawns: [
-          { unitType: "normal_zombie", route: "B", count: 50 }
+          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 13 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 13 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 12 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 12 }
         ]
       },
       {
         battleTime_s: 7,
         spawns: [
-          { unitType: "normal_zombie", route: "A", count: 50 },
-          { unitType: "normal_zombie", route: "C", count: 50 }
+          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 25 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 25 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 25 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 25 }
         ]
       },
       {
         battleTime_s: 20,
         spawns: [
-          { unitType: "normal_zombie", route: "A", count: 60 },
-          { unitType: "normal_zombie", route: "B", count: 80 },
-          { unitType: "normal_zombie", route: "C", count: 60 }
+          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 15 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 15 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "east", count: 15 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 20 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 20 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 20 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 20 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "north", count: 15 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "south", count: 15 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 15 }
         ]
       }
     ]
@@ -199,6 +347,9 @@ var WaveManager = class _WaveManager {
     for (const wave of this.level.waves) {
       for (const spawn of wave.spawns) {
         if (!map.getRoute(spawn.route)) throw new Error(`Unknown spawn route: ${spawn.route}`);
+        if (spawn.spawnPoint && !map.getSpawnPoint(spawn.spawnPoint)) {
+          throw new Error(`Unknown spawn point: ${spawn.spawnPoint}`);
+        }
       }
     }
   }
@@ -232,7 +383,7 @@ var units_default = {
   },
   movement: {
     arrival_tolerance_px: 12,
-    formation_spacing_px: 20
+    formation_spacing_px: 24
   },
   normal_zombie: {
     hitPoints: 40,
@@ -254,7 +405,7 @@ var UnitStore = class {
     __publicField(this, "pool", []);
     __publicField(this, "nextId", 1);
   }
-  spawn(unitType, position, routeId) {
+  spawn(unitType, position, routeId, spawnPointId = null) {
     var _a;
     const config = units_default[unitType];
     const fresh = {
@@ -272,6 +423,10 @@ var UnitStore = class {
       moveTarget: null,
       attackElapsed_s: 0,
       breached: false,
+      spawnPointId,
+      climbingWallId: null,
+      climbTarget: null,
+      stackLevel: 0,
       active: true
     };
     const unit = Object.assign((_a = this.pool.pop()) != null ? _a : {}, fresh);
@@ -295,6 +450,9 @@ var UnitStore = class {
     unit.velocity = { x: 0, y: 0 };
     unit.targetId = null;
     unit.moveTarget = null;
+    unit.climbingWallId = null;
+    unit.climbTarget = null;
+    unit.stackLevel = 0;
     return true;
   }
   remove(id) {
@@ -313,18 +471,26 @@ var UnitStore = class {
 
 // src/core/CommandSystem.ts
 function formationPositions(count, target, map) {
-  const columns = Math.ceil(Math.sqrt(count));
-  const rows = Math.ceil(count / columns);
   const spacing = units_default.movement.formation_spacing_px;
+  const points = Array.from({ length: count }, (_, index) => {
+    const angle = index * 2.399963229728653 + Math.sin(index * 7.13) * 0.12;
+    const radius = Math.sqrt(index) * spacing * 0.68;
+    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+  });
+  return translatedPositions(points, target, map);
+}
+function translatedPositions(points, target, map) {
+  if (!points.length) return [];
+  const center = {
+    x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+    y: points.reduce((sum, p) => sum + p.y, 0) / points.length
+  };
   const { left, top, right, bottom } = map.battle_bounds;
-  const width = Math.min((columns - 1) * spacing, right - left);
-  const height = Math.min((rows - 1) * spacing, bottom - top);
-  const centerX = Math.max(left + width / 2, Math.min(right - width / 2, target.x));
-  const centerY = Math.max(top + height / 2, Math.min(bottom - height / 2, target.y));
-  return Array.from({ length: count }, (_, i) => ({
-    x: centerX - width / 2 + (columns > 1 ? i % columns * width / (columns - 1) : 0),
-    y: centerY - height / 2 + (rows > 1 ? Math.floor(i / columns) * height / (rows - 1) : 0)
-  }));
+  const minX = Math.min(...points.map((p) => p.x)), maxX = Math.max(...points.map((p) => p.x));
+  const minY = Math.min(...points.map((p) => p.y)), maxY = Math.max(...points.map((p) => p.y));
+  const dx = Math.max(left - minX, Math.min(right - maxX, target.x - center.x));
+  const dy = Math.max(top - minY, Math.min(bottom - maxY, target.y - center.y));
+  return points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
 }
 var CommandSystem = class {
   constructor(store, map, emit = () => {
@@ -343,13 +509,13 @@ var CommandSystem = class {
     if (![targetX, targetY, time_s].every(Number.isFinite)) return null;
     const ids = new Set(unitIds);
     const selected = this.store.living().filter((unit) => unit.unitType === "rifleman" && ids.has(unit.id));
-    if (selected.length < 2) return null;
+    if (selected.length < 1) return null;
     const { left, top, right, bottom } = this.map.battle_bounds;
     const target = {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY))
     };
-    const positions = formationPositions(selected.length, target, this.map);
+    const positions = translatedPositions(selected.map((unit) => unit.position), target, this.map);
     selected.forEach((unit, i) => {
       const from = unit.state;
       unit.moveTarget = positions[i];
@@ -373,10 +539,12 @@ var CommandSystem = class {
 
 // src/core/MovementSystem.ts
 var MovementSystem = class {
-  constructor(store) {
+  constructor(store, map) {
     __publicField(this, "store", store);
+    __publicField(this, "map", map);
   }
   update(seconds, time_s) {
+    var _a;
     const events = [];
     if (!Number.isFinite(seconds) || seconds < 0) return events;
     const tolerance = units_default.movement.arrival_tolerance_px;
@@ -388,8 +556,24 @@ var MovementSystem = class {
       const step = distance <= tolerance ? 0 : Math.min(distance, seconds * unit.speed_px_per_s);
       unit.targetId = null;
       if (distance > 0 && step > 0) {
-        unit.position.x += dx / distance * step;
-        unit.position.y += dy / distance * step;
+        const destination = {
+          x: unit.position.x + dx / distance * step,
+          y: unit.position.y + dy / distance * step
+        };
+        const wall = (_a = this.map) == null ? void 0 : _a.firstBlockingTerrain(unit.position, destination, 7);
+        if (wall) {
+          unit.position = wall.point;
+          unit.state = "Idle";
+          unit.moveTarget = null;
+          unit.velocity = { x: 0, y: 0 };
+          events.push({
+            type: "unit_state_changed",
+            time_s,
+            data: { unitId: unit.id, from: "Moving", to: "Idle" }
+          });
+          continue;
+        }
+        unit.position = destination;
         unit.velocity = {
           x: dx / distance * unit.speed_px_per_s,
           y: dy / distance * unit.speed_px_per_s
@@ -453,6 +637,7 @@ var CombatSystem = class {
     return events;
   }
   update(seconds, time_s) {
+    var _a, _b;
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     const dt = Math.min(seconds, 0.05);
     const events = [];
@@ -461,12 +646,14 @@ var CombatSystem = class {
       if (unit.unitType === "rifleman") this.rifle(unit, dt, time_s, events);
       else {
         this.zombie(unit, dt, time_s, events);
-        if (!unit.breached && unit.position.y >= this.map.defense_line_y) {
+        const side = unit.spawnPointId ? (_b = (_a = this.map.getSpawnPoint(unit.spawnPointId)) == null ? void 0 : _a.side) != null ? _b : null : null;
+        if (!unit.breached && this.map.hasCrossedDefense(unit.position, side)) {
           unit.breached = true;
           events.push({ type: "route_breached", time_s, data: { routeId: unit.routeId, unitId: unit.id } });
         }
       }
     }
+    this.separateZombies();
     return events;
   }
   nearest(unit, faction, range = Infinity) {
@@ -505,7 +692,11 @@ var CombatSystem = class {
     }
   }
   zombie(unit, dt, time_s, events) {
-    var _a;
+    var _a, _b;
+    if (unit.climbingWallId && unit.climbTarget) {
+      this.climb(unit, dt, time_s, events);
+      return;
+    }
     const target = this.nearest(unit, "human");
     unit.targetId = (_a = target == null ? void 0 : target.id) != null ? _a : null;
     unit.velocity = { x: 0, y: 0 };
@@ -515,15 +706,53 @@ var CombatSystem = class {
       return;
     }
     const distance = this.distance(unit, target);
-    if (distance > units_default.normal_zombie.attack_range_px + 1e-9) {
+    const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position, 0);
+    if (distance <= units_default.normal_zombie.attack_range_px + 1e-9 && meleeBlocked && !unit.climbingWallId) {
       unit.attackElapsed_s = 0;
       this.state(unit, "Advancing", time_s, events);
+      return;
+    }
+    if (distance > units_default.normal_zombie.attack_range_px + 1e-9) {
+      unit.attackElapsed_s = 0;
       const step = Math.min(distance - units_default.normal_zombie.attack_range_px, unit.speed_px_per_s * dt);
       const dx = (target.position.x - unit.position.x) / distance;
       const dy = (target.position.y - unit.position.y) / distance;
-      unit.position.x += dx * step;
-      unit.position.y += dy * step;
-      unit.velocity = { x: dx * unit.speed_px_per_s, y: dy * unit.speed_px_per_s };
+      const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
+      const hit = this.map.firstBlockingTerrain(unit.position, destination, 8);
+      if (hit) {
+        const stack = this.wallStack(unit, target, hit.terrain, hit.point);
+        const required = (_b = hit.terrain.stackRequired) != null ? _b : Number.POSITIVE_INFINITY;
+        if (stack.length >= required) {
+          stack.forEach((member, index) => {
+            const b = hit.terrain.bounds;
+            const vertical = b.bottom - b.top >= b.right - b.left;
+            member.climbingWallId = hit.terrain.id;
+            member.stackLevel = index % required + 1;
+            member.climbTarget = vertical ? {
+              x: member.position.x < (b.left + b.right) / 2 ? b.right + 10 : b.left - 10,
+              y: Math.max(b.top, Math.min(b.bottom, member.position.y))
+            } : {
+              x: Math.max(b.left, Math.min(b.right, member.position.x)),
+              y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + 10 : b.top - 10
+            };
+            this.state(member, "Climbing", time_s, events);
+          });
+          events.push({ type: "wall_climb_started", time_s, data: {
+            wallId: hit.terrain.id,
+            stackCount: stack.length,
+            requiredStack: required,
+            unitIds: stack.map((member) => member.id)
+          } });
+          this.climb(unit, dt, time_s, events);
+        } else {
+          unit.position = hit.point;
+          unit.velocity = { x: 0, y: 0 };
+          this.state(unit, "Advancing", time_s, events);
+        }
+      } else {
+        this.move(unit, destination, dx, dy);
+        this.state(unit, "Advancing", time_s, events);
+      }
       return;
     }
     this.state(unit, "Attacking", time_s, events);
@@ -532,6 +761,89 @@ var CombatSystem = class {
       unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - units_default.normal_zombie.attack_interval_s);
       events.push(...this.applyDamage(target.id, units_default.normal_zombie.damagePerHit, unit.id, time_s));
     }
+  }
+  climb(unit, dt, time_s, events) {
+    const target = unit.climbTarget;
+    const dx = target.x - unit.position.x, dy = target.y - unit.position.y;
+    const distance = Math.hypot(dx, dy);
+    const step = Math.min(distance, unit.speed_px_per_s * dt);
+    unit.attackElapsed_s = 0;
+    unit.targetId = null;
+    unit.velocity = distance > 0 ? { x: dx / distance * unit.speed_px_per_s, y: dy / distance * unit.speed_px_per_s } : { x: 0, y: 0 };
+    if (distance > 0) {
+      unit.position.x += dx / distance * step;
+      unit.position.y += dy / distance * step;
+    }
+    if (distance - step > 1e-6) return;
+    events.push({ type: "wall_climbed", time_s, data: { unitId: unit.id, wallId: unit.climbingWallId } });
+    unit.climbingWallId = null;
+    unit.climbTarget = null;
+    unit.stackLevel = 0;
+    this.state(unit, "Advancing", time_s, events);
+  }
+  move(unit, destination, dx, dy) {
+    unit.position.x = destination.x;
+    unit.position.y = destination.y;
+    unit.velocity = { x: dx * unit.speed_px_per_s, y: dy * unit.speed_px_per_s };
+  }
+  wallStack(unit, target, wall, contact) {
+    const bounds = wall.bounds;
+    const vertical = bounds.bottom - bounds.top >= bounds.right - bounds.left;
+    const centerX = (bounds.left + bounds.right) / 2;
+    const centerY = (bounds.top + bounds.bottom) / 2;
+    const side = vertical ? Math.sign(unit.position.x - centerX) : Math.sign(unit.position.y - centerY);
+    const targetSide = vertical ? Math.sign(target.position.x - centerX) : Math.sign(target.position.y - centerY);
+    if (!side || side === targetSide) return [];
+    return this.store.living().filter((candidate) => {
+      if (candidate.faction !== "zombie" || candidate.climbingWallId || candidate.id === unit.id) return false;
+      const candidateSide = vertical ? Math.sign(candidate.position.x - centerX) : Math.sign(candidate.position.y - centerY);
+      if (candidateSide !== side) return false;
+      const across = vertical ? Math.sign(target.position.x - centerX) !== candidateSide : Math.sign(target.position.y - centerY) !== candidateSide;
+      if (!across) return false;
+      const along = vertical ? Math.abs(candidate.position.y - contact.y) : Math.abs(candidate.position.x - contact.x);
+      const edgeDistance = vertical ? candidate.position.x < centerX ? bounds.left - candidate.position.x : candidate.position.x - bounds.right : candidate.position.y < centerY ? bounds.top - candidate.position.y : candidate.position.y - bounds.bottom;
+      return along <= 36 && edgeDistance <= 40;
+    }).concat(unit).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  }
+  separateZombies() {
+    const zombies = this.store.living().filter((unit) => unit.faction === "zombie");
+    const minDistance = 17;
+    const { left, top, right, bottom } = this.map.battle_bounds;
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < zombies.length; i++) {
+        const a = zombies[i];
+        for (let j = i + 1; j < zombies.length; j++) {
+          const b = zombies[j];
+          let dx = b.position.x - a.position.x, dy = b.position.y - a.position.y;
+          let distance = Math.hypot(dx, dy);
+          if (distance >= minDistance) continue;
+          if (distance < 1e-6) {
+            const angle = ((i + 1) * 2.399963229728653 + (j + 1) * 0.7548776662466927) % (Math.PI * 2);
+            dx = Math.cos(angle);
+            dy = Math.sin(angle);
+            distance = 1;
+          } else {
+            dx /= distance;
+            dy /= distance;
+          }
+          const push = (minDistance - distance) * 0.5;
+          a.position = this.separatedPosition(a, { x: -dx * push, y: -dy * push }, left, top, right, bottom);
+          b.position = this.separatedPosition(b, { x: dx * push, y: dy * push }, left, top, right, bottom);
+        }
+      }
+    }
+  }
+  separatedPosition(unit, offset, left, top, right, bottom) {
+    let point = {
+      x: Math.max(left, Math.min(right, unit.position.x + offset.x)),
+      y: Math.max(top, Math.min(bottom, unit.position.y + offset.y))
+    };
+    const collision = this.map.terrain.find((terrain) => terrain.blocksMovement && this.map.terrainContains(point, terrain, 8));
+    if (!collision) return point;
+    if (!this.map.terrainContains(unit.position, collision, 8)) return { ...unit.position };
+    const vertical = collision.bounds.bottom - collision.bounds.top >= collision.bounds.right - collision.bounds.left;
+    point = vertical ? { x: unit.position.x, y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) } : { x: Math.max(left, Math.min(right, unit.position.x + offset.x)), y: unit.position.y };
+    return point;
   }
 };
 
@@ -619,13 +931,14 @@ var _BattleTestHarness = class _BattleTestHarness {
     __publicField(this, "waveManager", null);
     __publicField(this, "mapModel", null);
     __publicField(this, "units", new UnitStore());
-    __publicField(this, "movement", new MovementSystem(this.units));
+    __publicField(this, "movement");
     __publicField(this, "commands", null);
     __publicField(this, "combat", null);
     __publicField(this, "projectiles", null);
     __publicField(this, "results", null);
     this.config = config;
     this.snapshot = this.initialSnapshot();
+    this.movement = new MovementSystem(this.units);
   }
   start(levelId, _seed) {
     this.snapshot = this.initialSnapshot();
@@ -637,6 +950,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.deploymentTick = 0;
     this.waveManager = this.createWaveScheduler(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
+    this.movement = new MovementSystem(this.units, this.mapModel);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.combat = new CombatSystem(this.units, this.mapModel);
@@ -728,13 +1042,23 @@ var _BattleTestHarness = class _BattleTestHarness {
     return { cursor: this.events.length, events: cloneData(this.events.slice(cursor)) };
   }
   runWaves() {
+    var _a, _b, _c;
     if (!this.waveManager) return;
     for (const event of this.waveManager.update(this.battleTime_s)) {
       this.events.push(event);
       const data = event.data;
+      const offsets = /* @__PURE__ */ new Map();
       for (const spawn of data.spawns) {
-        for (const position of this.mapModel.spawnPositions(spawn.route, spawn.count)) {
-          this.units.spawn(spawn.unitType, position, spawn.route);
+        const key = (_a = spawn.spawnPoint) != null ? _a : `route:${spawn.route}`;
+        const total = data.spawns.filter((item) => {
+          var _a2;
+          return ((_a2 = item.spawnPoint) != null ? _a2 : `route:${item.route}`) === key;
+        }).reduce((sum, item) => sum + item.count, 0);
+        const offset = (_b = offsets.get(key)) != null ? _b : 0;
+        const positions = this.mapModel.spawnPositions(spawn.route, total, spawn.spawnPoint).slice(offset, offset + spawn.count);
+        offsets.set(key, offset + spawn.count);
+        for (const position of positions) {
+          this.units.spawn(spawn.unitType, position, spawn.route, (_c = spawn.spawnPoint) != null ? _c : null);
         }
         this.snapshot.spawnedZombies += spawn.count;
         this.snapshot.aliveZombies += spawn.count;

@@ -12,13 +12,14 @@ beforeEach(() => {
 afterEach(() => Object.assign(config, structuredClone(calibrated)));
 import assert from 'node:assert/strict';
 import { UnitStore } from '../../src/core/UnitStore.js';
-import { MapModel } from '../../src/core/MapModel.js';
 import { CombatSystem } from '../../src/core/CombatSystem.js';
 import { ProjectileSystem } from '../../src/core/ProjectileSystem.js';
+import { MapModel, type MapDefinition } from '../../src/core/MapModel.js';
+import mapConfig from '../../config/map.json' with { type: 'json' };
 
-function setup() {
+function setup(map = MapModel.load()) {
   const store = new UnitStore();
-  const combat = new CombatSystem(store, MapModel.load());
+  const combat = new CombatSystem(store, map);
   const projectiles = new ProjectileSystem(store, combat);
   return { store, combat, projectiles };
 }
@@ -213,9 +214,9 @@ for (const breached of [false, true]) test(`zombie with no living humans idles w
 
 test('breached zombies pursue and melee humans above the defense line', () => {
   const { store, combat } = setup();
-  const human = store.spawn('rifleman', { x: 540, y: 1100 }, 'B');
+  const human = store.spawn('rifleman', { x: 800, y: 1100 }, 'B');
   human.state = 'Moving';
-  const zombie = store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');
+  const zombie = store.spawn('normal_zombie', { x: 800, y: 1200 }, 'B');
   zombie.breached = true;
   combat.update(0.05, 0.05);
   assert.equal(zombie.position.y, 1197);
@@ -252,4 +253,36 @@ test('pursuit stops in inclusive melee range even for diagonal floating point co
   assert.equal(human.hp, 90);
   assert.equal(zombie.state, 'Attacking');
   assert.deepEqual(zombie.velocity, { x: 0, y: 0 });
+});
+
+test('wall collisions hold a small group until three zombies can climb through', () => {
+  const definition = structuredClone(mapConfig) as unknown as MapDefinition;
+  definition.terrain = [{ id: 'test-wall', kind: 'wall', blocksMovement: true, stackRequired: 3,
+    bounds: { left: 500, top: 600, right: 540, bottom: 800 } }];
+  const map = new MapModel(definition);
+  const run = (count: number) => {
+    const { store, combat } = setup(map);
+    const human = store.spawn('rifleman', { x: 650, y: 700 }, 'B');human.state = 'Moving';
+    const zombies = Array.from({ length: count }, (_, i) => {
+      const zombie = store.spawn('normal_zombie', { x: 480, y: 680 + i * 20 }, 'A');
+      zombie.speed_px_per_s = 120;
+      return zombie;
+    });
+    const events = Array.from({ length: 24 }, (_, i) => combat.update(.05, (i + 1) * .05)).flat();
+    return { zombies, events };
+  };
+  const two = run(2);
+  assert.equal(two.events.filter(e => e.type === 'wall_climb_started').length, 0);
+  assert.ok(two.zombies.every(unit => unit.position.x <= 492));
+  const three = run(3);
+  assert.ok(three.events.some(e => e.type === 'wall_climb_started'));
+  assert.ok(three.zombies.every(unit => unit.position.x > 548));
+});
+
+test('overlapping zombies keep separate positions after a crowd movement update', () => {
+  const { store, combat } = setup();
+  store.spawn('rifleman', { x: 800, y: 500 }, 'B').state = 'Moving';
+  const zombies = Array.from({ length: 3 }, () => store.spawn('normal_zombie', { x: 540, y: 500 }, 'B'));
+  combat.update(0, 0);
+  assert.equal(new Set(zombies.map(unit => `${unit.position.x},${unit.position.y}`)).size, 3);
 });

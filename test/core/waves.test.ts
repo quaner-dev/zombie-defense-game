@@ -2,11 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BattleTestHarness } from '../../src/core/BattleTestHarness.js';
 import { WaveManager, type WaveSpawnEventData } from '../../src/core/WaveManager.js';
+import { MapModel } from '../../src/core/MapModel.js';
 
 const expectedSpawns = [
-  [{ unitType: 'normal_zombie', route: 'B', count: 50 }],
-  [{ unitType: 'normal_zombie', route: 'A', count: 50 }, { unitType: 'normal_zombie', route: 'C', count: 50 }],
-  [{ unitType: 'normal_zombie', route: 'A', count: 60 }, { unitType: 'normal_zombie', route: 'B', count: 80 }, { unitType: 'normal_zombie', route: 'C', count: 60 }],
+  [
+    { unitType: 'normal_zombie', route: 'B', spawnPoint: 'north', count: 13 },
+    { unitType: 'normal_zombie', route: 'B', spawnPoint: 'south', count: 13 },
+    { unitType: 'normal_zombie', route: 'B', spawnPoint: 'east', count: 12 },
+    { unitType: 'normal_zombie', route: 'B', spawnPoint: 'west', count: 12 },
+  ],
+  [
+    { unitType: 'normal_zombie', route: 'A', spawnPoint: 'north', count: 25 },
+    { unitType: 'normal_zombie', route: 'A', spawnPoint: 'south', count: 25 },
+    { unitType: 'normal_zombie', route: 'C', spawnPoint: 'east', count: 25 },
+    { unitType: 'normal_zombie', route: 'C', spawnPoint: 'west', count: 25 },
+  ],
+  [
+    ...['A','B','C'].flatMap((route, routeIndex) => ['north','south','east','west'].map(spawnPoint => ({
+      unitType: 'normal_zombie', route,
+      spawnPoint,
+      count: routeIndex === 1 ? 20 : 15,
+    }))),
+  ],
 ];
 
 for (const [index, time] of [0, 7, 20].entries()) {
@@ -90,6 +107,13 @@ test('late updates retain scheduled timestamps for every emitted wave', () => {
   harness.advance(28);
   assert.deepEqual(harness.getEvents().filter(e => e.type === 'wave_spawn').map(event => event.time_s), [0, 7, 20]);
   assert.equal(harness.getSnapshot().time_s, 25);
+});
+
+test('wave map validation rejects unknown cardinal spawn points', () => {
+  const invalid = new WaveManager({ mapId: 'default', waves: [{ battleTime_s: 0, spawns: [
+    { unitType: 'normal_zombie', route: 'A', spawnPoint: 'missing', count: 1 },
+  ] }] });
+  assert.throws(() => invalid.validateMap(MapModel.load()), /spawn point.*missing/i);
 });
 
 test('zero-duration deployment can process the boundary through advance(0)', () => {

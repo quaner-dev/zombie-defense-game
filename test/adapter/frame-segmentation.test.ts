@@ -10,23 +10,23 @@ function replay(cadence:number[], tactical:boolean) {
       const dt=Math.min(remaining,cadence[i++%cadence.length]);s.tick(dt);remaining-=dt;
     }
   }
-  elapsed(3);elapsed(28);
-  assert.equal(s.snapshot.time_s,28);
-  if(tactical)for(const stage of [{time:28,y:1550},{time:52,y:1750}]){
+  elapsed(3);
+  assert.equal(s.snapshot.time_s,0);
+  if(tactical)for(const stage of [{time:0,y:1200}]){
     elapsed(stage.time-s.snapshot.time_s);
     for(const [i,route] of ['A','B','C'].entries()){
       const group=s.battle.getUnits().filter(u=>u.faction==='human'&&u.hp>0&&u.routeId===route);
-      assert.equal(s.move(group.reduce((n,u)=>n+u.position.x,0)/group.length,group.reduce((n,u)=>n+u.position.y,0)/group.length,[180,540,900][i],stage.y),true);
+      assert.equal(s.move(group.reduce((n,u)=>n+u.position.x,0)/group.length,group.reduce((n,u)=>n+u.position.y,0)/group.length,[380,540,700][i],stage.y),true);
     }
   }
   elapsed(120-s.snapshot.time_s);
   const result={snapshot:s.snapshot,units:s.battle.getUnits(),events:s.battle.getEvents()};
   s.tick(100);assert.deepEqual(s.snapshot,result.snapshot);assert.deepEqual(s.battle.getEvents(),result.events);
   assert.deepEqual(result.events.filter(e=>e.type==='wave_spawn').map(e=>e.time_s),[0,7,20]);
-  if(tactical)assert.deepEqual(result.events.filter(e=>e.type==='group_command').map(e=>e.time_s),[28,28,28,52,52,52]);
+  if(tactical)assert.deepEqual(result.events.filter(e=>e.type==='group_command').map(e=>e.time_s),[0,0,0]);
   return result;
 }
-for(const tactical of [false,true])test(`exact authoritative replay across single, 50ms, 60fps and jitter (${tactical?'fallback':'idle'})`,()=>{
+for(const tactical of [false,true])test(`exact authoritative replay across single, 50ms, 60fps and jitter (${tactical?'central regroup':'idle'})`,()=>{
   const expected=replay([120],tactical);
   for(const cadence of [[.05],[1/60],[.007,.083,.019,.041]])assert.deepEqual(replay(cadence,tactical),expected);
   assert.equal(expected.snapshot.result,tactical?'win':'lose');

@@ -40,7 +40,7 @@ test('event cursors return only unseen events and detached nested payloads', () 
   assert.equal(first.cursor, 1);
   assert.equal(first.events[0].type, 'wave_spawn');
   (first.events[0].data as { spawns: { count: number }[] }).spawns[0].count = -1;
-  assert.equal((harness.readEvents(0).events[0].data as { spawns: { count: number }[] }).spawns[0].count, 50);
+  assert.equal((harness.readEvents(0).events[0].data as { spawns: { count: number }[] }).spawns[0].count, 13);
   assert.deepEqual(harness.readEvents(first.cursor), { cursor: first.cursor, events: [] });
   const ids = harness.getUnits().filter(unit => unit.faction === 'human').slice(0, 2).map(unit => unit.id);
   assert.equal(harness.issueMoveGroup(ids, 600, 1400), true);

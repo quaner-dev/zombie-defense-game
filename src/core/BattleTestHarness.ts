@@ -24,7 +24,7 @@ export class BattleTestHarness {
   private waveManager: WaveScheduler | null = null;
   private mapModel: MapModel | null = null;
   private readonly units = new UnitStore();
-  private readonly movement = new MovementSystem(this.units);
+  private movement: MovementSystem;
   private commands: CommandSystem | null = null;
   private combat: CombatSystem | null = null;
   private projectiles: ProjectileSystem | null = null;
@@ -36,6 +36,7 @@ export class BattleTestHarness {
   ) {
     this.config = config;
     this.snapshot = this.initialSnapshot();
+    this.movement = new MovementSystem(this.units);
   }
 
   public start(levelId: string, _seed: number): void {
@@ -49,6 +50,7 @@ export class BattleTestHarness {
     // Load level config; battle time stays at zero until deployment ends.
     this.waveManager = this.createWaveScheduler(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
+    this.movement = new MovementSystem(this.units, this.mapModel);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.combat = new CombatSystem(this.units, this.mapModel);
@@ -155,9 +157,17 @@ export class BattleTestHarness {
     for (const event of this.waveManager.update(this.battleTime_s)) {
       this.events.push(event);
       const data = event.data as WaveSpawnEventData;
+      const offsets = new Map<string, number>();
       for (const spawn of data.spawns) {
-        for (const position of this.mapModel!.spawnPositions(spawn.route, spawn.count)) {
-          this.units.spawn(spawn.unitType as UnitType, position, spawn.route);
+        const key = spawn.spawnPoint ?? `route:${spawn.route}`;
+        const total = data.spawns.filter(item => (item.spawnPoint ?? `route:${item.route}`) === key)
+          .reduce((sum, item) => sum + item.count, 0);
+        const offset = offsets.get(key) ?? 0;
+        const positions = this.mapModel!.spawnPositions(spawn.route, total, spawn.spawnPoint)
+          .slice(offset, offset + spawn.count);
+        offsets.set(key, offset + spawn.count);
+        for (const position of positions) {
+          this.units.spawn(spawn.unitType as UnitType, position, spawn.route, spawn.spawnPoint ?? null);
         }
         this.snapshot.spawnedZombies += spawn.count;
         this.snapshot.aliveZombies += spawn.count;

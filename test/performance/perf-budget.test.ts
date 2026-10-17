@@ -53,7 +53,7 @@ test('actual projectile stream and death caches reset at terminal and across twe
   for(let run=0;run<20;run++){
     if(run===0){
       // One full idle run observes real projectile/death pools and reaches the
-      // current 68.65s terminal baseline. The remaining restarts focus on
+      // current terminal state. The remaining restarts focus on
       // reset/reuse invariants so the suite stays practical.
       c.session.tick(30);(c as any).draw();
       const pools=c.projectiles.counts;

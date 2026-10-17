@@ -36,6 +36,10 @@ test('pool reuse resets every field and assigns a new identity to prevent stale 
   unit.velocity = { x: 10, y: 20 };
   unit.attackElapsed_s = 0.49;
   unit.breached = true;
+  unit.spawnPointId = 'west';
+  unit.climbingWallId = 'wall';
+  unit.climbTarget = { x: 600, y: 600 };
+  unit.stackLevel = 3;
   assert.equal(store.remove(oldId), true);
   assert.equal(store.remove(oldId), false);
   assert.equal(unit.active, false);
@@ -58,6 +62,10 @@ test('pool reuse resets every field and assigns a new identity to prevent stale 
   assert.equal(reused.targetId, null);
   assert.equal(reused.attackElapsed_s, 0);
   assert.equal(reused.breached, false);
+  assert.equal(reused.spawnPointId, null);
+  assert.equal(reused.climbingWallId, null);
+  assert.equal(reused.climbTarget, null);
+  assert.equal(reused.stackLevel, 0);
   assert.equal(reused.active, true);
   assert.equal(store.living().length, 1);
 });
@@ -76,8 +84,8 @@ test('clear removes all active units and reuse restores human config without res
   assert.equal(human.state, 'Idle');
 });
 
-test('harness consumes wave spawns into living units on the configured routes', () => {
-  const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 2 });
+test('harness consumes all configured wave spawns and tracks surviving units', () => {
+  const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 50 });
   harness.start('LV01_zombie_wave', 1);
   harness.advance(20);
   const zombies = harness.getUnits().filter(unit => unit.faction === 'zombie');
@@ -85,8 +93,8 @@ test('harness consumes wave spawns into living units on the configured routes', 
   assert.equal(zombies.filter(unit => unit.routeId === 'A').length, 110);
   assert.equal(zombies.filter(unit => unit.routeId === 'B').length, 130);
   assert.equal(zombies.filter(unit => unit.routeId === 'C').length, 110);
-  assert.ok(zombies.every(unit => unit.unitType === 'normal_zombie' && unit.active));
-  assert.equal(new Set(harness.getUnits().map(unit => unit.id)).size, 352);
+  assert.ok(zombies.every(unit => unit.unitType === 'normal_zombie'));
+  assert.equal(new Set(harness.getUnits().map(unit => unit.id)).size, 400);
   assert.equal(harness.getSnapshot().aliveHumans,
     harness.getUnits().filter(u => u.faction === 'human' && u.hp > 0).length);
   assert.equal(harness.getSnapshot().aliveZombies, zombies.filter(u => u.hp > 0).length);

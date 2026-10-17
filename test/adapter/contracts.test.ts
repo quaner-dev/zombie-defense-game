@@ -62,7 +62,7 @@ test('deployment, pause, terminal freeze and restart are core-driven',()=>{
   const s=new BattleSession(); s.restart();
   s.battle.getEvents=()=>{throw new Error('must use incremental events');};
   const human=s.battle.getUnits().find(u=>u.faction==='human')!;
-  s.move(human.position.x,human.position.y,540,1600);
+  s.move(human.position.x,human.position.y,human.position.x+40,human.position.y);
   assert.ok(s.battle.getUnits().some(u=>u.state==='Moving'));
   s.tick(1);
   assert.ok(s.events.some(e=>e.type==='group_command'));

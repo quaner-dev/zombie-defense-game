@@ -6,20 +6,20 @@ import { CommandSystem } from '../../src/core/CommandSystem.js';
 import { MovementSystem } from '../../src/core/MovementSystem.js';
 import { MapModel } from '../../src/core/MapModel.js';
 
-test('identity commands filter dead, missing, enemy and duplicate IDs and still require a living group', () => {
+test('identity commands filter dead, missing, enemy and duplicate IDs and accept a living soldier', () => {
   const {store,commands}=setup();
   const a=store.spawn('rifleman',{x:300,y:400},'A');
   const b=store.spawn('rifleman',{x:320,y:400},'A');
   const dead=store.spawn('rifleman',{x:310,y:400},'A');store.kill(dead.id);
   const enemy=store.spawn('normal_zombie',{x:300,y:400},'A');
   const ids=[a.id,a.id,dead.id,'missing',enemy.id];
-  assert.equal(commands.issueMoveGroup(ids,600,800,1),null);
-  assert.equal(a.state,'Idle');
+  assert.deepEqual(commands.issueMoveGroup(ids,600,800,1)?.data.unitIds,[a.id]);
+  assert.equal(a.state,'Moving');
   assert.equal(commands.issueMoveGroup([a.id,b.id],NaN,800,1),null);
   const event=commands.issueMoveGroup([...ids,b.id],600,800,1)!;
   assert.deepEqual(event.data.unitIds,[a.id,b.id]);
   assert.equal(dead.state,'Dead');assert.equal(enemy.state,'Advancing');
-  store.kill(b.id);assert.equal(commands.issueMoveGroup([a.id,b.id],800,900,2),null);
+  store.kill(b.id);assert.deepEqual(commands.issueMoveGroup([a.id,b.id],800,900,2)?.data.unitIds,[a.id]);
 });
 
 function setup() {
@@ -29,11 +29,11 @@ function setup() {
   return { store, commands, movement };
 }
 
-test('radius selects every living rifleman through 72px, not nearest or diagonal outsiders', () => {
+test('radius selects every living rifleman through 112px, not nearest or diagonal outsiders', () => {
   const { store, commands } = setup();
   const a = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   const b = store.spawn('rifleman', { x: 372, y: 400 }, 'A');
-  const outside = store.spawn('rifleman', { x: 351, y: 451 }, 'A');
+  const outside = store.spawn('rifleman', { x: 380, y: 480 }, 'A');
   const dead = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   store.kill(dead.id);
   const zombie = store.spawn('normal_zombie', { x: 300, y: 400 }, 'A');
@@ -46,26 +46,28 @@ test('radius selects every living rifleman through 72px, not nearest or diagonal
     ['Moving', 'Moving', 'Idle', 'Dead', 'Advancing']);
 });
 
-test('blank area and isolated individual produce no command or state changes', () => {
+test('blank area produces no command while an isolated individual can be moved', () => {
   const { store, commands } = setup();
   const a = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   assert.equal(commands.issueMoveAt(800, 800, 600, 800, 0), null);
-  assert.equal(commands.issueMoveAt(300, 400, 600, 800, 0), null);
-  assert.equal(a.state, 'Idle');
-  assert.equal(a.moveTarget, null);
+  assert.equal(commands.issueMoveAt(300, 400, 600, 800, 0)?.data.unitIds[0], a.id);
+  assert.equal(a.state, 'Moving');
+  assert.ok(a.moveTarget);
 });
 
-test('formation is deterministic, separated, clamped at every boundary, and commands replace targets', () => {
+test('formation is deterministic, loosely scattered around its target, clamped and replaceable', () => {
   const { store, commands } = setup();
   const a = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   const b = store.spawn('rifleman', { x: 320, y: 400 }, 'A');
   a.targetId = b.id;
   commands.issueMoveAt(300, 400, 600, 800, 0);
-  assert.deepEqual(a.moveTarget, { x: 590, y: 800 });
-  assert.deepEqual(b.moveTarget, { x: 610, y: 800 });
+  const destinations = [a.moveTarget!, b.moveTarget!];
+  assert.notDeepEqual(destinations[0], destinations[1]);
+  assert.ok(Math.abs(destinations.reduce((sum,p)=>sum+p.x,0)/2-600)<1e-9);
+  assert.ok(Math.abs(destinations.reduce((sum,p)=>sum+p.y,0)/2-800)<1e-9);
   assert.equal(a.targetId, null);
   commands.issueMoveAt(300, 400, 600, 800, 1);
-  assert.deepEqual(a.moveTarget, { x: 590, y: 800 });
+  assert.notDeepEqual(a.moveTarget, b.moveTarget);
   for (const [x, y] of [[-100, -100], [2000, 3000]]) {
     commands.issueMoveAt(300, 400, x, y, 2);
     for (const unit of [a, b]) {
@@ -107,6 +109,17 @@ test('already within tolerance stops without movement and large steps never over
   movement.update(10, 10);
   assert.equal(a.position.x, 500);
   assert.equal(a.state, 'Idle');
+});
+
+test('human movement stops at a configured wall instead of crossing it', () => {
+  const store = new UnitStore(), map = MapModel.load(), movement = new MovementSystem(store, map);
+  const human = store.spawn('rifleman', { x: 540, y: 1040 }, 'B');
+  human.state = 'Moving';human.moveTarget = { x: 540, y: 1150 };
+  const events = movement.update(1, 1);
+  assert.equal(human.state, 'Idle');
+  assert.equal(human.moveTarget, null);
+  assert.ok(human.position.y < 1060);
+  assert.equal(events[0].type, 'unit_state_changed');
 });
 
 test('harness publishes Moving transitions for each selected unit and replacement actually redirects movement', () => {

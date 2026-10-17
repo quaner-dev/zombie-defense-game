@@ -1,7 +1,7 @@
 import { _decorator, Camera, Canvas, Color, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
 import { BattleSession } from '../generated/core.js';
 import { fitMap, type Frame } from './contracts';
-import { arrow, graphics, uiNode } from './drawing';
+import { arrow, color, graphics, palette, uiNode } from './drawing';
 import { MapView } from './MapView';
 import { UnitView } from './UnitView';
 import { ProjectileViewPool } from './ProjectileViewPool';
@@ -108,13 +108,20 @@ export class BattleSceneController extends Component {
     const visibleUnits=this.session.battle.getUnits().filter(u=>
       (s.result==='running'||u.hp>0)&&u.position.x>=0&&u.position.x<=this.frame.width&&
       u.position.y>=0&&u.position.y<=this.frame.height);
-    this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??null,time,this.session.events);
+    this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??this.controls.selectedUnitIds,time,this.session.events);
     this.projectiles.render(this.session.events,s.time_s);
     if(s.result!=='running'){this.projectiles.clear();this.units.releaseTransient();}
     const pools=this.projectiles.counts;
     this.performance.recordPools(pools.active,pools.hits,this.units.retainedDeaths);
     this.preview.clear();
     const p=this.controls.drag.preview;if(p)arrow(this.preview,p.start,p.target,true);
+    const box=this.controls.selectionPreview;
+    if(box){
+      const left=Math.min(box.start.x,box.target.x),top=Math.max(box.start.y,box.target.y);
+      const width=Math.abs(box.target.x-box.start.x),height=Math.abs(box.target.y-box.start.y);
+      this.preview.strokeColor=color(palette.command,180);this.preview.lineWidth=2;
+      this.preview.rect(left,-top,width,height);this.preview.stroke();
+    }
     this.hud.render();
   }
   public onDestroy():void {

@@ -3,7 +3,7 @@ export type BattleResult = 'running' | 'win' | 'lose';
 export interface Point { x: number; y: number }
 export type UnitType = 'rifleman' | 'normal_zombie';
 export type UnitState = 'Idle' | 'Moving' | 'Aiming' | 'Firing' |
-  'Advancing' | 'Breached' | 'Attacking' | 'Dead';
+  'Advancing' | 'Climbing' | 'Breached' | 'Attacking' | 'Dead';
 
 export interface Unit {
   id: string;
@@ -20,6 +20,10 @@ export interface Unit {
   moveTarget: Point | null;
   attackElapsed_s: number;
   breached: boolean;
+  spawnPointId: string | null;
+  climbingWallId: string | null;
+  climbTarget: Point | null;
+  stackLevel: number;
   active: boolean;
 }
 

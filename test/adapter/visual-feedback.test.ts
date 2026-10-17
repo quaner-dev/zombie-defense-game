@@ -51,11 +51,10 @@ test('melee damage draws a short expanding pulse on the attacked human',()=>{
   assert.ok(!view.g.calls.some((call:any)=>call.kind==='circle'&&call.args[0]===target.position.x&&call.args[2]>12));
 });
 
-test('breached defense lines shake during the flash and settle between pulses',()=>{
+test('the open battlefield boundary uses one four-sided perimeter indicator',()=>{
   const f=fixture(true),map=(f.controller as any).map;
   map.render(['A'],.03);
-  const shaking=(map.warning.calls.find((call:any)=>call.kind==='moveTo') as any).args[1];
-  map.render(['A'],.5);
-  const settled=(map.warning.calls.find((call:any)=>call.kind==='moveTo') as any).args[1];
-  assert.notEqual(shaking,settled);
+  assert.equal(map.warning.calls.filter((call:any)=>call.kind==='moveTo').length,4);
+  assert.ok(map.warning.calls.some((call:any)=>call.kind==='moveTo'&&call.args[0]===60&&call.args[1]===-180));
+  assert.ok(map.base.calls.some((call:any)=>call.kind==='rect'&&call.args[0]===350&&call.args[2]===40));
 });

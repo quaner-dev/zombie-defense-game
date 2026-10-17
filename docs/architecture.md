@@ -65,7 +65,7 @@ BattleSession 接受完整 elapsed，但 controller 每次 update 将传入 dt �
 
 ## 输入到命令
 
-按下时 InputManager 在半径 72px 内捕获至少两名活步枪兵，DragCommand 复制 `unitIds` 并保存主触点；UnitView 按这些 ID 绘制仍存活兵的圈。释放经过阈值/UI/冷却检查后，调用 `BattleSession.moveGroup` → `issueMoveGroup`，核心去重并滤除死亡、敌方及无效 ID，仍需两名活兵，钳制目标与阵形，再替换每名兵的移动目标。不在原按下坐标重新空间查询。
+按下时 InputManager 在半径 112px 内捕获活步枪兵；空地拖动则按矩形范围捕获活兵。DragCommand 复制 `unitIds` 并保存主触点；UnitView 按这些 ID 绘制仍存活兵的圈。释放经过阈值/UI/冷却检查后，调用 `BattleSession.moveGroup` → `issueMoveGroup`，核心去重并滤除死亡、敌方及无效 ID，单兵或部分兵群均可移动，钳制目标并给每名兵分配带轻微抖动的独立落点。不在原按下坐标重新空间查询。
 
 无渲染 `issueMoveAt` 仍提供调用瞬间的空间选择，用于验收固定战术；两者最终共用核心身份命令校验。
 

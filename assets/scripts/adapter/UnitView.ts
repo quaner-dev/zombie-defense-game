@@ -42,6 +42,15 @@ export class UnitView {
       g.fillColor=color(c,Math.round(52*fade));g.circle(u.position.x,-u.position.y,r*1.5);g.fill();
       const selected=selection!==null&&u.hp>0&&selectedIds.has(u.id);
       g.fillColor=color(c,Math.round((selected?230:180)*fade));g.circle(u.position.x,-u.position.y,r);g.fill();
+      if(u.state==='Climbing'&&u.stackLevel>0){
+        const lift=u.stackLevel*5;
+        g.strokeColor=color(palette.warning,230);g.lineWidth=2;
+        g.circle(u.position.x,-u.position.y+lift,r+2);g.stroke();
+        for(let level=0;level<u.stackLevel;level++){
+          g.moveTo(u.position.x-5,-u.position.y+lift+12+level*4);
+          g.lineTo(u.position.x+5,-u.position.y+lift+12+level*4);g.stroke();
+        }
+      }
       if(selected){
         if(!this.selectionStarted.has(u.id))this.selectionStarted.set(u.id,time);
         const glow=Math.min(1,Math.max(0,(time-this.selectionStarted.get(u.id)!)/.15));

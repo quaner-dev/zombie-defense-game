@@ -5,22 +5,36 @@
       {
         "battleTime_s": 0,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "B", "count": 50 }
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "north", "count": 13 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "south", "count": 13 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "east", "count": 12 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "west", "count": 12 }
         ]
       },
       {
         "battleTime_s": 7,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "A", "count": 50 },
-          { "unitType": "normal_zombie", "route": "C", "count": 50 }
+          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "north", "count": 25 },
+          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "south", "count": 25 },
+          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "east", "count": 25 },
+          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "west", "count": 25 }
         ]
       },
       {
         "battleTime_s": 20,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "A", "count": 60 },
-          { "unitType": "normal_zombie", "route": "B", "count": 80 },
-          { "unitType": "normal_zombie", "route": "C", "count": 60 }
+          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "north", "count": 15 },
+          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "south", "count": 15 },
+          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "east", "count": 15 },
+          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "west", "count": 15 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "north", "count": 20 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "south", "count": 20 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "east", "count": 20 },
+          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "west", "count": 20 },
+          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "north", "count": 15 },
+          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "south", "count": 15 },
+          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "east", "count": 15 },
+          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "west", "count": 15 }
         ]
       }
     ]

@@ -1,11 +1,11 @@
 {
-  "map_id": "LV01_three_routes",
+  "map_id": "LV01_four_sides",
   "design_size": { "width": 1080, "height": 2400 },
   "battle_bounds": { "left": 60, "top": 180, "right": 1020, "bottom": 2160 },
   "spawn_bounds": { "top": -180 },
   "defense_line_y": 1200,
-  "unit_selection_radius": 72,
-  "spawn_layout": { "columns": 9, "spacing_px": 5 },
+  "unit_selection_radius": 112,
+  "spawn_layout": { "columns": 25, "spacing_px": 22 },
   "routes": [
     {
       "id": "A",
@@ -32,6 +32,16 @@
   "spawnPoints": [
     { "id": "A", "x": 180, "y": -40 },
     { "id": "B", "x": 540, "y": -40 },
-    { "id": "C", "x": 900, "y": -40 }
+    { "id": "C", "x": 900, "y": -40 },
+    { "id": "north", "x": 540, "y": 180, "side": "north", "width": 900 },
+    { "id": "south", "x": 540, "y": 2160, "side": "south", "width": 900 },
+    { "id": "east", "x": 1020, "y": 1170, "side": "east", "width": 1800 },
+    { "id": "west", "x": 60, "y": 1170, "side": "west", "width": 1800 }
+  ],
+  "terrain": [
+    { "id": "west-barricade", "kind": "wall", "bounds": { "left": 350, "top": 900, "right": 390, "bottom": 1260 }, "blocksMovement": true, "stackRequired": 3 },
+    { "id": "east-barricade", "kind": "wall", "bounds": { "left": 690, "top": 900, "right": 730, "bottom": 1260 }, "blocksMovement": true, "stackRequired": 3 },
+    { "id": "north-barricade", "kind": "wall", "bounds": { "left": 420, "top": 1060, "right": 660, "bottom": 1100 }, "blocksMovement": true, "stackRequired": 3 },
+    { "id": "south-barricade", "kind": "wall", "bounds": { "left": 260, "top": 1600, "right": 360, "bottom": 1640 }, "blocksMovement": true, "stackRequired": 3 }
   ]
 }

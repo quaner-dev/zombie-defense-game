@@ -10,26 +10,23 @@ export class MapView {
     g.strokeColor=color('#FFFFFF',12);g.lineWidth=1;
     for(let x=0;x<=1080;x+=128)line(g,{x,y:0},{x,y:2400});
     for(let y=0;y<=2400;y+=128)line(g,{x:0,y},{x:1080,y});
-    const routes=[...mapConfig.routes].sort((a,b)=>a.spawn.x-b.spawn.x);
     g.fillColor=color(palette.wall);
-    for(let i=0;i<routes.length-1;i++){
-      const left=routes[i].spawn.x+routes[i].width/2;
-      const right=routes[i+1].spawn.x-routes[i+1].width/2;
-      if(right>left){g.rect(left,-mapConfig.defense_line_y,right-left,mapConfig.defense_line_y-180);g.fill();}
+    for(const terrain of mapConfig.terrain??[]){
+      if(terrain.kind!=='wall')continue;
+      const b=terrain.bounds;
+      g.rect(b.left,-b.bottom,b.right-b.left,b.bottom-b.top);g.fill();
     }
 
   }
   public render(breached:string[],time:number):void {
     const g=this.warning;g.clear();g.lineWidth=4;
-    for(const r of mapConfig.routes){
-      const isBreached=breached.includes(r.id);
-      const phase=time%0.8;
-      const flash=phase<0.08||(phase>=0.16&&phase<0.24);
-      g.strokeColor=color(isBreached?palette.warning:palette.wall,isBreached?(flash?255:80):220);
-      for(let index=0,x=r.defend.x-r.width/2;x<r.defend.x+r.width/2;x+=20,index++){
-        const jitter=isBreached&&phase<0.4?Math.sin(time*42+index*1.7)*3:0;
-        line(g,{x:x+jitter,y:mapConfig.defense_line_y+jitter*.35},{x:x+12+jitter,y:mapConfig.defense_line_y+jitter*.35});
-      }
-    }
+    const phase=time%0.8,flash=phase<0.08||(phase>=0.16&&phase<0.24);
+    const isBreached=breached.length>0;
+    g.strokeColor=color(isBreached?palette.warning:palette.wall,isBreached?(flash?255:80):100);
+    const b=mapConfig.battle_bounds;
+    line(g,{x:b.left,y:b.top},{x:b.right,y:b.top});
+    line(g,{x:b.right,y:b.top},{x:b.right,y:b.bottom});
+    line(g,{x:b.right,y:b.bottom},{x:b.left,y:b.bottom});
+    line(g,{x:b.left,y:b.bottom},{x:b.left,y:b.top});
   }
 }

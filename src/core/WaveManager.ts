@@ -6,6 +6,7 @@ export interface WaveSpawn {
   unitType: string;
   route: string;
   count: number;
+  spawnPoint?: string;
 }
 
 export interface WaveDefinition {
@@ -77,6 +78,9 @@ export class WaveManager implements WaveScheduler {
     for (const wave of this.level.waves) {
       for (const spawn of wave.spawns) {
         if (!map.getRoute(spawn.route)) throw new Error(`Unknown spawn route: ${spawn.route}`);
+        if (spawn.spawnPoint && !map.getSpawnPoint(spawn.spawnPoint)) {
+          throw new Error(`Unknown spawn point: ${spawn.spawnPoint}`);
+        }
       }
     }
   }

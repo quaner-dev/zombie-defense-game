@@ -39,7 +39,7 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 
 | 权威文件 | 内容与注意事项 |
 |---|---|
-| [map.json](../config/map.json) | 1080×2400、战场边界、防线、72px 选择半径、路线、出生阵列；地图默认注册键为 default，map_id 是描述字段 |
+| [map.json](../config/map.json) | 1080×2400、战场边界、防线、112px 选择半径、四边出生点、墙体 terrain；地图默认注册键为 default，map_id 是描述字段 |
 | [levels.json](../config/levels.json) | LV01_zombie_wave 的 mapId、按时排序的 waves、各路类型与数量；默认 0/7/20s、50/100/200 只 |
 | [units.json](../config/units.json) | 生命、速度、攻击、弹道与阵形；当前默认为全场追击配对校准41.9px/s、0.13s |
 | [core/config.ts](../src/core/config.ts) | 3s 布阵、50 初始人类；不是所有参数都在 JSON |
@@ -48,11 +48,11 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 
 ```json
 {
-  "spawn_layout": { "columns": 9, "spacing_px": 5 }
+  "spawn_layout": { "columns": 25, "spacing_px": 22 }
 }
 ```
 
-路线可覆盖 spawn_layout；当前未完整拒绝缺失/非有限字段，修改者须先检查其值。新增地图/兵种还须更新注册、类型和行为，不能只加任意 JSON 就保证扩展。当前未知关卡/地图 ID 会回落默认，不应拿成功加载当作 ID 校验。
+路线可覆盖旧式 `spawn_layout`；关卡波次可通过 `spawnPoint` 从 north/south/east/west 四边出生。terrain 中 `blocksMovement` 墙体会阻挡移动，`stackRequired: 3` 表示墙边至少三只僵尸才能翻越。新增地图/兵种还须更新注册、类型和行为，不能只加任意 JSON 就保证扩展。当前未知关卡/地图 ID 会回落默认，不应拿成功加载当作 ID 校验。
 
 改配置后同步核心、跑相关测试和报告，对比确定字段并说明测量改变的规则原因。不要为了通过测试放宽胜利/减员目标；原型夹具中的 300px / 60px/s / 1s 用于旧规则边界测试，当前默认 400px / 41.9px/s / 0.13s 有独立回归。子弹视觉不能自行造成伤害。
 
