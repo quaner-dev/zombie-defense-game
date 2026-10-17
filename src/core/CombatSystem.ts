@@ -76,9 +76,10 @@ export class CombatSystem {
     return events;
   }
 
-  private nearest(unit: Unit, faction: Unit['faction'], range = Infinity): Unit | undefined {
+  private nearest(unit: Unit, faction: Unit['faction'], range = Infinity, clearShot = false): Unit | undefined {
     return this.store.living().filter(target => target.faction === faction &&
-      this.distance(unit, target) <= range).sort((a, b) =>
+      this.distance(unit, target) <= range &&
+      (!clearShot || !this.map.firstBlockingTerrain(unit.position, target.position))).sort((a, b) =>
       this.distance(unit, a) - this.distance(unit, b) ||
       (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0];
   }
@@ -100,7 +101,7 @@ export class CombatSystem {
       unit.attackElapsed_s = 0;
       return;
     }
-    const target = this.nearest(unit, 'zombie', config.rifleman.attack_range_px);
+    const target = this.nearest(unit, 'zombie', config.rifleman.attack_range_px, true);
     unit.targetId = target?.id ?? null;
     if (!target) {
       unit.attackElapsed_s = 0;
@@ -122,32 +123,54 @@ export class CombatSystem {
       this.climb(unit, dt, time_s, events);
       return;
     }
-    const target = this.nearest(unit, 'human');
-    unit.targetId = target?.id ?? null;
+    let target = this.nearest(unit, 'human');
     unit.velocity = { x: 0, y: 0 };
     if (!target) {
       unit.attackElapsed_s = 0;
+      unit.targetId = null;
       this.state(unit, 'Idle', time_s, events);
       return;
     }
+    const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, 8);
+    const required = obstruction?.terrain.stackRequired ?? Infinity;
+    const stack = obstruction && Number.isFinite(required) &&
+      Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= 40
+      ? this.wallStack(unit, target, obstruction.terrain, obstruction.point) : [];
+    // Nearby crowds may still climb; lone zombies immediately take a route
+    // around the wall instead of waiting forever for reinforcements.
+    // A soldier can stand 7px from a wall; the larger 8px zombie must route to
+    // the adjacent free space, then stop in melee range instead of entering it.
+    let approach = this.map.walkablePoint(target.position, 8);
+    let waypoint = stack.length >= required ? target.position
+      : this.map.nextWaypoint(unit.position, approach, 8);
+    if (!waypoint) {
+      const blockedTargetId = target.id;
+      const alternatives = this.store.living().filter(candidate => candidate.faction === 'human' && candidate.id !== blockedTargetId)
+        .sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      for (const candidate of alternatives) {
+        const candidateApproach = this.map.walkablePoint(candidate.position, 8);
+        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, 8);
+        if (waypoint) { target = candidate;approach = candidateApproach;break; }
+      }
+    }
+    unit.targetId = target.id;
     const distance = this.distance(unit, target);
     const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position, 0);
-    if (distance <= config.normal_zombie.attack_range_px + 1e-9 && meleeBlocked && !unit.climbingWallId) {
+    // Normalize roundoff from diagonal stop-at-range movement, not gameplay range.
+    if (distance > config.normal_zombie.attack_range_px + 1e-9 || meleeBlocked) {
       unit.attackElapsed_s = 0;
       this.state(unit, 'Advancing', time_s, events);
-      return;
-    }
-    // Normalize roundoff from diagonal stop-at-range movement, not gameplay range.
-    if (distance > config.normal_zombie.attack_range_px + 1e-9) {
-      unit.attackElapsed_s = 0;
-      const step = Math.min(distance - config.normal_zombie.attack_range_px, unit.speed_px_per_s * dt);
-      const dx = (target.position.x - unit.position.x) / distance;
-      const dy = (target.position.y - unit.position.y) / distance;
+      if (!waypoint) return;
+      const pathDistance = Math.hypot(waypoint.x - unit.position.x, waypoint.y - unit.position.y);
+      if (pathDistance < 1e-9) return;
+      const direct = waypoint.x === approach.x && waypoint.y === approach.y && !meleeBlocked;
+      const step = Math.min(pathDistance, direct ? Math.max(0, distance - config.normal_zombie.attack_range_px) : Infinity,
+        unit.speed_px_per_s * dt);
+      const dx = (waypoint.x - unit.position.x) / pathDistance;
+      const dy = (waypoint.y - unit.position.y) / pathDistance;
       const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
       const hit = this.map.firstBlockingTerrain(unit.position, destination, 8);
       if (hit) {
-        const stack = this.wallStack(unit, target, hit.terrain, hit.point);
-        const required = hit.terrain.stackRequired ?? Number.POSITIVE_INFINITY;
         if (stack.length >= required) {
           stack.forEach((member, index) => {
             const b = hit.terrain.bounds;
@@ -241,7 +264,9 @@ export class CombatSystem {
   }
 
   private separateZombies(): void {
-    const zombies = this.store.living().filter(unit => unit.faction === 'zombie');
+    // Climbers intentionally overlap in a stack. Crowd pushes during the
+    // crossing can otherwise keep them orbiting a shared exit indefinitely.
+    const zombies = this.store.living().filter(unit => unit.faction === 'zombie' && !unit.climbingWallId);
     const minDistance = 17;
     const { left, top, right, bottom } = this.map.battle_bounds;
     for (let pass = 0; pass < 2; pass++) {

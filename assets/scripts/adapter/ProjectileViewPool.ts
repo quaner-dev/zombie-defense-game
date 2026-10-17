@@ -10,14 +10,29 @@ export class ProjectileViewPool {
   public get counts(){return this.tracks.counts;}
   public clear():void {this.tracks.clear();this.g.clear();}
   public render(events:BattleEvent[],time:number):void {
-    this.tracks.consume(events);const g=this.g;g.clear();g.lineWidth=2;g.strokeColor=color('#E9FFFF');
-    for(const p of this.tracks.positions(time,unitConfig.projectile.speed_px_per_s)){
+    this.tracks.consume(events);const g=this.g;g.clear();
+    const flying=this.tracks.positions(time,unitConfig.projectile.speed_px_per_s);
+    for(const t of this.tracks.trails){
+      const fade=1-Math.max(0,time-t.time)/.10;
+      g.lineWidth=3;g.strokeColor=color('#FFE2A1',Math.round(170*fade));
+      line(g,t.origin,t.position);
+    }
+    for(const p of flying){
       const dx=p.position.x-p.origin.x,dy=p.position.y-p.origin.y,d=Math.hypot(dx,dy);
-      line(g,{x:p.position.x-(d?dx/d*Math.min(d,18):0),y:p.position.y-(d?dy/d*Math.min(d,18):0)},p.position);
+      // Show only the distance already traveled; never draw ahead to the target.
+      g.lineWidth=2.5;g.strokeColor=color('#FFE2A1',110);line(g,p.origin,p.position);
+      g.lineWidth=4;g.strokeColor=color('#FFF4CC');
+      line(g,{x:p.position.x-(d?dx/d*Math.min(d,44):0),y:p.position.y-(d?dy/d*Math.min(d,44):0)},p.position);
+      g.fillColor=color('#FFFFFF');g.circle(p.position.x,-p.position.y,2.8);g.fill();
+    }
+    for(const m of this.tracks.muzzles){
+      const progress=Math.max(0,time-m.time)/.08;
+      g.fillColor=color('#FFD477',Math.round(220*(1-progress)));
+      g.circle(m.position.x,-m.position.y,5+progress*3);g.fill();
     }
     for(const h of this.tracks.hits){
       const age=Math.max(0,time-h.time),progress=Math.min(1,age/.12);
-      g.fillColor=color('#FFFFFF',Math.round(255*(1-progress)));
+      g.fillColor=color(h.blocked?'#FFC46B':'#FFFFFF',Math.round(255*(1-progress)));
       g.circle(h.position.x,-h.position.y,3+progress*7);g.fill();
     }
   }

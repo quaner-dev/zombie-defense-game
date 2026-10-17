@@ -113,3 +113,35 @@ test('map rejects waypoints outside battlefield and routes ending above defense 
   short.routes[0].waypoints[short.routes[0].waypoints.length - 1].y = 1100;
   assert.throws(() => new MapModel(short), /defense/i);
 });
+
+test('navigation reaches targets around vertical, horizontal and consecutive walls without crossing terrain', () => {
+  const data = definition();
+  data.terrain = [
+    { id: 'first', kind: 'wall', blocksMovement: true,
+      bounds: { left: 400, top: 500, right: 440, bottom: 1000 } },
+    { id: 'second', kind: 'wall', blocksMovement: true,
+      bounds: { left: 600, top: 800, right: 640, bottom: 1300 } },
+    { id: 'horizontal', kind: 'wall', blocksMovement: true,
+      bounds: { left: 300, top: 1600, right: 700, bottom: 1640 } },
+  ];
+  const map = new MapModel(data);
+  for (const [start, target] of [
+    [{ x: 350, y: 900 }, { x: 750, y: 900 }],
+    [{ x: 750, y: 900 }, { x: 350, y: 900 }],
+    [{ x: 500, y: 1550 }, { x: 500, y: 1700 }],
+    [{ x: 500, y: 1700 }, { x: 500, y: 1550 }],
+  ]) {
+    let position = { ...start };
+    for (let step = 0; step < 300 && Math.hypot(position.x - target.x, position.y - target.y) > 1e-6; step++) {
+      const waypoint = map.nextWaypoint(position, target, 8);
+      assert.ok(waypoint, 'an accessible corner route must exist');
+      const distance = Math.hypot(waypoint.x - position.x, waypoint.y - position.y);
+      const ratio = Math.min(1, 10 / distance);
+      const next = { x: position.x + (waypoint.x - position.x) * ratio,
+        y: position.y + (waypoint.y - position.y) * ratio };
+      assert.equal(map.firstBlockingTerrain(position, next, 8), null);
+      position = next;
+    }
+    assert.ok(Math.hypot(position.x - target.x, position.y - target.y) < 1e-6);
+  }
+});

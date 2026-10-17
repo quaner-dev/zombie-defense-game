@@ -4,11 +4,16 @@ import units from '../../config/units.json' with { type: 'json' };
 import map from '../../config/map.json' with { type: 'json' };
 import { MapModel, type MapDefinition } from '../../src/core/MapModel.js';
 
-test('global pursuit calibrated defaults preserve HP and damage', () => {
+test('calibrated defaults increase rifle cadence and zombie HP while preserving movement and damage', () => {
   assert.equal(units.normal_zombie.speed_px_per_s, 41.9);
   assert.equal(units.normal_zombie.attack_interval_s, 0.13);
-  assert.equal(units.rifleman.attack_range_px, 400);
-  assert.equal(units.normal_zombie.hitPoints, 40);
+  assert.equal(units.rifleman.attack_range_px, 260);
+  assert.ok(units.rifleman.attack_range_px <= units.projectile.speed_px_per_s * units.projectile.max_flight_time_s);
+  assert.equal(units.rifleman.speed_px_per_s, 48);
+  assert.ok(units.rifleman.speed_px_per_s > units.normal_zombie.speed_px_per_s);
+  assert.ok(units.rifleman.speed_px_per_s / units.normal_zombie.speed_px_per_s < 1.2);
+  assert.equal(units.normal_zombie.hitPoints, 60);
+  assert.equal(units.rifleman.attack_interval_s, 0.35);
   assert.equal(units.normal_zombie.damagePerHit, 10);
   assert.equal(units.rifleman.damagePerHit, 10);
   assert.deepEqual((map as any).spawn_layout, { columns: 25, spacing_px: 22 });

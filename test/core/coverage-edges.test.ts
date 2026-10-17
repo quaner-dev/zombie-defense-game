@@ -217,19 +217,19 @@ test('nonfinite selection inputs do not select or mutate a valid group', () => {
 
 test('zero-distance projectile arrives once at launch time and still applies damage', () => {
   const store = new UnitStore();
-  const combat = new CombatSystem(store, MapModel.load());
-  const projectiles = new ProjectileSystem(store, combat);
+  const map = MapModel.load(), combat = new CombatSystem(store, map);
+  const projectiles = new ProjectileSystem(store, combat, map);
   const human = store.spawn('rifleman', { x: 540, y: 1370 }, 'B');
   const zombie = store.spawn('normal_zombie', { x: 540, y: 1370 }, 'B');
   projectiles.spawn(human, zombie, 2);
   for (const seconds of [-1, NaN, Infinity]) {
     assert.deepEqual(projectiles.update(seconds, 2), []);
-    assert.equal(zombie.hp, 40);
+    assert.equal(zombie.hp, 60);
   }
   const events = projectiles.update(0, 2);
   assert.equal(events.filter(event => event.type === 'projectile_hit').length, 1);
   assert.ok(events.every(event => event.time_s === 2));
-  assert.equal(zombie.hp, 30);
+  assert.equal(zombie.hp, 50);
   assert.deepEqual(projectiles.getProjectiles(), []);
   assert.deepEqual(projectiles.update(1, 3), []);
 });

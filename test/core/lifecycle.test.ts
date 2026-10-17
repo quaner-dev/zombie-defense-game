@@ -51,8 +51,8 @@ test('pool reuse resets every field and assigns a new identity to prevent stale 
   assert.equal(reused.unitType, 'normal_zombie');
   assert.equal(reused.faction, 'zombie');
   // Task 4 reconciles ordinary zombie defaults with the authoritative combat spec.
-  assert.equal(reused.hp, 40);
-  assert.equal(reused.maxHp, 40);
+  assert.equal(reused.hp, 60);
+  assert.equal(reused.maxHp, 60);
   assert.equal(reused.speed_px_per_s, config.normal_zombie.speed_px_per_s);
   assert.equal(reused.state, 'Advancing');
   assert.equal(reused.routeId, 'B');
@@ -80,7 +80,7 @@ test('clear removes all active units and reuse restores human config without res
   const human = store.spawn('rifleman', { x: 180, y: 1370 }, 'A');
   assert.notEqual(human.id, oldId);
   assert.equal(human.hp, 100);
-  assert.equal(human.speed_px_per_s, 120);
+  assert.equal(human.speed_px_per_s, 48);
   assert.equal(human.state, 'Idle');
 });
 

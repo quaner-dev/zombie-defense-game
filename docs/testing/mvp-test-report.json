@@ -8,17 +8,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -33,27 +34,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2816.754285,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2622.3674330000003,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -64,17 +65,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -89,27 +91,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2091.136102,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2415.267399,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -120,17 +122,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -145,27 +148,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2004.2316200000005,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2349.905624,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -176,17 +179,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -201,27 +205,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2605.709716999999,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 3031.869270000001,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -232,17 +236,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -257,27 +262,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2681.1260899999997,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 3089.585204000001,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -288,17 +293,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -313,27 +319,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2808.744353,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2655.8598970000003,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -344,17 +350,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -369,27 +376,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2433.6484980000005,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2848.9984750000003,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -400,17 +407,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -425,27 +433,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 2057.9672070000015,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2599.5092379999987,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -456,17 +464,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -481,27 +490,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 1989.4593609999974,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2547.832802000001,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     },
     {
@@ -512,17 +521,18 @@
       "config": {
         "rifleman": {
           "hitPoints": 100,
-          "speed_px_per_s": 120,
+          "speed_px_per_s": 48,
           "damagePerHit": 10,
-          "attack_interval_s": 0.5,
-          "attack_range_px": 400
+          "attack_interval_s": 0.35,
+          "attack_range_px": 260
         },
         "movement": {
           "arrival_tolerance_px": 12,
-          "formation_spacing_px": 24
+          "formation_spacing_px": 24,
+          "arrival_spacing_px": 16
         },
         "normal_zombie": {
-          "hitPoints": 40,
+          "hitPoints": 60,
           "speed_px_per_s": 41.9,
           "damagePerHit": 10,
           "attack_interval_s": 0.13,
@@ -537,27 +547,27 @@
           "spacing_px": 22
         }
       },
-      "first_casualty_time_s": 14,
+      "first_casualty_time_s": 21.1,
       "human_alive_at_end": 0,
-      "zombie_alive_at_end": 52,
+      "zombie_alive_at_end": 30,
       "wave_spawn_times_s": [
         0,
         7,
         20
       ],
       "breached_routes": [
+        "B",
         "A",
-        "C",
-        "B"
+        "C"
       ],
       "assertions_failed": [],
-      "game_time_s": 46.8,
-      "real_runtime_ms": 1979.1612300000015,
-      "human_losses_before_wave_3": 2,
+      "game_time_s": 56.85,
+      "real_runtime_ms": 2561.069330000002,
+      "human_losses_before_wave_3": 0,
       "combat_diagnostics": {
-        "rifle_shots": 2760,
-        "effective_rifle_hits": 1199,
-        "rifle_hits_without_damage": 1561
+        "rifle_shots": 3163,
+        "effective_rifle_hits": 1928,
+        "rifle_hits_without_damage": 1235
       }
     }
   ],
@@ -569,17 +579,18 @@
     "config": {
       "rifleman": {
         "hitPoints": 100,
-        "speed_px_per_s": 120,
+        "speed_px_per_s": 48,
         "damagePerHit": 10,
-        "attack_interval_s": 0.5,
-        "attack_range_px": 400
+        "attack_interval_s": 0.35,
+        "attack_range_px": 260
       },
       "movement": {
         "arrival_tolerance_px": 12,
-        "formation_spacing_px": 24
+        "formation_spacing_px": 24,
+        "arrival_spacing_px": 16
       },
       "normal_zombie": {
-        "hitPoints": 40,
+        "hitPoints": 60,
         "speed_px_per_s": 41.9,
         "damagePerHit": 10,
         "attack_interval_s": 0.13,
@@ -594,23 +605,27 @@
         "spacing_px": 22
       }
     },
-    "first_casualty_time_s": 27.05,
-    "human_alive_at_end": 46,
+    "first_casualty_time_s": 35.3,
+    "human_alive_at_end": 42,
     "zombie_alive_at_end": 0,
     "wave_spawn_times_s": [
       0,
       7,
       20
     ],
-    "breached_routes": [],
+    "breached_routes": [
+      "B",
+      "A",
+      "C"
+    ],
     "assertions_failed": [],
-    "game_time_s": 44.85,
-    "real_runtime_ms": 2564.463004000001,
+    "game_time_s": 48.3,
+    "real_runtime_ms": 3474.307702000002,
     "human_losses_before_wave_3": 0,
     "combat_diagnostics": {
-      "rifle_shots": 3515,
-      "effective_rifle_hits": 1400,
-      "rifle_hits_without_damage": 2093
+      "rifle_shots": 5212,
+      "effective_rifle_hits": 2100,
+      "rifle_hits_without_damage": 3087
     },
     "commands": [
       {
@@ -624,8 +639,8 @@
           "y": 1369.9999999999998
         },
         "target": {
-          "x": 380,
-          "y": 1200
+          "x": 450,
+          "y": 1400
         },
         "intended_ids": [
           "unit-1",
@@ -679,7 +694,7 @@
         },
         "target": {
           "x": 540,
-          "y": 1200
+          "y": 1400
         },
         "intended_ids": [
           "unit-18",
@@ -732,8 +747,8 @@
           "y": 1370
         },
         "target": {
-          "x": 700,
-          "y": 1200
+          "x": 630,
+          "y": 1400
         },
         "intended_ids": [
           "unit-35",

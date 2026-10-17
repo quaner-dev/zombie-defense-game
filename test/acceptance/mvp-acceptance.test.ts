@@ -172,7 +172,7 @@ test('report CLI runs ten idle seeds and fixed commands, preserves deterministic
     assert.deepEqual(report.scripted.commands.map((c: any) => c.time_s), [0,0,0]);
     assert.deepEqual(report.scripted.commands.map((c: any) => c.source_route), ['A','B','C']);
     assert.deepEqual(report.scripted.commands.map((c: any) => c.target),
-      [{ x: 380, y: 1200 }, { x: 540, y: 1200 }, { x: 700, y: 1200 }]);
+      [{ x: 450, y: 1400 }, { x: 540, y: 1400 }, { x: 630, y: 1400 }]);
     const decision = start();
     for (const command of report.scripted.commands.slice(0,3)) {
       const group = decision.getUnits().filter(u => u.faction === 'human' && u.routeId === command.source_route && u.active && u.hp > 0 && u.state !== 'Dead');
@@ -193,7 +193,7 @@ test('report CLI runs ten idle seeds and fixed commands, preserves deterministic
     assert.equal(decision.getSnapshot().result, 'win');
     assert.equal(report.scripted.config.normal_zombie.speed_px_per_s, 41.9);
     assert.equal(report.scripted.config.normal_zombie.attack_interval_s, 0.13);
-    assert.equal(report.scripted.config.rifleman.attack_range_px, 400);
+    assert.equal(report.scripted.config.rifleman.attack_range_px, 260);
     assert.deepEqual(report.scripted.config.spawn_layout, {columns:25,spacing_px:22});
     for (const entry of [...report.idle, report.scripted]) {
       const diagnostics = entry.combat_diagnostics;

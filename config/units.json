@@ -1,17 +1,18 @@
 {
   "rifleman": {
     "hitPoints": 100,
-    "speed_px_per_s": 120,
+    "speed_px_per_s": 48,
     "damagePerHit": 10,
-    "attack_interval_s": 0.5,
-    "attack_range_px": 400
+    "attack_interval_s": 0.35,
+    "attack_range_px": 260
   },
   "movement": {
     "arrival_tolerance_px": 12,
-    "formation_spacing_px": 24
+    "formation_spacing_px": 24,
+    "arrival_spacing_px": 16
   },
   "normal_zombie": {
-    "hitPoints": 40,
+    "hitPoints": 60,
     "speed_px_per_s": 41.9,
     "damagePerHit": 10,
     "attack_interval_s": 0.13,

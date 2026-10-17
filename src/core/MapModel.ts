@@ -48,6 +48,12 @@ export interface TerrainHit {
   point: Waypoint;
 }
 
+interface NavigationGraph {
+  corners: Waypoint[];
+  edges: { index: number; distance: number }[][];
+  destinations: Map<string, number[]>;
+}
+
 const MAP_DEFINITIONS: Record<string, MapDefinition> = {
   default: mapJson as unknown as MapDefinition,
 };
@@ -56,6 +62,7 @@ const MAP_DEFINITIONS: Record<string, MapDefinition> = {
 export class MapModel {
   private readonly routes = new Map<string, RouteDefinition>();
   private readonly spawnPoints = new Map<string, SpawnPointDefinition>();
+  private readonly navigation = new Map<number, NavigationGraph>();
 
   public readonly battle_bounds: MapDefinition['battle_bounds'];
   public readonly defense_line_y: number;
@@ -221,6 +228,92 @@ export class MapModel {
     const b = terrain.bounds;
     return point.x >= b.left - radius && point.x <= b.right + radius &&
       point.y >= b.top - radius && point.y <= b.bottom + radius;
+  }
+
+  /** Keep a commanded destination outside walls, including the unit's radius. */
+  public walkablePoint(point: Waypoint, radius = 0): Waypoint {
+    const { left, top, right, bottom } = this.battle_bounds;
+    const clamp = (p: Waypoint): Waypoint => ({
+      x: Math.max(left, Math.min(right, p.x)), y: Math.max(top, Math.min(bottom, p.y)),
+    });
+    const target = clamp(point);
+    const blockers = this.terrain.filter(terrain => terrain.blocksMovement);
+    if (!blockers.some(wall => this.terrainContains(target, wall, radius))) return target;
+    const candidates = blockers.flatMap(wall => {
+      const b = wall.bounds, padding = radius + 1;
+      return [
+        { x: b.left - padding, y: target.y }, { x: b.right + padding, y: target.y },
+        { x: target.x, y: b.top - padding }, { x: target.x, y: b.bottom + padding },
+        ...this.wallCorners(wall, padding),
+      ].map(clamp);
+    }).filter(p => !blockers.some(wall => this.terrainContains(p, wall, radius)));
+    candidates.sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) -
+      Math.hypot(b.x - target.x, b.y - target.y));
+    return candidates[0] ?? target;
+  }
+
+  /** Shortest visible corner to follow around rectangular walls; null means unreachable. */
+  public nextWaypoint(start: Waypoint, target: Waypoint, radius = 0): Waypoint | null {
+    if (!this.firstBlockingTerrain(start, target, radius)) return { ...target };
+    const graph = this.navigationGraph(radius);
+    const key = `${target.x},${target.y}`;
+    let distances = graph.destinations.get(key);
+    if (!distances) {
+      // Distances to this moving target are shared by all pursuing units.
+      distances = graph.corners.map(corner => this.firstBlockingTerrain(corner, target, radius)
+        ? Infinity : Math.hypot(corner.x - target.x, corner.y - target.y));
+      const visited = new Set<number>();
+      for (let pass = 0; pass < graph.corners.length; pass++) {
+        let closest = -1;
+        for (let i = 0; i < distances.length; i++) {
+          if (!visited.has(i) && distances[i] < (closest < 0 ? Infinity : distances[closest])) closest = i;
+        }
+        if (closest < 0) break;
+        visited.add(closest);
+        for (const edge of graph.edges[closest]) {
+          distances[edge.index] = Math.min(distances[edge.index], distances[closest] + edge.distance);
+        }
+      }
+      if (graph.destinations.size >= 64) graph.destinations.delete(graph.destinations.keys().next().value!);
+      graph.destinations.set(key, distances);
+    }
+    let best: Waypoint | null = null, length = Infinity;
+    for (const [i, corner] of graph.corners.entries()) {
+      const approach = Math.hypot(corner.x - start.x, corner.y - start.y);
+      if (approach < 1e-6 || approach + distances[i] >= length ||
+          this.firstBlockingTerrain(start, corner, radius)) continue;
+      best = corner;
+      length = approach + distances[i];
+    }
+    return best ? { ...best } : null;
+  }
+
+  private wallCorners(wall: TerrainDefinition, padding: number): Waypoint[] {
+    const b = wall.bounds;
+    return [
+      { x: b.left - padding, y: b.top - padding }, { x: b.right + padding, y: b.top - padding },
+      { x: b.left - padding, y: b.bottom + padding }, { x: b.right + padding, y: b.bottom + padding },
+    ];
+  }
+
+  private navigationGraph(radius: number): NavigationGraph {
+    const cached = this.navigation.get(radius);
+    if (cached) return cached;
+    const { left, top, right, bottom } = this.battle_bounds;
+    const blockers = this.terrain.filter(wall => wall.blocksMovement);
+    const corners = blockers.flatMap(wall => this.wallCorners(wall, radius + 1)).filter(p =>
+      p.x >= left && p.x <= right && p.y >= top && p.y <= bottom &&
+      !blockers.some(wall => this.terrainContains(p, wall, radius)));
+    const graph: NavigationGraph = { corners, edges: corners.map(() => []), destinations: new Map() };
+    for (let i = 0; i < corners.length; i++) {
+      for (let j = i + 1; j < corners.length; j++) {
+        if (this.firstBlockingTerrain(corners[i], corners[j], radius)) continue;
+        const distance = Math.hypot(corners[i].x - corners[j].x, corners[i].y - corners[j].y);
+        graph.edges[i].push({ index: j, distance });graph.edges[j].push({ index: i, distance });
+      }
+    }
+    this.navigation.set(radius, graph);
+    return graph;
   }
 
   public hasCrossedDefense(point: Waypoint, side: string | null): boolean {

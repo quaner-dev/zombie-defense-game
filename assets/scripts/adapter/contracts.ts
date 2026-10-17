@@ -36,21 +36,32 @@ interface Event {type:string;time_s:number;data:unknown}
 interface Track {id:string;origin:Point;destination:Point;time:number}
 export class ProjectileTracks {
   private active=new Map<string,Track>();
-  public hits:{position:Point;time:number}[]=[];
+  public hits:{position:Point;time:number;blocked:boolean}[]=[];
+  public trails:{origin:Point;position:Point;time:number}[]=[];
+  public muzzles:{position:Point;time:number}[]=[];
   public consume(events:Event[]):void {
     for(const e of events){
       if(e.type==='projectile_spawned'){
         const d=e.data as {id:string;origin:Point;destination:Point};
         this.active.set(d.id,{...d,time:e.time_s});
-      } else if(e.type==='projectile_hit'||e.type==='projectile_expired'){
+        this.muzzles.push({position:d.origin,time:e.time_s});
+      } else if(e.type==='projectile_hit'||e.type==='projectile_blocked'||e.type==='projectile_expired'){
         const d=e.data as {projectileId:string;position:Point};
-        if(e.type==='projectile_hit'&&this.active.has(d.projectileId))this.hits.push({position:d.position,time:e.time_s});
+        const track=this.active.get(d.projectileId);
+        if(e.type!=='projectile_expired'&&track){
+          this.hits.push({position:d.position,time:e.time_s,blocked:e.type==='projectile_blocked'});
+          // Retain the traveled segment even when spawn and impact share a frame.
+          // Wall impacts use the actual contact point, never the intended target.
+          this.trails.push({origin:track.origin,position:d.position,time:e.time_s});
+        }
         this.active.delete(d.projectileId);
       }
     }
   }
   public positions(time:number,speed:number):{id:string;position:Point;origin:Point}[]{
     this.hits=this.hits.filter(h=>time-h.time<.12);
+    this.trails=this.trails.filter(t=>time-t.time<.10);
+    this.muzzles=this.muzzles.filter(m=>time-m.time<.08);
     return [...this.active.values()].map(t=>{
       const distance=Math.hypot(t.destination.x-t.origin.x,t.destination.y-t.origin.y);
       const f=distance===0?1:Math.min(1,Math.max(0,time-t.time)*speed/distance);
@@ -58,5 +69,5 @@ export class ProjectileTracks {
     });
   }
   public get counts(){return {active:this.active.size,hits:this.hits.length};}
-  public clear():void {this.active.clear();this.hits=[];}
+  public clear():void {this.active.clear();this.hits=[];this.trails=[];this.muzzles=[];}
 }

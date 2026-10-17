@@ -1,5 +1,5 @@
 import { _decorator, Camera, Canvas, Color, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
-import { BattleSession } from '../generated/core.js';
+import { BattleSession, unitConfig } from '../generated/core.js';
 import { fitMap, type Frame } from './contracts';
 import { arrow, color, graphics, palette, uiNode } from './drawing';
 import { MapView } from './MapView';
@@ -114,13 +114,21 @@ export class BattleSceneController extends Component {
     const pools=this.projectiles.counts;
     this.performance.recordPools(pools.active,pools.hits,this.units.retainedDeaths);
     this.preview.clear();
-    const p=this.controls.drag.preview;if(p)arrow(this.preview,p.start,p.target,true);
-    const box=this.controls.selectionPreview;
-    if(box){
-      const left=Math.min(box.start.x,box.target.x),top=Math.max(box.start.y,box.target.y);
-      const width=Math.abs(box.target.x-box.start.x),height=Math.abs(box.target.y-box.start.y);
+    const p=this.controls.drag.preview;
+    if(p?.unitIds.length){
+      arrow(this.preview,p.start,p.target,true);
+      // One representative soldier shows the individual weapon range without
+      // covering a large selection with overlapping circles.
+      const soldier=visibleUnits.find(unit=>unit.id===p.unitIds[0]&&unit.hp>0);
+      if(soldier){
+        this.preview.strokeColor=color(palette.human,75);this.preview.lineWidth=1;
+        this.preview.circle(soldier.position.x,-soldier.position.y,unitConfig.rifleman.attack_range_px);this.preview.stroke();
+      }
+    }
+    const selection=this.controls.selectionPreview;
+    if(selection){
       this.preview.strokeColor=color(palette.command,180);this.preview.lineWidth=2;
-      this.preview.rect(left,-top,width,height);this.preview.stroke();
+      this.preview.circle(selection.center.x,-selection.center.y,selection.radius);this.preview.stroke();
     }
     this.hud.render();
   }

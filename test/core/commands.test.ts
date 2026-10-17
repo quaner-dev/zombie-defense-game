@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BattleTestHarness } from '../../src/core/BattleTestHarness.js';
 import { UnitStore } from '../../src/core/UnitStore.js';
-import { CommandSystem } from '../../src/core/CommandSystem.js';
+import { CommandSystem, formationPositions } from '../../src/core/CommandSystem.js';
 import { MovementSystem } from '../../src/core/MovementSystem.js';
 import { MapModel } from '../../src/core/MapModel.js';
 
@@ -78,22 +78,52 @@ test('formation is deterministic, loosely scattered around its target, clamped a
   assert.notDeepEqual(a.moveTarget, b.moveTarget);
 });
 
+test('soldiers converge near the finger instead of translating their original shape', () => {
+  const { store, commands, movement } = setup();
+  const a = store.spawn('rifleman', { x: 100, y: 400 }, 'A');
+  const b = store.spawn('rifleman', { x: 900, y: 400 }, 'C');
+  commands.issueMoveGroup([a.id, b.id], 540, 800, 0);
+  for (const soldier of [a, b]) assert.ok(Math.hypot(soldier.moveTarget!.x - 540, soldier.moveTarget!.y - 800) < 24);
+  movement.update(.5, .5);
+  assert.ok(a.velocity.x > 0 && b.velocity.x < 0, 'each soldier approaches the landing point from its own direction');
+  assert.ok(a.velocity.y > 0 && b.velocity.y > 0);
+});
+
+test('a finger landing on a wall assigns walkable personal destinations', () => {
+  const store = new UnitStore(), map = MapModel.load(), commands = new CommandSystem(store, map);
+  const soldiers = Array.from({ length: 8 }, (_, i) => store.spawn('rifleman', { x: 520 + i, y: 1300 }, 'B'));
+  commands.issueMoveGroup(soldiers.map(soldier => soldier.id), 540, 1080, 0);
+  for (const soldier of soldiers) {
+    assert.ok(!map.terrain.some(wall => wall.blocksMovement && map.terrainContains(soldier.moveTarget!, wall, 7)));
+  }
+});
+
+test('an initially deployed squad also converges instead of keeping parallel movement vectors', () => {
+  const store = new UnitStore(), map = MapModel.load(), commands = new CommandSystem(store, map);
+  const soldiers = formationPositions(17, { x: 540, y: 1370 }, map)
+    .map(position => store.spawn('rifleman', position, 'B'));
+  commands.issueMoveGroup(soldiers.map(soldier => soldier.id), 700, 1800, 0);
+  const initialSpread = Math.max(...soldiers.map(soldier => Math.hypot(soldier.position.x - 540, soldier.position.y - 1370)));
+  const finalSpread = Math.max(...soldiers.map(soldier => Math.hypot(soldier.moveTarget!.x - 700, soldier.moveTarget!.y - 1800)));
+  assert.ok(finalSpread < initialSpread * .75);
+});
+
 test('movement uses configured speed, clears combat targets, and stops at inclusive 12px tolerance', () => {
   const { store, movement } = setup();
   const a = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   a.state = 'Moving';
-  a.moveTarget = { x: 432, y: 400 };
+  a.moveTarget = { x: 360, y: 400 };
   movement.update(0.5, 0.5);
-  assert.deepEqual(a.position, { x: 360, y: 400 });
+  assert.deepEqual(a.position, { x: 324, y: 400 });
   assert.equal(a.state, 'Moving');
   const events = movement.update(0.5, 1);
-  assert.deepEqual(a.position, { x: 420, y: 400 });
+  assert.deepEqual(a.position, { x: 348, y: 400 });
   assert.equal(a.state, 'Idle');
   assert.equal(a.moveTarget, null);
   assert.equal(events[0].type, 'unit_state_changed');
   assert.deepEqual(a.velocity, { x: 0, y: 0 });
   movement.update(100, 101);
-  assert.deepEqual(a.position, { x: 420, y: 400 });
+  assert.deepEqual(a.position, { x: 348, y: 400 });
 });
 
 test('already within tolerance stops without movement and large steps never overshoot', () => {
@@ -111,14 +141,19 @@ test('already within tolerance stops without movement and large steps never over
   assert.equal(a.state, 'Idle');
 });
 
-test('human movement stops at a configured wall instead of crossing it', () => {
+test('a soldier walks around a wall and resumes idle on the other side', () => {
   const store = new UnitStore(), map = MapModel.load(), movement = new MovementSystem(store, map);
   const human = store.spawn('rifleman', { x: 540, y: 1040 }, 'B');
   human.state = 'Moving';human.moveTarget = { x: 540, y: 1150 };
-  const events = movement.update(1, 1);
+  const events = [];
+  for (let i = 0; i < 200 && human.state === 'Moving'; i++) {
+    const before = { ...human.position };
+    events.push(...movement.update(.05, (i + 1) * .05));
+    assert.equal(map.firstBlockingTerrain(before, human.position, 7), null, 'no movement segment crosses a wall');
+  }
   assert.equal(human.state, 'Idle');
   assert.equal(human.moveTarget, null);
-  assert.ok(human.position.y < 1060);
+  assert.ok(Math.hypot(human.position.x - 540, human.position.y - 1150) <= 12);
   assert.equal(events[0].type, 'unit_state_changed');
 });
 

@@ -5,8 +5,8 @@ import type { UnitStore } from './UnitStore.js';
 import type { BattleEvent, GroupCommandEvent, Point } from './types.js';
 
 /** Deterministic irregular deployment, without rows or shared destinations. */
-export function formationPositions(count: number, target: Point, map: MapModel): Point[] {
-  const spacing = unitConfig.movement.formation_spacing_px;
+export function formationPositions(count: number, target: Point, map: MapModel,
+  spacing = unitConfig.movement.formation_spacing_px): Point[] {
   const points = Array.from({ length: count }, (_, index) => {
     const angle = index * 2.399963229728653 + Math.sin(index * 7.13) * .12;
     const radius = Math.sqrt(index) * spacing * .68;
@@ -15,7 +15,7 @@ export function formationPositions(count: number, target: Point, map: MapModel):
   return translatedPositions(points, target, map);
 }
 
-/** Move the captured shape as a whole, including when constrained at an edge. */
+/** Center a placement layout at the target while keeping all its points in bounds. */
 export function translatedPositions(points: readonly Point[], target: Point, map: MapModel): Point[] {
   if (!points.length) return [];
   const center = { x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
@@ -53,7 +53,10 @@ export class CommandSystem {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY)),
     };
-    const positions = translatedPositions(selected.map(unit => unit.position), target, this.map);
+    // Each soldier converges on a personal spot near the finger, independent of
+    // the old squad shape. Small offsets keep arrivals from occupying one pixel.
+    const positions = formationPositions(selected.length, target, this.map, unitConfig.movement.arrival_spacing_px)
+      .map(point => this.map.walkablePoint(point, 7));
     selected.forEach((unit, i) => {
       const from = unit.state;
       unit.moveTarget = positions[i];

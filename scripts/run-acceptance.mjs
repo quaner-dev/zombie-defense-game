@@ -15,13 +15,13 @@ function run(seed, scripted) {
   h.advance(3);
   const commands = [];
   if (scripted) {
-    for (const stage of [{ time_s: 0, y: 1200 }]) {
+    for (const stage of [{ time_s: 0, y: 1400 }]) {
       h.advance(stage.time_s - h.getSnapshot().time_s);
       for (const source of routeIds) {
         const group = h.getUnits().filter(u => u.faction === 'human' && u.active && u.hp > 0 && u.state !== 'Dead' && u.routeId === source);
         const centroid = group.length ? { x: group.reduce((s,u) => s + u.position.x,0) / group.length,
           y: group.reduce((s,u) => s + u.position.y,0) / group.length } : null;
-        const destination = { x: { A: 380, B: 540, C: 700 }[source], y: stage.y };
+        const destination = { x: { A: 450, B: 540, C: 630 }[source], y: stage.y };
         const previous = h.getEvents().filter(e => e.type === 'group_command').length;
         if (centroid) h.issueMoveAt(centroid.x,centroid.y,destination.x,destination.y);
         const events = h.getEvents().filter(e => e.type === 'group_command');

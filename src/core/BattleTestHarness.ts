@@ -54,7 +54,7 @@ export class BattleTestHarness {
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.combat = new CombatSystem(this.units, this.mapModel);
-    this.projectiles = new ProjectileSystem(this.units, this.combat);
+    this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = this.mapModel.routeIds();
@@ -187,6 +187,7 @@ export class BattleTestHarness {
     }
     this.events.push(...this.results!.update(this.waveManager!.allWavesSpawned(), this.battleTime_s));
     this.snapshot.result = this.results!.getResult();
+    if (this.snapshot.result !== 'running') this.events.push(...this.projectiles!.expireAll(this.battleTime_s));
   }
 
   private initialSnapshot(): BattleSnapshot {

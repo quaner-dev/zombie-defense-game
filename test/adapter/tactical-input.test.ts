@@ -7,13 +7,13 @@ test('three opening InputManager centroid drags submit the captured living group
   const f = fixture(true), c = f.controller, s = c.session;
   s.tick(3);
   const captured: any[] = [];
-  for (const stage of [{ at: 0, y: 1200 }]) {
+  for (const stage of [{ at: 0, y: 1400 }]) {
     s.tick(stage.at - s.snapshot.time_s);
     for (const [i, region] of ['A', 'B', 'C'].entries()) {
       const group = s.battle.getUnits().filter((u: any) => u.faction === 'human' && u.active && u.hp > 0 && u.routeId === region);
       const center = { x: group.reduce((n: number,u: any) => n + u.position.x,0)/group.length,
         y: group.reduce((n: number,u: any) => n + u.position.y,0)/group.length };
-      const target = { x: [380,540,700][i], y: stage.y };
+      const target = { x: [450,540,630][i], y: stage.y };
       const press = mapToScreen(center,c.frame), release = mapToScreen(target,c.frame);
       f.advanceTime(301); // Respect the real gesture cooldown; no extra battle time is submitted.
       f.touch('start',1,press.x,press.y);

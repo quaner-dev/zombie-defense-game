@@ -12,11 +12,11 @@ function replay(cadence:number[], tactical:boolean) {
   }
   elapsed(3);
   assert.equal(s.snapshot.time_s,0);
-  if(tactical)for(const stage of [{time:0,y:1200}]){
+  if(tactical)for(const stage of [{time:0,y:1400}]){
     elapsed(stage.time-s.snapshot.time_s);
     for(const [i,route] of ['A','B','C'].entries()){
       const group=s.battle.getUnits().filter(u=>u.faction==='human'&&u.hp>0&&u.routeId===route);
-      assert.equal(s.move(group.reduce((n,u)=>n+u.position.x,0)/group.length,group.reduce((n,u)=>n+u.position.y,0)/group.length,[380,540,700][i],stage.y),true);
+      assert.equal(s.move(group.reduce((n,u)=>n+u.position.x,0)/group.length,group.reduce((n,u)=>n+u.position.y,0)/group.length,[450,540,630][i],stage.y),true);
     }
   }
   elapsed(120-s.snapshot.time_s);

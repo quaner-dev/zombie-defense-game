@@ -77,8 +77,8 @@ test('harness subdivides elapsed time so late-spawned waves do not move retroact
 
 test('in-flight lethal hit and final melee death in one frame resolve as lose', () => {
   const store = new UnitStore();
-  const combat = new CombatSystem(store, MapModel.load());
-  const projectiles = new ProjectileSystem(store, combat);
+  const map = MapModel.load(), combat = new CombatSystem(store, map);
+  const projectiles = new ProjectileSystem(store, combat, map);
   const results = new ResultSystem(store);
   const human = store.spawn('rifleman', { x: 540, y: 1228 }, 'B');
   const zombie = store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');

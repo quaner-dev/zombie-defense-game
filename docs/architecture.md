@@ -35,9 +35,9 @@ flowchart TD
 | [BattleTestHarness](../src/core/BattleTestHarness.ts) | start、50ms 时钟、系统编排、快照、完整及游标事件、终局冻结 |
 | [MapModel](../src/core/MapModel.ts) / [WaveManager](../src/core/WaveManager.ts) | 地图与出生阵列、路线校验、按战斗时间一次性派发波次 |
 | [UnitStore](../src/core/UnitStore.ts) | 单位 ID、存活筛选、死亡、清理与对象复用 |
-| [CommandSystem](../src/core/CommandSystem.ts) / [MovementSystem](../src/core/MovementSystem.ts) | 群体选择、ID 校验、替换目标、确定阵形、直线移动与到达 |
-| [CombatSystem](../src/core/CombatSystem.ts) | 每步最近目标选择、射击、出生即全场最近目标直线追击、近战；防线仅警告；唯一伤害与死亡权威 |
-| [ProjectileSystem](../src/core/ProjectileSystem.ts) | 核心飞行时间、到达事件、请求核心再次验证伤害；目标已死不重复扣血 |
+| [CommandSystem](../src/core/CommandSystem.ts) / [MovementSystem](../src/core/MovementSystem.ts) | 固定半径选择、ID 校验、替换目标、个人紧凑落点、绕墙移动与到达 |
+| [CombatSystem](../src/core/CombatSystem.ts) | 每步最近目标选择、射程/视线检查、全场追击与绕墙、堆叠翻墙、近战；防线仅警告；唯一伤害与死亡权威 |
+| [ProjectileSystem](../src/core/ProjectileSystem.ts) | 核心飞行时间、整段墙体碰撞与到达事件；命中前再次验证遮挡，目标已死或躲入掩体不扣血 |
 | [ResultSystem](../src/core/ResultSystem.ts) | 人类全灭优先失败，否则全波出完且无僵尸、有人类时胜利 |
 | [BattleSession](../src/adapter/BattleSession.ts) | 暂停、重启、引擎 elapsed 桥接、事件游标、群体命令 |
 | [BattleSceneController](../assets/scripts/adapter/BattleSceneController.ts) | 动态 Canvas/Camera、生命周期、布局、tick/draw、后台暂停、统计 |
@@ -65,13 +65,15 @@ BattleSession 接受完整 elapsed，但 controller 每次 update 将传入 dt �
 
 ## 输入到命令
 
-按下时 InputManager 在半径 112px 内捕获活步枪兵；空地拖动则按矩形范围捕获活兵。DragCommand 复制 `unitIds` 并保存主触点；UnitView 按这些 ID 绘制仍存活兵的圈。释放经过阈值/UI/冷却检查后，调用 `BattleSession.moveGroup` → `issueMoveGroup`，核心去重并滤除死亡、敌方及无效 ID，单兵或部分兵群均可移动，钳制目标并给每名兵分配带轻微抖动的独立落点。不在原按下坐标重新空间查询。
+每次按下时 InputManager 仅在半径 112px 内重新捕获活步枪兵，不扩展到旧选中组，空地拖动不框选。DragCommand 复制 `unitIds` 并保存主触点；UnitView 按这些 ID 绘制仍存活兵的圈。释放经过阈值/UI/冷却检查后，调用 `BattleSession.moveGroup` → `issueMoveGroup`，核心去重并滤除死亡、敌方及无效 ID，单兵或部分兵群均可移动，钳制目标并给每名兵分配松手点附近的紧凑个人落点。落点不沿用旧队形，并避开墙体；不在原按下坐标重新空间查询。
+
+MapModel 为不同单位半径缓存墙角可见图，以最短距离选择下一路点；目标距离缓存有64项上限。每步按当前目标重算方向，士兵也共用绕墙规则。僵尸对贴墙士兵使用可行走的接近点，避免7px/8px体型差异将目标误判为不可达；翻墙中的单位不参与分离推力，完成后恢复。
 
 无渲染 `issueMoveAt` 仍提供调用瞬间的空间选择，用于验收固定战术；两者最终共用核心身份命令校验。
 
 ## 状态到画面
 
-`getSnapshot()`、`getUnits()` 提供隔离副本。核心保留本局完整历史；会话用 `readEvents(cursor)` 仅拷贝新事件，重启后游标归零。渲染弹道根据 spawned/hit/expired 事件维护共享 Graphics 轨迹和闪光，不建每弹一个 Node，不碰核心 HP；不是另一套命中系统。
+`getSnapshot()`、`getUnits()` 提供隔离副本。核心保留本局完整历史；会话用 `readEvents(cursor)` 仅拷贝新事件，重启后游标归零。渲染弹道根据 spawned/hit/blocked/expired 事件维护共享 Graphics 飞行轨迹、枪口闪光、命中后0.10s残留弹道与墙面火花，不建每弹一个 Node，不碰核心 HP；不是另一套命中系统。
 
 逻辑地图左上原点、y 向下，UI/Graphics y 向上；输入用 `getUILocation()`，contracts 在同一适配框转换。SHOW_ALL 保持 1080×2400 完整地图，另按安全区预留 HUD。真实摄像机、Canvas、安全区、Label/Graphics 行为还须 Creator 与设备验证。
 

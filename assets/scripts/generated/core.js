@@ -78,6 +78,7 @@ var MapModel = class _MapModel {
     __publicField(this, "definition", definition);
     __publicField(this, "routes", /* @__PURE__ */ new Map());
     __publicField(this, "spawnPoints", /* @__PURE__ */ new Map());
+    __publicField(this, "navigation", /* @__PURE__ */ new Map());
     __publicField(this, "battle_bounds");
     __publicField(this, "defense_line_y");
     __publicField(this, "spawn_top");
@@ -231,6 +232,89 @@ var MapModel = class _MapModel {
     const b = terrain.bounds;
     return point.x >= b.left - radius && point.x <= b.right + radius && point.y >= b.top - radius && point.y <= b.bottom + radius;
   }
+  /** Keep a commanded destination outside walls, including the unit's radius. */
+  walkablePoint(point, radius = 0) {
+    var _a;
+    const { left, top, right, bottom } = this.battle_bounds;
+    const clamp = (p) => ({
+      x: Math.max(left, Math.min(right, p.x)),
+      y: Math.max(top, Math.min(bottom, p.y))
+    });
+    const target = clamp(point);
+    const blockers = this.terrain.filter((terrain) => terrain.blocksMovement);
+    if (!blockers.some((wall) => this.terrainContains(target, wall, radius))) return target;
+    const candidates = blockers.flatMap((wall) => {
+      const b = wall.bounds, padding = radius + 1;
+      return [
+        { x: b.left - padding, y: target.y },
+        { x: b.right + padding, y: target.y },
+        { x: target.x, y: b.top - padding },
+        { x: target.x, y: b.bottom + padding },
+        ...this.wallCorners(wall, padding)
+      ].map(clamp);
+    }).filter((p) => !blockers.some((wall) => this.terrainContains(p, wall, radius)));
+    candidates.sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y));
+    return (_a = candidates[0]) != null ? _a : target;
+  }
+  /** Shortest visible corner to follow around rectangular walls; null means unreachable. */
+  nextWaypoint(start, target, radius = 0) {
+    if (!this.firstBlockingTerrain(start, target, radius)) return { ...target };
+    const graph = this.navigationGraph(radius);
+    const key = `${target.x},${target.y}`;
+    let distances = graph.destinations.get(key);
+    if (!distances) {
+      distances = graph.corners.map((corner) => this.firstBlockingTerrain(corner, target, radius) ? Infinity : Math.hypot(corner.x - target.x, corner.y - target.y));
+      const visited = /* @__PURE__ */ new Set();
+      for (let pass = 0; pass < graph.corners.length; pass++) {
+        let closest = -1;
+        for (let i = 0; i < distances.length; i++) {
+          if (!visited.has(i) && distances[i] < (closest < 0 ? Infinity : distances[closest])) closest = i;
+        }
+        if (closest < 0) break;
+        visited.add(closest);
+        for (const edge of graph.edges[closest]) {
+          distances[edge.index] = Math.min(distances[edge.index], distances[closest] + edge.distance);
+        }
+      }
+      if (graph.destinations.size >= 64) graph.destinations.delete(graph.destinations.keys().next().value);
+      graph.destinations.set(key, distances);
+    }
+    let best = null, length = Infinity;
+    for (const [i, corner] of graph.corners.entries()) {
+      const approach = Math.hypot(corner.x - start.x, corner.y - start.y);
+      if (approach < 1e-6 || approach + distances[i] >= length || this.firstBlockingTerrain(start, corner, radius)) continue;
+      best = corner;
+      length = approach + distances[i];
+    }
+    return best ? { ...best } : null;
+  }
+  wallCorners(wall, padding) {
+    const b = wall.bounds;
+    return [
+      { x: b.left - padding, y: b.top - padding },
+      { x: b.right + padding, y: b.top - padding },
+      { x: b.left - padding, y: b.bottom + padding },
+      { x: b.right + padding, y: b.bottom + padding }
+    ];
+  }
+  navigationGraph(radius) {
+    const cached = this.navigation.get(radius);
+    if (cached) return cached;
+    const { left, top, right, bottom } = this.battle_bounds;
+    const blockers = this.terrain.filter((wall) => wall.blocksMovement);
+    const corners = blockers.flatMap((wall) => this.wallCorners(wall, radius + 1)).filter((p) => p.x >= left && p.x <= right && p.y >= top && p.y <= bottom && !blockers.some((wall) => this.terrainContains(p, wall, radius)));
+    const graph = { corners, edges: corners.map(() => []), destinations: /* @__PURE__ */ new Map() };
+    for (let i = 0; i < corners.length; i++) {
+      for (let j = i + 1; j < corners.length; j++) {
+        if (this.firstBlockingTerrain(corners[i], corners[j], radius)) continue;
+        const distance = Math.hypot(corners[i].x - corners[j].x, corners[i].y - corners[j].y);
+        graph.edges[i].push({ index: j, distance });
+        graph.edges[j].push({ index: i, distance });
+      }
+    }
+    this.navigation.set(radius, graph);
+    return graph;
+  }
   hasCrossedDefense(point, side) {
     const centerX = (this.battle_bounds.left + this.battle_bounds.right) / 2;
     if (side === "north") return point.y >= this.defense_line_y;
@@ -376,17 +460,18 @@ var WaveManager = class _WaveManager {
 var units_default = {
   rifleman: {
     hitPoints: 100,
-    speed_px_per_s: 120,
+    speed_px_per_s: 48,
     damagePerHit: 10,
-    attack_interval_s: 0.5,
-    attack_range_px: 400
+    attack_interval_s: 0.35,
+    attack_range_px: 260
   },
   movement: {
     arrival_tolerance_px: 12,
-    formation_spacing_px: 24
+    formation_spacing_px: 24,
+    arrival_spacing_px: 16
   },
   normal_zombie: {
-    hitPoints: 40,
+    hitPoints: 60,
     speed_px_per_s: 41.9,
     damagePerHit: 10,
     attack_interval_s: 0.13,
@@ -470,8 +555,7 @@ var UnitStore = class {
 };
 
 // src/core/CommandSystem.ts
-function formationPositions(count, target, map) {
-  const spacing = units_default.movement.formation_spacing_px;
+function formationPositions(count, target, map, spacing = units_default.movement.formation_spacing_px) {
   const points = Array.from({ length: count }, (_, index) => {
     const angle = index * 2.399963229728653 + Math.sin(index * 7.13) * 0.12;
     const radius = Math.sqrt(index) * spacing * 0.68;
@@ -515,7 +599,7 @@ var CommandSystem = class {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY))
     };
-    const positions = translatedPositions(selected.map((unit) => unit.position), target, this.map);
+    const positions = formationPositions(selected.length, target, this.map, units_default.movement.arrival_spacing_px).map((point) => this.map.walkablePoint(point, 7));
     selected.forEach((unit, i) => {
       const from = unit.state;
       unit.moveTarget = positions[i];
@@ -550,10 +634,24 @@ var MovementSystem = class {
     const tolerance = units_default.movement.arrival_tolerance_px;
     for (const unit of this.store.living()) {
       if (unit.state !== "Moving" || !unit.moveTarget) continue;
-      const dx = unit.moveTarget.x - unit.position.x;
-      const dy = unit.moveTarget.y - unit.position.y;
+      const remaining = Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y);
+      const waypoint = this.map ? this.map.nextWaypoint(unit.position, unit.moveTarget, 7) : unit.moveTarget;
+      if (!waypoint) {
+        unit.state = "Idle";
+        unit.moveTarget = null;
+        unit.velocity = { x: 0, y: 0 };
+        unit.targetId = null;
+        events.push({
+          type: "unit_state_changed",
+          time_s,
+          data: { unitId: unit.id, from: "Moving", to: "Idle" }
+        });
+        continue;
+      }
+      const dx = waypoint.x - unit.position.x;
+      const dy = waypoint.y - unit.position.y;
       const distance = Math.hypot(dx, dy);
-      const step = distance <= tolerance ? 0 : Math.min(distance, seconds * unit.speed_px_per_s);
+      const step = remaining <= tolerance ? 0 : Math.min(distance, seconds * unit.speed_px_per_s);
       unit.targetId = null;
       if (distance > 0 && step > 0) {
         const destination = {
@@ -579,7 +677,7 @@ var MovementSystem = class {
           y: dy / distance * unit.speed_px_per_s
         };
       }
-      if (distance - step <= tolerance) {
+      if (Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y) <= tolerance) {
         unit.state = "Idle";
         unit.moveTarget = null;
         unit.velocity = { x: 0, y: 0 };
@@ -656,8 +754,8 @@ var CombatSystem = class {
     this.separateZombies();
     return events;
   }
-  nearest(unit, faction, range = Infinity) {
-    return this.store.living().filter((target) => target.faction === faction && this.distance(unit, target) <= range).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0];
+  nearest(unit, faction, range = Infinity, clearShot = false) {
+    return this.store.living().filter((target) => target.faction === faction && this.distance(unit, target) <= range && (!clearShot || !this.map.firstBlockingTerrain(unit.position, target.position))).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0];
   }
   distance(a, b) {
     return Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
@@ -675,7 +773,7 @@ var CombatSystem = class {
       unit.attackElapsed_s = 0;
       return;
     }
-    const target = this.nearest(unit, "zombie", units_default.rifleman.attack_range_px);
+    const target = this.nearest(unit, "zombie", units_default.rifleman.attack_range_px, true);
     unit.targetId = (_a = target == null ? void 0 : target.id) != null ? _a : null;
     if (!target) {
       unit.attackElapsed_s = 0;
@@ -692,36 +790,57 @@ var CombatSystem = class {
     }
   }
   zombie(unit, dt, time_s, events) {
-    var _a, _b;
+    var _a;
     if (unit.climbingWallId && unit.climbTarget) {
       this.climb(unit, dt, time_s, events);
       return;
     }
-    const target = this.nearest(unit, "human");
-    unit.targetId = (_a = target == null ? void 0 : target.id) != null ? _a : null;
+    let target = this.nearest(unit, "human");
     unit.velocity = { x: 0, y: 0 };
     if (!target) {
       unit.attackElapsed_s = 0;
+      unit.targetId = null;
       this.state(unit, "Idle", time_s, events);
       return;
     }
+    const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, 8);
+    const required = (_a = obstruction == null ? void 0 : obstruction.terrain.stackRequired) != null ? _a : Infinity;
+    const stack = obstruction && Number.isFinite(required) && Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= 40 ? this.wallStack(unit, target, obstruction.terrain, obstruction.point) : [];
+    let approach = this.map.walkablePoint(target.position, 8);
+    let waypoint = stack.length >= required ? target.position : this.map.nextWaypoint(unit.position, approach, 8);
+    if (!waypoint) {
+      const blockedTargetId = target.id;
+      const alternatives = this.store.living().filter((candidate) => candidate.faction === "human" && candidate.id !== blockedTargetId).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      for (const candidate of alternatives) {
+        const candidateApproach = this.map.walkablePoint(candidate.position, 8);
+        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, 8);
+        if (waypoint) {
+          target = candidate;
+          approach = candidateApproach;
+          break;
+        }
+      }
+    }
+    unit.targetId = target.id;
     const distance = this.distance(unit, target);
     const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position, 0);
-    if (distance <= units_default.normal_zombie.attack_range_px + 1e-9 && meleeBlocked && !unit.climbingWallId) {
+    if (distance > units_default.normal_zombie.attack_range_px + 1e-9 || meleeBlocked) {
       unit.attackElapsed_s = 0;
       this.state(unit, "Advancing", time_s, events);
-      return;
-    }
-    if (distance > units_default.normal_zombie.attack_range_px + 1e-9) {
-      unit.attackElapsed_s = 0;
-      const step = Math.min(distance - units_default.normal_zombie.attack_range_px, unit.speed_px_per_s * dt);
-      const dx = (target.position.x - unit.position.x) / distance;
-      const dy = (target.position.y - unit.position.y) / distance;
+      if (!waypoint) return;
+      const pathDistance = Math.hypot(waypoint.x - unit.position.x, waypoint.y - unit.position.y);
+      if (pathDistance < 1e-9) return;
+      const direct = waypoint.x === approach.x && waypoint.y === approach.y && !meleeBlocked;
+      const step = Math.min(
+        pathDistance,
+        direct ? Math.max(0, distance - units_default.normal_zombie.attack_range_px) : Infinity,
+        unit.speed_px_per_s * dt
+      );
+      const dx = (waypoint.x - unit.position.x) / pathDistance;
+      const dy = (waypoint.y - unit.position.y) / pathDistance;
       const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
       const hit = this.map.firstBlockingTerrain(unit.position, destination, 8);
       if (hit) {
-        const stack = this.wallStack(unit, target, hit.terrain, hit.point);
-        const required = (_b = hit.terrain.stackRequired) != null ? _b : Number.POSITIVE_INFINITY;
         if (stack.length >= required) {
           stack.forEach((member, index) => {
             const b = hit.terrain.bounds;
@@ -806,7 +925,7 @@ var CombatSystem = class {
     }).concat(unit).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   }
   separateZombies() {
-    const zombies = this.store.living().filter((unit) => unit.faction === "zombie");
+    const zombies = this.store.living().filter((unit) => unit.faction === "zombie" && !unit.climbingWallId);
     const minDistance = 17;
     const { left, top, right, bottom } = this.map.battle_bounds;
     for (let pass = 0; pass < 2; pass++) {
@@ -849,8 +968,10 @@ var CombatSystem = class {
 
 // src/core/ProjectileSystem.ts
 var ProjectileSystem = class {
-  constructor(_store, combat) {
+  constructor(store, combat, map) {
+    __publicField(this, "store", store);
     __publicField(this, "combat", combat);
+    __publicField(this, "map", map);
     __publicField(this, "projectiles", /* @__PURE__ */ new Map());
   }
   spawn(source, target, time_s) {
@@ -859,11 +980,22 @@ var ProjectileSystem = class {
   getProjectiles() {
     return cloneData([...this.projectiles.values()]);
   }
+  /** A terminal battle cancels in-flight shots without applying later damage. */
+  expireAll(time_s) {
+    const events = [...this.projectiles.keys()].map((projectileId) => ({
+      type: "projectile_expired",
+      time_s,
+      data: { projectileId }
+    }));
+    this.projectiles.clear();
+    return events;
+  }
   update(seconds, time_s) {
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     for (const shot of this.combat.drainShots()) this.projectiles.set(shot.id, shot);
     const events = [];
     for (const shot of this.projectiles.values()) {
+      const previous = { ...shot.position }, previousElapsed = shot.elapsed_s;
       const distance = Math.hypot(shot.destination.x - shot.origin.x, shot.destination.y - shot.origin.y);
       const duration = Math.min(
         distance / units_default.projectile.speed_px_per_s,
@@ -881,6 +1013,18 @@ var ProjectileSystem = class {
         x: shot.origin.x + (shot.destination.x - shot.origin.x) * fraction,
         y: shot.origin.y + (shot.destination.y - shot.origin.y) * fraction
       };
+      const wall = this.map.firstBlockingTerrain(previous, shot.position);
+      if (wall) {
+        const impactTime_s = shot.spawnedAt_s + previousElapsed + (shot.elapsed_s - previousElapsed) * wall.fraction;
+        events.push({ type: "projectile_blocked", time_s: impactTime_s, data: {
+          projectileId: shot.id,
+          wallId: wall.terrain.id,
+          position: { ...wall.point }
+        } });
+        events.push({ type: "projectile_expired", time_s: impactTime_s, data: { projectileId: shot.id } });
+        this.projectiles.delete(shot.id);
+        continue;
+      }
       if (shot.elapsed_s + 1e-9 < duration) continue;
       const terminalTime_s = shot.spawnedAt_s + duration;
       events.push({
@@ -888,7 +1032,10 @@ var ProjectileSystem = class {
         time_s: terminalTime_s,
         data: { projectileId: shot.id, targetId: shot.targetId, position: { ...shot.position } }
       });
-      events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+      const target = this.store.get(shot.targetId);
+      if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) && !this.map.firstBlockingTerrain(shot.position, target.position)) {
+        events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+      }
       events.push({ type: "projectile_expired", time_s: terminalTime_s, data: { projectileId: shot.id } });
       this.projectiles.delete(shot.id);
     }
@@ -954,7 +1101,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.combat = new CombatSystem(this.units, this.mapModel);
-    this.projectiles = new ProjectileSystem(this.units, this.combat);
+    this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
     const routes = this.mapModel.routeIds();
@@ -1077,6 +1224,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     }
     this.events.push(...this.results.update(this.waveManager.allWavesSpawned(), this.battleTime_s));
     this.snapshot.result = this.results.getResult();
+    if (this.snapshot.result !== "running") this.events.push(...this.projectiles.expireAll(this.battleTime_s));
   }
   initialSnapshot() {
     return {
