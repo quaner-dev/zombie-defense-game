@@ -53,4 +53,25 @@ test('courtyard continuous generation stops exactly at 720', () => {
   assert.ok(harness.getSnapshot().spawnedZombies <= 720);
   for (let i = 0; i < 80 && harness.getSnapshot().spawnedZombies < 720; i++) harness.advance(10);
   assert.ok(harness.getSnapshot().spawnedZombies <= 720);
+  assert.equal(harness.getUnits().filter(unit => unit.unitType === 'gut_zombie').length, 36);
+});
+
+test('gut zombie throws only after a hit and releases its remaining inventory on death', () => {
+  const store = new UnitStore();
+  const combat = new CombatSystem(store, MapModel.load());
+  const gut = store.spawn('gut_zombie', { x: 500, y: 500 }, 'B');
+  const swallowed = store.spawn('normal_zombie', { x: 510, y: 500 }, 'B');
+  const attacker = store.spawn('rifleman', { x: 540, y: 500 }, 'B');
+  combat.update(.05, .05);
+  assert.equal(gut.storedGutUnitIds.length, 1);
+  const hit = combat.applyDamage(gut.id, 1, attacker.id, .1, 'bullet', attacker.position);
+  assert.ok(hit.some(event => event.type === 'gut_thrown'));
+  assert.equal(swallowed.state, 'Suicidal');
+  for (let i = 0; i < 20; i++) combat.update(.05, .15 + i * .05);
+  assert.equal(swallowed.state, 'Dead');
+  const remaining = store.spawn('normal_zombie', { x: 512, y: 500 }, 'B');
+  gut.storedGutUnitIds.push(remaining.id);
+  combat.applyDamage(gut.id, 999, attacker.id, 2, 'bullet', attacker.position);
+  assert.equal(remaining.state, 'Advancing');
+  assert.equal(remaining.storedInGutById, null);
 });

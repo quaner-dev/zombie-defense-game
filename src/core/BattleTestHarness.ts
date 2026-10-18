@@ -14,7 +14,7 @@ import type { BattleConfig, BattleEvent, BattleSnapshot, HumanUnitType, Unit } f
 import { HUMAN_UNIT_TYPES } from './units/index.js';
 import { CivilianStore } from './CivilianStore.js';
 import { VillaWallModel } from './VillaWallModel.js';
-import { SCENES } from '../scenes/index.js';
+import { ALL_SCENES } from '../scenes/index.js';
 import type { ScenarioKind } from './types.js';
 
 export class BattleTestHarness {
@@ -73,12 +73,7 @@ export class BattleTestHarness {
     if (this.scenarioKind === 'villa_rescue') {
       this.spawnSystem.configureContinuous({ totalTarget: 240, interval_s: 1.2, initialInterval_s: 1.2, minInterval_s: 0.45, rampDuration_s: 120, batchSize: 2, spawnPoints: ['north', 'east', 'south', 'west'], distribution: { north: .25, east: .25, south: .25, west: .25 } });
     } else if (this.waveManager.getMapId() === 'LV02_building_courtyard') {
-      this.spawnSystem.configureContinuous({
-        totalTarget: 720, interval_s: 0.35, batchSize: 10,
-        spawnPoints: ['north', 'south', 'east', 'west'],
-        distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 },
-        specialRatios: { gut_zombie: 0.05 },
-      });
+      this.spawnSystem.configureContinuous({ totalTarget: 720, interval_s: 0.35, batchSize: 10, spawnPoints: ['north', 'south', 'east', 'west'], distribution: { north: .3, south: .3, east: .2, west: .2 }, specialRatios: { gut_zombie: .05 } });
     }
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
@@ -89,7 +84,7 @@ export class BattleTestHarness {
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const villaScene = SCENES.find(scene => scene.levelId === levelId);
+    const villaScene = ALL_SCENES.find(scene => scene.levelId === levelId);
     const humanTypes = this.scenarioKind === 'villa_rescue' ? (villaScene?.level.initialSoldiers ?? ['rifleman','rifleman','rifleman','rifleman','flamethrower','flamethrower','shield']) : this.humanSpawnTypes(this.initialHumanCount);
     // Deploy one squad around the middle route instead of splitting it across lanes.
     const routeId = routes[Math.floor(routes.length / 2)];
@@ -208,7 +203,7 @@ export class BattleTestHarness {
     return this.mapModel;
   }
 
-  public getWaveCount(): number { return this.waveManager?.getWaveCount() ?? 0; }
+  public getWaveCount(): number { return this.spawnSystem?.isContinuous() ? 0 : (this.waveManager?.getWaveCount() ?? 0); }
 
   public getInitialHumans(): number { return this.initialHumanCount; }
 

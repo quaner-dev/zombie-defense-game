@@ -36,6 +36,7 @@ export class SpawnSystem {
   private continuousGenerated = 0;
   private continuousGutSpawned = 0;
   private continuousCompletionEmitted = false;
+  private continuousPointCounts = new Map<string, number>();
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
@@ -43,6 +44,7 @@ export class SpawnSystem {
     this.pending = []; this.spawned = 0; this.offsets.clear(); this.continuous = null;
     this.nextContinuousTime_s = 0; this.continuousGenerated = 0;
     this.continuousGutSpawned = 0; this.continuousCompletionEmitted = false;
+    this.continuousPointCounts.clear();
   }
   public get spawnedCount(): number { return this.spawned; }
   public hasPending(): boolean { return this.pending.length > 0; }
@@ -52,6 +54,7 @@ export class SpawnSystem {
     this.continuousGenerated = 0;
     this.continuousGutSpawned = 0;
     this.continuousCompletionEmitted = false;
+    this.continuousPointCounts.clear();
   }
   public isGenerationComplete(): boolean {
     return this.continuous ? this.continuousGenerated >= this.continuous.totalTarget : false;
@@ -163,8 +166,14 @@ export class SpawnSystem {
     const points = this.continuous!.spawnPoints;
     const total = points.reduce((sum, point) => sum + Math.max(0, this.continuous!.distribution[point] ?? 0), 0);
     if (total <= 0) return sequence % points.length;
-    const normalized = points.map(point => Math.max(0, this.continuous!.distribution[point] ?? 0) / total);
-    return normalized.findIndex((weight, index) => sequence / Math.max(1, this.continuous!.totalTarget) <
-      normalized.slice(0, index + 1).reduce((sum, value) => sum + value, 0));
+    let selected = 0, greatestDeficit = -Infinity;
+    points.forEach((point, index) => {
+      const weight = Math.max(0, this.continuous!.distribution[point] ?? 0) / total;
+      const deficit = (sequence + 1) * weight - (this.continuousPointCounts.get(point) ?? 0);
+      if (deficit > greatestDeficit) { selected = index; greatestDeficit = deficit; }
+    });
+    const chosen = points[selected];
+    this.continuousPointCounts.set(chosen, (this.continuousPointCounts.get(chosen) ?? 0) + 1);
+    return selected;
   }
 }

@@ -6,9 +6,9 @@ import { WaveManager } from '../../src/core/WaveManager.js';
 import { BattleTestHarness } from '../../src/core/BattleTestHarness.js';
 import { BattleSession } from '../../src/adapter/BattleSession.js';
 
-test('both scene modules resolve their geometry and exactly three complete waves', () => {
-  assert.deepEqual(SCENES.map(scene => scene.id), ['cabin', 'courtyard']);
-  for (const scene of SCENES) {
+test('registered scene modules resolve their geometry and scheduled content', () => {
+  assert.deepEqual(SCENES.map(scene => scene.id), ['cabin', 'courtyard', 'villa-rescue']);
+  for (const scene of SCENES.slice(0, 2)) {
     const map = MapModel.load(scene.mapId), waves = WaveManager.load(scene.levelId);
     assert.equal(waves.getWaveCount(), 3);
     waves.validateMap(map);
@@ -27,6 +27,10 @@ test('both scene modules resolve their geometry and exactly three complete waves
       }
     }
   }
+  const villa = getScene('villa-rescue');
+  assert.equal(villa.level.waves.length, 0);
+  assert.equal(villa.level.continuousSpawn?.totalTarget, 240);
+  assert.equal(villa.level.civilians?.length, 6);
   assert.throws(() => getScene('missing'), /Unknown scene/);
 });
 
@@ -62,8 +66,8 @@ test('entry screens freeze time and reject commands; practice replays the chosen
   assert.equal(session.screen, 'battle');assert.equal(session.mode, 'practice');
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.waveCount, 3);
   assert.equal(session.map.terrain[0].id, 'northwest-building');
-  session.tick(3);assert.equal(session.snapshot.waveIndex, 1);
-  assert.ok(session.events.some(event => event.type === 'wave_spawn'));
+  session.tick(3);assert.equal(session.snapshot.waveIndex, 0);
+  assert.ok(session.events.some(event => event.type === 'zombie_batch_spawn'));
   session.paused = true;session.restart();
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.paused, false);
   assert.equal(session.snapshot.time_s, 0);assert.equal(session.deploymentRemaining, 3);
@@ -103,7 +107,7 @@ function shortBattle(initialHumans = 3) {
   });
 }
 
-test('story advances only after victory, resets the new battle, and stops at the last scene', () => {
+test('story advances after the first scene and the courtyard continues spawning without waves', () => {
   const session = new BattleSession(shortBattle());session.startStory();
   assert.equal(session.activeScene.id, 'cabin');assert.equal(session.advanceScene(), false);
   session.tick(3.05);assert.equal(session.snapshot.result, 'running');
@@ -112,8 +116,9 @@ test('story advances only after victory, resets the new battle, and stops at the
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.mode, 'story');
   assert.equal(session.deploymentRemaining, 3);assert.equal(session.paused, false);
   assert.equal(session.snapshot.waveIndex, 0);assert.equal(session.snapshot.result, 'running');assert.deepEqual(session.events, []);
-  session.tick(3.1);session.tick(.05);assert.equal(session.snapshot.result, 'win');
-  assert.equal(session.nextScene, undefined);assert.equal(session.canAdvance, false);assert.equal(session.advanceScene(), false);
+  session.tick(3.1);assert.equal(session.snapshot.result, 'running');
+  assert.ok(session.snapshot.spawnedZombies > 0);
+  assert.equal(session.nextScene?.id, 'villa-rescue');assert.equal(session.canAdvance, false);assert.equal(session.advanceScene(), false);
   session.restart();assert.equal(session.activeScene.id, 'courtyard');
   session.startStory();assert.equal(session.activeScene.id, 'cabin');
 });

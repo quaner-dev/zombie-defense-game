@@ -355,9 +355,9 @@ test('a thin wall inside melee range causes a detour instead of a permanent stop
 
 test('zombies damage a closed cabin door before entering the room', () => {
   const map = MapModel.load('LV01_cabin_rooms'), { store, combat } = setup(map);
-  const human = store.spawn('rifleman', { x: 250, y: 1030 }, 'B');
-  const zombie = store.spawn('normal_zombie', { x: 450, y: 1030 }, 'B');
-  const door = map.getDoorStates().find(state => state.id === 'west-upper-door')!;
+  const human = store.spawn('rifleman', { x: 540, y: 900 }, 'B');
+  const zombie = store.spawn('normal_zombie', { x: 540, y: 650 }, 'B');
+  const door = map.getDoorStates().find(state => state.id === 'house-north-door')!;
   const events = ticks(combat, 220);
 
   assert.ok(map.getDoorStates().find(state => state.id === door.id)!.hp < door.maxHp);
@@ -372,8 +372,8 @@ test('zombies damage a closed cabin door before entering the room', () => {
   }
   assert.ok(map.getDoorStates().find(state => state.id === door.id)!.destroyed);
   assert.ok([...events, ...untilDestroyed].some(event => event.type === 'door_destroyed'));
-  for (let i = 0; i < 160 && zombie.position.x >= 400; i++) combat.update(.05, (1321 + i) * .05);
-  assert.ok(zombie.position.x < 400, `the zombie enters through the destroyed doorway: ${JSON.stringify(zombie.position)}`);
+  for (let i = 0; i < 160 && zombie.position.y <= 704; i++) combat.update(.05, (1321 + i) * .05);
+  assert.ok(zombie.position.y > 704, `the zombie enters through the destroyed doorway: ${JSON.stringify(zombie.position)}`);
 });
 
 test('a dense zombie crowd follows a wall corner without crossing or freezing against it', () => {

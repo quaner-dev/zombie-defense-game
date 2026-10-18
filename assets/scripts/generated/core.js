@@ -854,28 +854,197 @@ var villa_rescue_default = {
   levelId: "LV03_villa_rescue",
   scenarioKind: "villa_rescue",
   map: {
-    design_size: { width: 1080, height: 2400 },
-    battle_bounds: { left: 60, top: 180, right: 1020, bottom: 2160 },
+    design_size: {
+      width: 1080,
+      height: 2400
+    },
+    battle_bounds: {
+      left: 60,
+      top: 180,
+      right: 1020,
+      bottom: 2160
+    },
     defense_line_y: 1200,
     unit_selection_radius: 112,
-    spawn_layout: { columns: 4, spacing_px: 42 },
-    routes: [{ id: "villa", spawn: { x: 540, y: 180 }, defend: { x: 540, y: 1170 }, width: 900, waypoints: [{ x: 540, y: 180 }, { x: 540, y: 1170 }] }],
-    spawnPoints: [
-      { id: "north", x: 540, y: 180, side: "north", width: 900 },
-      { id: "south", x: 540, y: 2160, side: "south", width: 900 },
-      { id: "east", x: 1020, y: 1170, side: "east", width: 1800 },
-      { id: "west", x: 60, y: 1170, side: "west", width: 1800 }
+    spawn_layout: {
+      columns: 4,
+      spacing_px: 42
+    },
+    routes: [
+      {
+        id: "villa",
+        spawn: {
+          x: 540,
+          y: 180
+        },
+        defend: {
+          x: 540,
+          y: 1280
+        },
+        width: 900,
+        waypoints: [
+          {
+            x: 540,
+            y: 180
+          },
+          {
+            x: 540,
+            y: 1280
+          }
+        ]
+      }
     ],
-    terrain: []
+    spawnPoints: [
+      {
+        id: "north",
+        x: 540,
+        y: 180,
+        side: "north",
+        width: 900
+      },
+      {
+        id: "south",
+        x: 540,
+        y: 2160,
+        side: "south",
+        width: 900
+      },
+      {
+        id: "east",
+        x: 1020,
+        y: 1170,
+        side: "east",
+        width: 1800
+      },
+      {
+        id: "west",
+        x: 60,
+        y: 1170,
+        side: "west",
+        width: 1800
+      }
+    ],
+    terrain: [
+      {
+        id: "villa-wall-north",
+        kind: "villa_wall",
+        bounds: {
+          left: 100,
+          top: 400,
+          right: 980,
+          bottom: 424
+        },
+        blocksMovement: true,
+        maxHp: 1800
+      },
+      {
+        id: "villa-wall-east",
+        kind: "villa_wall",
+        bounds: {
+          left: 956,
+          top: 400,
+          right: 980,
+          bottom: 2024
+        },
+        blocksMovement: true,
+        maxHp: 1800
+      },
+      {
+        id: "villa-wall-south",
+        kind: "villa_wall",
+        bounds: {
+          left: 100,
+          top: 2e3,
+          right: 980,
+          bottom: 2024
+        },
+        blocksMovement: true,
+        maxHp: 1800
+      },
+      {
+        id: "villa-wall-west",
+        kind: "villa_wall",
+        bounds: {
+          left: 100,
+          top: 400,
+          right: 124,
+          bottom: 2024
+        },
+        blocksMovement: true,
+        maxHp: 1800
+      }
+    ]
   },
   level: {
     mapId: "LV03_villa_rescue",
     waves: [],
-    continuousSpawn: { totalTarget: 240, initialInterval_s: 1.2, minInterval_s: 0.45, rampDuration_s: 120, batchSize: 1, spawnPoints: ["north", "east", "south", "west"] },
-    initialSoldiers: ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"],
-    civilians: [{ position: { x: 540, y: 1080 } }, { position: { x: 615, y: 1125 } }, { position: { x: 615, y: 1215 } }, { position: { x: 540, y: 1260 } }, { position: { x: 465, y: 1215 } }, { position: { x: 465, y: 1125 } }]
+    continuousSpawn: {
+      totalTarget: 240,
+      initialInterval_s: 1.2,
+      minInterval_s: 0.45,
+      rampDuration_s: 120,
+      batchSize: 1,
+      spawnPoints: [
+        "north",
+        "east",
+        "south",
+        "west"
+      ]
+    },
+    initialSoldiers: [
+      "rifleman",
+      "rifleman",
+      "rifleman",
+      "rifleman",
+      "flamethrower",
+      "flamethrower",
+      "shield"
+    ],
+    civilians: [
+      {
+        position: {
+          x: 540,
+          y: 1080
+        }
+      },
+      {
+        position: {
+          x: 615,
+          y: 1125
+        }
+      },
+      {
+        position: {
+          x: 615,
+          y: 1215
+        }
+      },
+      {
+        position: {
+          x: 540,
+          y: 1260
+        }
+      },
+      {
+        position: {
+          x: 465,
+          y: 1215
+        }
+      },
+      {
+        position: {
+          x: 465,
+          y: 1125
+        }
+      }
+    ]
   },
-  presentation: { floorColor: "#4a514f", wallColor: "#8b9088", wallOutlineColor: "#c7c8be", decorations: [] }
+  presentation: {
+    floorColor: "#4a514f",
+    wallColor: "#8b9088",
+    wallOutlineColor: "#c7c8be",
+    decorations: []
+  }
 };
 
 // src/scenes/villaRescue.ts
@@ -883,19 +1052,20 @@ var villaRescue = villa_rescue_default;
 
 // src/scenes/index.ts
 var SCENES = [cabin, courtyard, villaRescue];
+var ALL_SCENES = SCENES;
 function getScene(id) {
-  const scene = SCENES.find((scene2) => scene2.id === id);
+  const scene = ALL_SCENES.find((scene2) => scene2.id === id);
   if (!scene) throw new Error(`Unknown scene: ${id}`);
   return scene;
 }
 function sceneForLevel(levelId) {
-  return SCENES.find((scene) => scene.levelId === levelId);
+  return ALL_SCENES.find((scene) => scene.levelId === levelId);
 }
 
 // src/core/MapModel.ts
 var MAP_DEFINITIONS = {
   default: map_default,
-  ...Object.fromEntries(SCENES.map((scene) => [scene.mapId, scene.map]))
+  ...Object.fromEntries(ALL_SCENES.map((scene) => [scene.mapId, scene.map]))
 };
 var MapModel = class _MapModel {
   constructor(definition) {
@@ -1416,7 +1586,7 @@ var levels_default = {
 // src/core/WaveManager.ts
 var LEVEL_DEFINITIONS = {
   ...levels_default,
-  ...Object.fromEntries(SCENES.map((scene) => [scene.levelId, scene.level]))
+  ...Object.fromEntries(ALL_SCENES.map((scene) => [scene.levelId, scene.level]))
 };
 var WaveManager = class _WaveManager {
   constructor(level) {
@@ -2195,8 +2365,9 @@ var CombatSystem = class {
         } });
       }
     }
-    if (target.hp === 0 && this.store.kill(targetId)) {
+    if (target.hp === 0) {
       if (target.unitType === "gut_zombie") events.push(...this.releaseGut(target, time_s));
+      if (!this.store.kill(targetId)) return events;
       (_d = this.stats) == null ? void 0 : _d.recordKill(sourceId, (_c = source == null ? void 0 : source.unitType) != null ? _c : "rifleman");
       events.push({ type: "unit_died", time_s, data: {
         unitId: targetId,
@@ -2343,7 +2514,7 @@ var CombatSystem = class {
       } else if (unit.state === "Cooling") {
         unit.weaponHeat = Math.max(0, unit.weaponHeat - ((_d = stats.gun_cooling_rate_s) != null ? _d : 45) * dt);
         if (unit.weaponHeat <= ((_e = stats.gun_cooling_threshold) != null ? _e : 25)) {
-          unit.state = "Deployed";
+          unit.state = unit.moveTarget ? "Dismantling" : "Deployed";
           unit.stateElapsed_s = 0;
         }
       }
@@ -2791,7 +2962,7 @@ var ProjectileSystem = class {
           const dx = shot.destination.x - shot.origin.x, dy = shot.destination.y - shot.origin.y;
           const length = Math.max(1, Math.hypot(dx, dy));
           const maxTargets = (_b = shot.penetrationCount) != null ? _b : 3;
-          const hitTargets = this.store.living().filter((candidate) => candidate.faction === "zombie" && !this.map.firstBlockingTerrain(shot.origin, candidate.position, 0, true) && Math.abs((candidate.position.x - shot.origin.x) * dy - (candidate.position.y - shot.origin.y) * dx) / length <= Math.max(10, candidate.radius_px) && (candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy >= 0).sort((a, b) => Math.hypot(a.position.x - shot.origin.x, a.position.y - shot.origin.y) - Math.hypot(b.position.x - shot.origin.x, b.position.y - shot.origin.y) || (a.id < b.id ? -1 : 1)).slice(0, maxTargets);
+          const hitTargets = this.store.living().filter((candidate) => candidate.faction === "zombie" && !this.map.firstBlockingTerrain(shot.origin, candidate.position, 0, true) && Math.abs((candidate.position.x - shot.origin.x) * dy - (candidate.position.y - shot.origin.y) * dx) / length <= Math.max(10, candidate.radius_px) && (candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy >= 0 && (candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy <= length * length).sort((a, b) => Math.hypot(a.position.x - shot.origin.x, a.position.y - shot.origin.y) - Math.hypot(b.position.x - shot.origin.x, b.position.y - shot.origin.y) || (a.id < b.id ? -1 : 1)).slice(0, maxTargets);
           const multiplier = (_c = shot.penetrationDamageMultiplier) != null ? _c : 0.8;
           hitTargets.forEach((candidate, index) => {
             events.push(...this.combat.applyDamage(candidate.id, shot.damage * Math.pow(multiplier, index), shot.sourceId, terminalTime_s, "sniper", shot.origin));
@@ -2856,6 +3027,7 @@ var SpawnSystem = class {
     __publicField(this, "continuousGenerated", 0);
     __publicField(this, "continuousGutSpawned", 0);
     __publicField(this, "continuousCompletionEmitted", false);
+    __publicField(this, "continuousPointCounts", /* @__PURE__ */ new Map());
   }
   reset() {
     this.pending = [];
@@ -2866,6 +3038,7 @@ var SpawnSystem = class {
     this.continuousGenerated = 0;
     this.continuousGutSpawned = 0;
     this.continuousCompletionEmitted = false;
+    this.continuousPointCounts.clear();
   }
   get spawnedCount() {
     return this.spawned;
@@ -2879,6 +3052,7 @@ var SpawnSystem = class {
     this.continuousGenerated = 0;
     this.continuousGutSpawned = 0;
     this.continuousCompletionEmitted = false;
+    this.continuousPointCounts.clear();
   }
   isGenerationComplete() {
     return this.continuous ? this.continuousGenerated >= this.continuous.totalTarget : false;
@@ -3000,17 +3174,26 @@ var SpawnSystem = class {
     return events;
   }
   weightedSpawnPointIndex(sequence) {
+    var _a;
     const points = this.continuous.spawnPoints;
     const total = points.reduce((sum, point) => {
-      var _a;
-      return sum + Math.max(0, (_a = this.continuous.distribution[point]) != null ? _a : 0);
+      var _a2;
+      return sum + Math.max(0, (_a2 = this.continuous.distribution[point]) != null ? _a2 : 0);
     }, 0);
     if (total <= 0) return sequence % points.length;
-    const normalized = points.map((point) => {
-      var _a;
-      return Math.max(0, (_a = this.continuous.distribution[point]) != null ? _a : 0) / total;
+    let selected = 0, greatestDeficit = -Infinity;
+    points.forEach((point, index) => {
+      var _a2, _b;
+      const weight = Math.max(0, (_a2 = this.continuous.distribution[point]) != null ? _a2 : 0) / total;
+      const deficit = (sequence + 1) * weight - ((_b = this.continuousPointCounts.get(point)) != null ? _b : 0);
+      if (deficit > greatestDeficit) {
+        selected = index;
+        greatestDeficit = deficit;
+      }
     });
-    return normalized.findIndex((weight, index) => sequence / Math.max(1, this.continuous.totalTarget) < normalized.slice(0, index + 1).reduce((sum, value) => sum + value, 0));
+    const chosen = points[selected];
+    this.continuousPointCounts.set(chosen, ((_a = this.continuousPointCounts.get(chosen)) != null ? _a : 0) + 1);
+    return selected;
   }
 };
 
@@ -3193,14 +3376,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     if (this.scenarioKind === "villa_rescue") {
       this.spawnSystem.configureContinuous({ totalTarget: 240, interval_s: 1.2, initialInterval_s: 1.2, minInterval_s: 0.45, rampDuration_s: 120, batchSize: 2, spawnPoints: ["north", "east", "south", "west"], distribution: { north: 0.25, east: 0.25, south: 0.25, west: 0.25 } });
     } else if (this.waveManager.getMapId() === "LV02_building_courtyard") {
-      this.spawnSystem.configureContinuous({
-        totalTarget: 720,
-        interval_s: 0.35,
-        batchSize: 10,
-        spawnPoints: ["north", "south", "east", "west"],
-        distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 },
-        specialRatios: { gut_zombie: 0.05 }
-      });
+      this.spawnSystem.configureContinuous({ totalTarget: 720, interval_s: 0.35, batchSize: 10, spawnPoints: ["north", "south", "east", "west"], distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 }, specialRatios: { gut_zombie: 0.05 } });
     }
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
@@ -3211,7 +3387,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const villaScene = SCENES.find((scene) => scene.levelId === levelId);
+    const villaScene = ALL_SCENES.find((scene) => scene.levelId === levelId);
     const humanTypes = this.scenarioKind === "villa_rescue" ? (_a = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _a : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
@@ -3326,8 +3502,8 @@ var _BattleTestHarness = class _BattleTestHarness {
     return this.mapModel;
   }
   getWaveCount() {
-    var _a, _b;
-    return (_b = (_a = this.waveManager) == null ? void 0 : _a.getWaveCount()) != null ? _b : 0;
+    var _a, _b, _c;
+    return ((_a = this.spawnSystem) == null ? void 0 : _a.isContinuous()) ? 0 : (_c = (_b = this.waveManager) == null ? void 0 : _b.getWaveCount()) != null ? _c : 0;
   }
   getInitialHumans() {
     return this.initialHumanCount;
@@ -3497,4 +3673,4 @@ export {
   units_default as unitConfig
 };
 
-export const CORE_BUILD_ID = "core-25551b9a6f6c";
+export const CORE_BUILD_ID = "core-0dc268116bea";

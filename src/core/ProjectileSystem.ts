@@ -105,7 +105,8 @@ export class ProjectileSystem {
           const hitTargets = this.store.living().filter(candidate => candidate.faction === 'zombie' &&
             !this.map.firstBlockingTerrain(shot.origin, candidate.position, 0, true) &&
             Math.abs((candidate.position.x - shot.origin.x) * dy - (candidate.position.y - shot.origin.y) * dx) / length <= Math.max(10, candidate.radius_px) &&
-            ((candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy) >= 0)
+            ((candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy) >= 0 &&
+            ((candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy) <= length * length)
             .sort((a, b) => Math.hypot(a.position.x - shot.origin.x, a.position.y - shot.origin.y) - Math.hypot(b.position.x - shot.origin.x, b.position.y - shot.origin.y) || (a.id < b.id ? -1 : 1))
             .slice(0, maxTargets);
           const multiplier = shot.penetrationDamageMultiplier ?? 0.8;

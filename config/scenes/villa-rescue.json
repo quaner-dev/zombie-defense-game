@@ -8,26 +8,195 @@
   "levelId": "LV03_villa_rescue",
   "scenarioKind": "villa_rescue",
   "map": {
-    "design_size": { "width": 1080, "height": 2400 },
-    "battle_bounds": { "left": 60, "top": 180, "right": 1020, "bottom": 2160 },
+    "design_size": {
+      "width": 1080,
+      "height": 2400
+    },
+    "battle_bounds": {
+      "left": 60,
+      "top": 180,
+      "right": 1020,
+      "bottom": 2160
+    },
     "defense_line_y": 1200,
     "unit_selection_radius": 112,
-    "spawn_layout": { "columns": 4, "spacing_px": 42 },
-    "routes": [{ "id": "villa", "spawn": { "x": 540, "y": 180 }, "defend": { "x": 540, "y": 1170 }, "width": 900, "waypoints": [{ "x": 540, "y": 180 }, { "x": 540, "y": 1170 }] }],
-    "spawnPoints": [
-      { "id": "north", "x": 540, "y": 180, "side": "north", "width": 900 },
-      { "id": "south", "x": 540, "y": 2160, "side": "south", "width": 900 },
-      { "id": "east", "x": 1020, "y": 1170, "side": "east", "width": 1800 },
-      { "id": "west", "x": 60, "y": 1170, "side": "west", "width": 1800 }
+    "spawn_layout": {
+      "columns": 4,
+      "spacing_px": 42
+    },
+    "routes": [
+      {
+        "id": "villa",
+        "spawn": {
+          "x": 540,
+          "y": 180
+        },
+        "defend": {
+          "x": 540,
+          "y": 1280
+        },
+        "width": 900,
+        "waypoints": [
+          {
+            "x": 540,
+            "y": 180
+          },
+          {
+            "x": 540,
+            "y": 1280
+          }
+        ]
+      }
     ],
-    "terrain": []
+    "spawnPoints": [
+      {
+        "id": "north",
+        "x": 540,
+        "y": 180,
+        "side": "north",
+        "width": 900
+      },
+      {
+        "id": "south",
+        "x": 540,
+        "y": 2160,
+        "side": "south",
+        "width": 900
+      },
+      {
+        "id": "east",
+        "x": 1020,
+        "y": 1170,
+        "side": "east",
+        "width": 1800
+      },
+      {
+        "id": "west",
+        "x": 60,
+        "y": 1170,
+        "side": "west",
+        "width": 1800
+      }
+    ],
+    "terrain": [
+      {
+        "id": "villa-wall-north",
+        "kind": "villa_wall",
+        "bounds": {
+          "left": 100,
+          "top": 400,
+          "right": 980,
+          "bottom": 424
+        },
+        "blocksMovement": true,
+        "maxHp": 1800
+      },
+      {
+        "id": "villa-wall-east",
+        "kind": "villa_wall",
+        "bounds": {
+          "left": 956,
+          "top": 400,
+          "right": 980,
+          "bottom": 2024
+        },
+        "blocksMovement": true,
+        "maxHp": 1800
+      },
+      {
+        "id": "villa-wall-south",
+        "kind": "villa_wall",
+        "bounds": {
+          "left": 100,
+          "top": 2000,
+          "right": 980,
+          "bottom": 2024
+        },
+        "blocksMovement": true,
+        "maxHp": 1800
+      },
+      {
+        "id": "villa-wall-west",
+        "kind": "villa_wall",
+        "bounds": {
+          "left": 100,
+          "top": 400,
+          "right": 124,
+          "bottom": 2024
+        },
+        "blocksMovement": true,
+        "maxHp": 1800
+      }
+    ]
   },
   "level": {
     "mapId": "LV03_villa_rescue",
     "waves": [],
-    "continuousSpawn": { "totalTarget": 240, "initialInterval_s": 1.2, "minInterval_s": 0.45, "rampDuration_s": 120, "batchSize": 1, "spawnPoints": ["north", "east", "south", "west"] },
-    "initialSoldiers": ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"],
-    "civilians": [{ "position": { "x": 540, "y": 1080 } }, { "position": { "x": 615, "y": 1125 } }, { "position": { "x": 615, "y": 1215 } }, { "position": { "x": 540, "y": 1260 } }, { "position": { "x": 465, "y": 1215 } }, { "position": { "x": 465, "y": 1125 } }]
+    "continuousSpawn": {
+      "totalTarget": 240,
+      "initialInterval_s": 1.2,
+      "minInterval_s": 0.45,
+      "rampDuration_s": 120,
+      "batchSize": 1,
+      "spawnPoints": [
+        "north",
+        "east",
+        "south",
+        "west"
+      ]
+    },
+    "initialSoldiers": [
+      "rifleman",
+      "rifleman",
+      "rifleman",
+      "rifleman",
+      "flamethrower",
+      "flamethrower",
+      "shield"
+    ],
+    "civilians": [
+      {
+        "position": {
+          "x": 540,
+          "y": 1080
+        }
+      },
+      {
+        "position": {
+          "x": 615,
+          "y": 1125
+        }
+      },
+      {
+        "position": {
+          "x": 615,
+          "y": 1215
+        }
+      },
+      {
+        "position": {
+          "x": 540,
+          "y": 1260
+        }
+      },
+      {
+        "position": {
+          "x": 465,
+          "y": 1215
+        }
+      },
+      {
+        "position": {
+          "x": 465,
+          "y": 1125
+        }
+      }
+    ]
   },
-  "presentation": { "floorColor": "#4a514f", "wallColor": "#8b9088", "wallOutlineColor": "#c7c8be", "decorations": [] }
+  "presentation": {
+    "floorColor": "#4a514f",
+    "wallColor": "#8b9088",
+    "wallOutlineColor": "#c7c8be",
+    "decorations": []
+  }
 }

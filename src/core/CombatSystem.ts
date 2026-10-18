@@ -103,8 +103,11 @@ export class CombatSystem {
           targetPosition: { ...thrown.position } } });
       }
     }
-    if (target.hp === 0 && this.store.kill(targetId)) {
+    if (target.hp === 0) {
+      // Release before kill() clears the gut inventory. Released zombies remain real
+      // units and are intentionally not credited as kills.
       if (target.unitType === 'gut_zombie') events.push(...this.releaseGut(target, time_s));
+      if (!this.store.kill(targetId)) return events;
       this.stats?.recordKill(sourceId, source?.unitType ?? 'rifleman');
       events.push({ type: 'unit_died', time_s, data: {
         unitId: targetId, faction: target.faction, killerId: sourceId,
@@ -237,7 +240,9 @@ export class CombatSystem {
       if (unit.state === 'Overheated' && unit.stateElapsed_s >= (stats.gun_overheat_lock_s ?? 2.5)) { unit.state = 'Cooling'; unit.stateElapsed_s = 0; }
       else if (unit.state === 'Cooling') {
         unit.weaponHeat = Math.max(0, unit.weaponHeat - (stats.gun_cooling_rate_s ?? 45) * dt);
-        if (unit.weaponHeat <= (stats.gun_cooling_threshold ?? 25)) { unit.state = 'Deployed'; unit.stateElapsed_s = 0; }
+        if (unit.weaponHeat <= (stats.gun_cooling_threshold ?? 25)) {
+          unit.state = unit.moveTarget ? 'Dismantling' : 'Deployed'; unit.stateElapsed_s = 0;
+        }
       }
       return;
     }

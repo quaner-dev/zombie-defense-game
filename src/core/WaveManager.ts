@@ -1,5 +1,5 @@
 import levelsJson from '../../config/levels.json' with { type: 'json' };
-import { SCENES } from '../scenes/index.js';
+import { ALL_SCENES } from '../scenes/index.js';
 import type { BattleEvent, WaveSpawnEventData } from './types.js';
 import type { MapModel } from './MapModel.js';
 import type { ZombieUnitType } from './types.js';
@@ -40,7 +40,7 @@ export type { WaveSpawnEventData } from './types.js';
 
 const LEVEL_DEFINITIONS: Record<string, LevelDefinition> = {
   ...levelsJson as unknown as Record<string, LevelDefinition>,
-  ...Object.fromEntries(SCENES.map(scene => [scene.levelId, scene.level])),
+  ...Object.fromEntries(ALL_SCENES.map(scene => [scene.levelId, scene.level])),
 };
 
 /**

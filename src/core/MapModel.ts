@@ -1,5 +1,5 @@
 import mapJson from '../../config/map.json' with { type: 'json' };
-import { SCENES } from '../scenes/index.js';
+import { ALL_SCENES } from '../scenes/index.js';
 
 export interface Waypoint {
   x: number;
@@ -64,7 +64,7 @@ interface NavigationGraph {
 
 const MAP_DEFINITIONS: Record<string, MapDefinition> = {
   default: mapJson as unknown as MapDefinition,
-  ...Object.fromEntries(SCENES.map(scene => [scene.mapId, scene.map])),
+  ...Object.fromEntries(ALL_SCENES.map(scene => [scene.mapId, scene.map])),
 };
 
 /** Loads and exposes map configuration, spawn edges and movement blockers. */

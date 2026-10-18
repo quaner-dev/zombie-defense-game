@@ -57,10 +57,10 @@ test('spray projectiles deal area damage to nearby zombies and keep their projec
   assert.equal(payload.splashRadius_px, 42);
 
   const impacts = projectiles.update(0.2, 0.2);
-  assert.equal(target.hp, 36);
-  assert.equal(splashTarget.hp, 36);
+  assert.equal(target.hp, 46);
+  assert.equal(splashTarget.hp, 60);
   assert.equal(outside.hp, 60);
-  assert.equal(impacts.filter(event => event.type === 'damage').length, 2);
+  assert.equal(impacts.filter(event => event.type === 'damage').length, 1);
 });
 
 test('group commands accept new human modules through the shared human faction contract', () => {

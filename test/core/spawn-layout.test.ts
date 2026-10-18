@@ -15,12 +15,12 @@ test('courtyard continuous spawning enters deterministic batches from all four e
     const first = spawn();
     const units = first.units;
     const positions = units.map(u => u.position);
-    assert.equal(units.length, 20);
+    assert.equal(units.length, 10);
     assert.equal(new Set(positions.map(p => `${p.x},${p.y}`)).size, 10);
     assert.deepEqual(spawn().units.map(u => u.position), positions);
     assert.deepEqual(Object.fromEntries(['north','south','east','west'].map(side =>
       [side, units.filter(u => u.spawnPointId === side).length])),
-      { north: 6, south: 6, east: 4, west: 4 });
+      { north: 3, south: 3, east: 2, west: 2 });
     assert.ok(first.events.filter(event => event.type === 'zombie_batch_spawn').length >= 1);
     assert.equal((first.events.find(event => event.type === 'zombie_batch_spawn')!.data as any).batchSize, 10);
     for (const unit of units) {
