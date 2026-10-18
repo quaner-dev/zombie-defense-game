@@ -17,7 +17,7 @@ test('production entry opens mode selection and waits for a story button release
   f.button(0,'start');c.update(.05);assert.equal(s.screen,'menu');
   f.button(0,'end');assert.equal(s.screen,'battle');assert.equal(s.mode,'story');
   assert.equal(s.activeScene.id,'cabin');assert.equal(s.deploymentRemaining,3);
-  assert.equal(c.field.active,true);assert.match(c.hud.status.string,/故事.*小屋突围/);
+  assert.equal(c.field.active,true);assert.match(c.hud.status.string,/故事.*大屋守卫/);
   c.update(.05);assert.ok(s.deploymentRemaining<3);c.onDestroy();
 });
 
@@ -42,7 +42,7 @@ test('scene selection draws matching geometry and resets transient effects on re
   assert.equal(c.hud.waveBanner.node.active,false);assert.equal(s.events.length,0);
   click(f,2);assert.equal(s.screen,'menu');assert.equal(c.field.active,false);
   click(f,1);click(f,0);assert.equal(s.activeScene.id,'cabin');
-  assert.ok(c.map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='416,-950,24,270'));
+  assert.ok(c.map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='100,-2064,24,1384'));
   assert.ok(!c.map.base.calls.some((call:any)=>call.kind==='rect'&&call.args[2]===240&&call.args[3]===620));
   c.onDestroy();
 });

@@ -72,6 +72,18 @@ test('entry screens freeze time and reject commands; practice replays the chosen
   assert.deepEqual(session.snapshot, before);assert.equal(session.moveGroup(['missing'],1,1), false);
 });
 
+test('story startup reports malformed deployment geometry clearly', () => {
+  const scene = SCENES[0];
+  const malformed = structuredClone(scene.map);
+  delete (malformed.routes[1] as { defend?: unknown }).defend;
+  MapModel.register('test-malformed-map', malformed);
+  const harness = new BattleTestHarness({}, levelId => {
+    assert.equal(levelId, scene.levelId);
+    return new WaveManager({ mapId: 'test-malformed-map', waves: [] });
+  });
+  assert.throws(() => harness.start(scene.levelId, 1), /missing a valid defend point|missing deployment route/);
+});
+
 // Real result resolution and session progression, with short, empty waves so
 // this regression tests chapter lifecycle independently of balance tuning.
 function shortBattle(initialHumans = 3) {

@@ -65,11 +65,17 @@ export class BattleTestHarness {
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = this.mapModel.routeIds();
-    if (!routes.length) throw new Error('Map must define at least one route');
+    if (!routes.length) throw new Error(`Level ${this.levelId} map ${this.waveManager.getMapId()} must define at least one route`);
     const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
     // Deploy one squad around the middle route instead of splitting it across lanes.
     const routeId = routes[Math.floor(routes.length / 2)];
-    const route = this.mapModel.getRoute(routeId)!;
+    const route = this.mapModel.getRoute(routeId);
+    if (!route) {
+      throw new Error(`Level ${this.levelId} map ${this.waveManager.getMapId()} references missing deployment route ${routeId}`);
+    }
+    if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
+      throw new Error(`Level ${this.levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
+    }
     for (const [index, position] of formationPositions(this.initialHumanCount, route.defend, this.mapModel).entries()) {
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
       unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);

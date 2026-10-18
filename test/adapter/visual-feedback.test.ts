@@ -87,5 +87,5 @@ test('the open battlefield boundary uses one four-sided perimeter indicator',()=
   assert.ok(map.warning.calls.filter((call:any)=>call.kind==='stroke')
     .every((call:any)=>call.color.hex==='#7A7A85'),'perimeter stays neutral instead of using warning red');
   assert.ok(map.warning.calls.some((call:any)=>call.kind==='moveTo'&&call.args[0]===60&&call.args[1]===-180));
-  assert.ok(map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='416,-950,24,270'));
+  assert.ok(map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='100,-2064,24,1384'));
 });
