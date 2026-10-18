@@ -21,7 +21,8 @@
     "test-adapter": "npm run test:adapter",
     "sync:core": "node scripts/sync-cocos-core.mjs",
     "typecheck:cocos": "npm run sync:core && tsc -p tsconfig.cocos.json",
-    "check:cocos-bundle": "node scripts/check-cocos-bundle.mjs"
+    "check:cocos-bundle": "node scripts/check-cocos-bundle.mjs",
+    "package:wechat": "node scripts/package-wechat.mjs"
   },
   "devDependencies": {
     "@cocos/creator-types": "3.8.8",

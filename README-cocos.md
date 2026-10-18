@@ -58,6 +58,22 @@ After import, confirm there are 50 green units, three routes, a visible 3→2→
 
 In **Project → Project Settings**, confirm 1080×2400 resolution and UI/Graphics modules are enabled. In **Project → Build**, select **Web Mobile**, add Battle as the start scene, build and run. Then select **WeChat Mini Game**, set your authorized app ID in Creator, add the same start scene, build, and open the exported directory in WeChat DevTools. Measure real device FPS and touch latency; no 60fps claim follows from headless tests.
 
+### WeChat source-size limit
+
+Do not open the repository root as the upload source. It contains development-only
+directories such as `node_modules`, `.git`, tests, and documentation. Prepare an
+isolated Cocos project first:
+
+```sh
+npm run package:wechat
+```
+
+The command synchronizes the generated core and creates `build/wechat`, containing
+only `package.json`, `settings`, and `assets`. It prints the source size and fails
+when the package reaches WeChat's 4 MB source limit. Open `build/wechat` in Creator
+or use it as the project directory for the WeChat build, then open the generated
+export directory in WeChat DevTools. `build/` is ignored and can be regenerated.
+
 
 
 ## Performance capture (Task 7)

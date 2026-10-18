@@ -6,5 +6,6 @@ local/
 temp/
 build/
 profiles/
+build/
 assets/scripts/generated/core.js
 assets/scripts/generated/core.d.ts
