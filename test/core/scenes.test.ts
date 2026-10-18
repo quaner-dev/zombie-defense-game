@@ -77,11 +77,21 @@ test('story startup reports malformed deployment geometry clearly', () => {
   const malformed = structuredClone(scene.map);
   delete (malformed.routes[1] as { defend?: unknown }).defend;
   MapModel.register('test-malformed-map', malformed);
-  const harness = new BattleTestHarness({}, levelId => {
+  const harness = new BattleTestHarness(undefined, levelId => {
     assert.equal(levelId, scene.levelId);
     return new WaveManager({ mapId: 'test-malformed-map', waves: [] });
   });
   assert.throws(() => harness.start(scene.levelId, 1), /missing a valid defend point|missing deployment route/);
+});
+
+test('startup identifies the level and map when no deployment routes exist', () => {
+  const mapId = 'test-no-deployment-routes';
+  const malformed = structuredClone(SCENES[0].map);
+  malformed.routes = [];
+  MapModel.register(mapId, malformed);
+  const harness = new BattleTestHarness(undefined, () => new WaveManager({ mapId, waves: [] }));
+  assert.throws(() => harness.start('test-level', 1),
+    /Level test-level map test-no-deployment-routes must define at least one route/);
 });
 
 // Real result resolution and session progression, with short, empty waves so

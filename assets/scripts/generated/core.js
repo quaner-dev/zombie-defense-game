@@ -890,10 +890,13 @@ var MapModel = class _MapModel {
       }
     };
     for (const route of definition.routes) {
-      for (const [index, point] of route.waypoints.entries()) {
-        validatePoint(point, index === 0);
+      for (let index = 0; index < route.waypoints.length; index++) {
+        validatePoint(route.waypoints[index], index === 0);
       }
       validatePoint(route.spawn, true);
+      if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
+        throw new Error(`Map route ${route.id} is missing a valid defend point`);
+      }
       validatePoint(route.defend);
       const end = route.waypoints[route.waypoints.length - 1];
       if (!end || end.y < this.defense_line_y) {
@@ -926,7 +929,7 @@ var MapModel = class _MapModel {
     }
   }
   getDoorStates() {
-    return [...this.doors.values()].map((door) => ({ ...door }));
+    return Array.from(this.doors.values(), (door) => ({ ...door }));
   }
   damageDoor(id, damage) {
     const door = this.doors.get(id);
@@ -1121,7 +1124,8 @@ var MapModel = class _MapModel {
       graph.destinations.set(key, distances);
     }
     let best = null, length = Infinity;
-    for (const [i, corner] of graph.corners.entries()) {
+    for (let i = 0; i < graph.corners.length; i++) {
+      const corner = graph.corners[i];
       const approach = Math.hypot(corner.x - start.x, corner.y - start.y);
       if (approach < 1e-6 || approach + distances[i] >= length || this.firstBlockingTerrain(start, corner, radius, ignoreDoors)) continue;
       best = corner;
@@ -1188,8 +1192,9 @@ var MapModel = class _MapModel {
   getRoute(id) {
     return this.routes.get(id);
   }
+  // Creator may lower iterator spread to array concat; materialize it explicitly.
   routeIds() {
-    return [...this.routes.keys()];
+    return Array.from(this.routes.keys());
   }
   getSpawnPoint(id) {
     return this.spawnPoints.get(id);
@@ -1664,7 +1669,7 @@ var UnitStore = class {
     return this.units.get(id);
   }
   all() {
-    return [...this.units.values()];
+    return Array.from(this.units.values());
   }
   living() {
     return this.all().filter((unit) => unit.active && unit.hp > 0 && unit.state !== "Dead");
@@ -1714,7 +1719,7 @@ var UnitStore = class {
     return true;
   }
   clear() {
-    for (const id of this.units.keys()) this.remove(id);
+    for (const unit of this.all()) this.remove(unit.id);
   }
 };
 
@@ -2314,11 +2319,11 @@ var ProjectileSystem = class {
     return this.combat.createProjectile(source, target, time_s, false);
   }
   getProjectiles() {
-    return cloneData([...this.projectiles.values()]);
+    return cloneData(Array.from(this.projectiles.values()));
   }
   /** A terminal battle cancels in-flight shots without applying later damage. */
   expireAll(time_s) {
-    const events = [...this.projectiles.keys()].map((projectileId) => ({
+    const events = Array.from(this.projectiles.keys(), (projectileId) => ({
       type: "projectile_expired",
       time_s,
       data: { projectileId }
@@ -2331,7 +2336,7 @@ var ProjectileSystem = class {
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     for (const shot of this.combat.drainShots()) this.projectiles.set(shot.id, shot);
     const events = [];
-    for (const shot of this.projectiles.values()) {
+    for (const shot of Array.from(this.projectiles.values())) {
       const previous = { ...shot.position }, previousElapsed = shot.elapsed_s;
       const distance = Math.hypot(shot.destination.x - shot.origin.x, shot.destination.y - shot.origin.y);
       const flightDuration = Math.min(distance / shot.speed_px_per_s, shot.max_flight_time_s);
@@ -2544,6 +2549,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.movement = new MovementSystem(this.units);
   }
   start(levelId, _seed) {
+    this.started = false;
     this.snapshot = this.initialSnapshot();
     this.events = [];
     this.deploymentTime_s = 0;
@@ -2562,11 +2568,19 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
     const routes = this.mapModel.routeIds();
-    if (!routes.length) throw new Error("Map must define at least one route");
+    if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
     const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
-    for (const [index, position] of formationPositions(this.initialHumanCount, route.defend, this.mapModel).entries()) {
+    if (!route) {
+      throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} references missing deployment route ${routeId}`);
+    }
+    if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
+      throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
+    }
+    const positions = formationPositions(this.initialHumanCount, route.defend, this.mapModel);
+    for (let index = 0; index < positions.length; index++) {
+      const position = positions[index];
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
       unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
@@ -2803,3 +2817,5 @@ export {
   map_default as mapConfig,
   units_default as unitConfig
 };
+
+export const CORE_BUILD_ID = "core-4230b0efd5d9";

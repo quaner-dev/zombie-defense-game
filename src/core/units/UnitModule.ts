@@ -1,7 +1,7 @@
 import config from '../../../config/units.json' with { type: 'json' };
 import type { HumanUnitType, UnitState, UnitType, ZombieUnitType } from '../types.js';
 
-export type ProjectileKind = 'bullet' | 'flame';
+export type ProjectileKind = 'bullet' | 'flame' | 'sniper' | 'machine_gun';
 
 export interface UnitStats {
   hitPoints: number;
@@ -18,6 +18,11 @@ export interface UnitStats {
   /** Damage cadence while a continuous attack is active. */
   damage_tick_interval_s?: number;
   infectsSoldiers?: boolean;
+  penetration_count?: number;
+  penetration_damage_multiplier?: number;
+  gun_damage?: number;
+  gun_rate_per_s?: number;
+  gun_range_px?: number;
 }
 
 export interface AttackProfile {

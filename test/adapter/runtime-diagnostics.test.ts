@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { fixture } from '../../test-support/cocos-fixture.js';
 
 const entry=(console:unknown=undefined,platform?:unknown,globals?:Record<string,unknown>)=>fixture(true,platform,{console,globals},undefined,true);
-const logs=(f:ReturnType<typeof entry>)=>f.controller.diagnostics.dump().split('\n').map((line:string)=>JSON.parse(line));
+const logs=(f:ReturnType<typeof entry>):{sequence:number;level:string;event:string;data:any}[]=>f.controller.diagnostics.dump().split('\n').map((line:string)=>JSON.parse(line));
 
 test('practice selection records the entire touch, action, initialization and first draw chain',()=>{
   const f=entry(),c=f.controller;
@@ -19,6 +19,7 @@ test('practice selection records the entire touch, action, initialization and fi
     assert.ok(entries.some(e=>e.event==='input.button-action:state'&&e.data.id===id));
   }
   const scene=entries.find(e=>e.event==='scene.first-draw:complete'&&e.data.screen==='scenes');
+  assert.ok(scene);
   assert.deepEqual(scene.data.hud.buttons.map((b:any)=>b.id),['scene.cabin','scene.courtyard','scenes.back']);
   assert.ok(scene.data.hud.labels.every((label:any)=>label.active&&label.text.length>0));
   const begin=entries.findIndex(e=>e.event==='input.button-action:start'&&e.data.id==='scene.cabin');
@@ -51,7 +52,7 @@ test('menu heartbeat continues after the first three frames and captures slow ra
   f.advanceTime(5001);c.update(1);
   const entries=logs(f),beats=entries.filter(e=>e.event==='runtime.heartbeat');
   assert.equal(beats.length,before+1);
-  const last=beats.at(-1);assert.equal(last.data.state.screen,'scenes');assert.equal(last.data.state.paused,true);
+  const last=beats.at(-1);assert.ok(last);assert.equal(last.data.state.screen,'scenes');assert.equal(last.data.state.paused,true);
   assert.equal(last.data.rawDt,1);assert.equal(last.data.appliedDt,.05);
   assert.equal(last.data.state.configuredFrameRate,60);assert.equal(last.data.state.frames,11);
   assert.equal(entries.filter(e=>e.event==='update').length,3);
@@ -65,6 +66,7 @@ test('scene initialization errors retain the target button and stack without cla
   c.session.startScene=()=>{throw new Error('scene initialization failed');};
   f.button(1,'start');assert.throws(()=>f.button(1,'end'),/scene initialization failed/);
   const failure=logs(f).find(e=>e.event==='input.button-action:failed');
+  assert.ok(failure);
   assert.equal(failure.data.context.id,'scene.courtyard');
   assert.equal(failure.data.state.screen,'scenes');
   assert.match(failure.data.error.stack,/scene initialization failed/);
@@ -97,9 +99,9 @@ test('WeChat error and rejection hooks preserve existing listeners, expose expor
   for(const fn of errors)fn(new Error('wx exploded'));
   for(const fn of rejections)fn({reason:new Error('promise rejected')});
   const entries=logs(f);
-  assert.match(entries.find(e=>e.event==='runtime.uncaught-error').data.error.stack,/wx exploded/);
-  assert.match(entries.find(e=>e.event==='runtime.unhandled-rejection').data.error.reason.stack,/promise rejected/);
-  const environment=entries.find(e=>e.event==='runtime.environment');assert.equal(environment.data.SDKVersion,'3.17.4');
+  assert.match(entries.find(e=>e.event==='runtime.uncaught-error')?.data.error.stack,/wx exploded/);
+  assert.match(entries.find(e=>e.event==='runtime.unhandled-rejection')?.data.error.reason.stack,/promise rejected/);
+  const environment=entries.find(e=>e.event==='runtime.environment');assert.ok(environment);assert.equal(environment.data.SDKVersion,'3.17.4');
   assert.equal(environment.data.windowWidth,393);
   assert.equal(f.runtime.__ZOMBIE_DEFENSE_DEBUG__,d);assert.equal(gameGlobal.__ZOMBIE_DEFENSE_DEBUG__,d);
   assert.equal(d.state().hud.buttons[1].id,'mode.practice');
@@ -112,8 +114,8 @@ test('browser error hooks capture errors and promise rejections without suppress
   const f=entry(undefined,undefined,{addEventListener:(type:string,fn:Function)=>handlers.set(type,fn),removeEventListener:(type:string)=>handlers.delete(type)});
   handlers.get('error')!({error:new Error('browser failure')});
   handlers.get('unhandledrejection')!({reason:new Error('browser rejection')});
-  assert.match(logs(f).find(e=>e.event==='runtime.uncaught-error').data.error.stack,/browser failure/);
-  assert.match(logs(f).find(e=>e.event==='runtime.unhandled-rejection').data.error.stack,/browser rejection/);
+  assert.match(logs(f).find(e=>e.event==='runtime.uncaught-error')?.data.error.stack,/browser failure/);
+  assert.match(logs(f).find(e=>e.event==='runtime.unhandled-rejection')?.data.error.stack,/browser rejection/);
   f.controller.onDestroy();assert.equal(handlers.size,0);
 });
 
@@ -146,8 +148,9 @@ test('history is bounded, ordered, detached from live objects and handles cycles
   for(let i=0;i<350;i++){value.count=i;d.info('buffer-test',value);}
   value.count=999;
   const entries=logs(f);assert.equal(entries.length,300);assert.equal(entries[0].data.count,50);
-  assert.equal(entries.at(-1).data.count,349);assert.equal(entries.at(-1).data.self,'[Circular]');
-  assert.match(entries.at(-1).data.error.stack,/snapshot error/);
+  const last=entries.at(-1);assert.ok(last);
+  assert.equal(last.data.count,349);assert.equal(last.data.self,'[Circular]');
+  assert.match(last.data.error.stack,/snapshot error/);
   for(let i=1;i<entries.length;i++)assert.equal(entries[i].sequence,entries[i-1].sequence+1);
   const copy=d.entries();copy[0].data.count=10000;assert.equal(logs(f)[0].data.count,50);
   f.controller.onDestroy();

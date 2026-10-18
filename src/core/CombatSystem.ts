@@ -3,7 +3,9 @@ import config from '../../config/units.json' with { type: 'json' };
 import type { MapModel, TerrainDefinition, Waypoint } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
 import type { BattleEvent, Point, Unit, UnitState, ZombieUnitType } from './types.js';
-import { getUnitModule, getZombieModule, type ProjectileKind } from './units/index.js';
+import { getUnitModule, getZombieModule, type AttackProfile, type ProjectileKind } from './units/index.js';
+import type { CombatStats } from './CombatStats.js';
+import type { DamageKind } from './types.js';
 
 export interface Projectile {
   id: string;
@@ -23,6 +25,9 @@ export interface Projectile {
   damage_elapsed_s: number;
   spawnedAt_s: number;
   elapsed_s: number;
+  penetrationCount?: number;
+  penetrationDamageMultiplier?: number;
+  hitTargetIds?: string[];
 }
 
 /** The sole authority for damage/death; visuals only request validated hits. */
@@ -33,7 +38,8 @@ export class CombatSystem {
   private humans: Unit[] = [];
   private zombies: Unit[] = [];
 
-  public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
+  public constructor(private readonly store: UnitStore, private readonly map: MapModel,
+    private readonly stats?: CombatStats) {}
 
   public createProjectile(source: Unit, target: Unit, time_s: number, continuous = true): BattleEvent {
     const profile = getUnitModule(source.unitType).getAttackProfile();
@@ -49,6 +55,9 @@ export class CombatSystem {
       damage_tick_interval_s: continuous && profile.projectileKind === 'flame' ? profile.damageTickInterval_s : undefined,
       damage_elapsed_s: 0,
       spawnedAt_s: time_s, elapsed_s: 0,
+      penetrationCount: profile.projectileKind === 'sniper' ? (getUnitModule(source.unitType).getStats().penetration_count ?? 3) : undefined,
+      penetrationDamageMultiplier: profile.projectileKind === 'sniper' ? (getUnitModule(source.unitType).getStats().penetration_damage_multiplier ?? 0.8) : undefined,
+      hitTargetIds: [],
     };
     this.shots.push(shot);
     return { type: 'projectile_spawned', time_s, data: cloneData(shot) };
@@ -60,16 +69,51 @@ export class CombatSystem {
     return shots;
   }
 
-  public applyDamage(targetId: string, amount: number, sourceId: string, time_s: number): BattleEvent[] {
+  public applyDamage(targetId: string, amount: number, sourceId: string, time_s: number,
+    damageKind: DamageKind = 'bullet', sourcePosition?: Point): BattleEvent[] {
     const target = this.store.get(targetId);
     if (!target || !target.active || target.hp <= 0 || target.state === 'Dead' ||
         !Number.isFinite(amount) || amount <= 0) return [];
-    target.hp = Math.max(0, target.hp - amount);
-    const events: BattleEvent[] = [{ type: 'damage', time_s,
-      data: { sourceId, targetId, amount, hp: target.hp } }];
-    if (target.hp === 0 && this.store.kill(targetId)) {
-      events.push({ type: 'unit_died', time_s, data: { unitId: targetId, faction: target.faction } });
+    let adjustedAmount = amount;
+    if (target.unitType === 'shield' && sourcePosition && damageKind !== 'flame' && damageKind !== 'explosion') {
+      const incomingX = sourcePosition.x - target.position.x;
+      const incomingY = sourcePosition.y - target.position.y;
+      const incomingLength = Math.hypot(incomingX, incomingY);
+      const facingLength = Math.hypot(target.facing.x, target.facing.y);
+      if (incomingLength > 1e-6 && facingLength > 1e-6) {
+        const cos = (incomingX * target.facing.x + incomingY * target.facing.y) / (incomingLength * facingLength);
+        if (cos >= Math.cos(Math.PI / 3)) adjustedAmount *= 0.4;
+      }
     }
+    const appliedAmount = Math.min(adjustedAmount, target.hp);
+    target.hp = Math.max(0, target.hp - appliedAmount);
+    const events: BattleEvent[] = [{ type: 'damage', time_s,
+      data: { sourceId, targetId, amount, appliedAmount, hp: target.hp, damageKind } }];
+    const source = this.store.get(sourceId);
+    this.stats?.recordDamage(sourceId, source?.unitType ?? 'rifleman', appliedAmount);
+    if (target.hp === 0 && this.store.kill(targetId)) {
+      if (target.unitType === 'gut_zombie') this.releaseGut(target, time_s);
+      this.stats?.recordKill(sourceId, source?.unitType ?? 'rifleman');
+      events.push({ type: 'unit_died', time_s, data: {
+        unitId: targetId, faction: target.faction, killerId: sourceId,
+        killerUnitType: source?.unitType ?? null, damageKind,
+      } });
+    }
+    return events;
+  }
+
+  private releaseGut(gut: Unit, time_s: number): BattleEvent[] {
+    const events: BattleEvent[] = [];
+    const ids = [...gut.storedGutUnitIds];
+    gut.storedGutUnitIds = [];
+    for (const [index, id] of ids.entries()) {
+      const unit = this.store.get(id);
+      if (!unit) continue;
+      unit.state = 'Advancing'; unit.storedInGutById = null; unit.hp = unit.maxHp;
+      const angle = index * 2.399963229728653;
+      unit.position = { x: gut.position.x + Math.cos(angle) * 18, y: gut.position.y + Math.sin(angle) * 18 };
+    }
+    if (ids.length) events.push({ type: 'gut_released', time_s, data: { gutId: gut.id, zombieIds: ids } });
     return events;
   }
 
@@ -86,8 +130,13 @@ export class CombatSystem {
     for (const unit of this.frameUnits) {
       // Earlier melee attacks may have killed a unit in this living snapshot.
       if (!unit.active || unit.hp <= 0 || unit.state === 'Dead') continue;
-      if (unit.faction === 'human') this.rangedHuman(unit, dt, time_s, events);
+      if (unit.faction === 'human') {
+        if (unit.unitType === 'flamethrower') this.updateFlamethrower(unit, dt, time_s, events);
+        else if (unit.unitType === 'engineer') this.updateEngineer(unit, dt, time_s, events);
+        else this.rangedHuman(unit, dt, time_s, events);
+      }
       else {
+        if (unit.unitType === 'gut_zombie') this.gutBehavior(unit, dt, time_s, events);
         this.zombie(unit, dt, time_s, events);
         // Crossing is a one-time spatial warning, never a combat phase/gate.
         const side = unit.spawnPointId ? this.map.getSpawnPoint(unit.spawnPointId)?.side ?? null : null;
@@ -97,8 +146,105 @@ export class CombatSystem {
         }
       }
     }
-    this.separateZombies(frameStarts);
+    // Zombies are intentionally allowed to overlap as a crowd. Keep wall and
+    // map-boundary collision in their navigation, but do not apply an entity
+    // separation impulse that turns the horde into a mutually exclusive queue.
     return events;
+  }
+
+  private updateFlamethrower(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
+    const stats = getUnitModule('flamethrower').getStats();
+    const retract = stats.retract_duration_s ?? 0.3;
+    const release = stats.release_duration_s ?? 0.25;
+    if (unit.state === 'RetractingFlame' || unit.state === 'ReleasingFlame') {
+      unit.stateElapsed_s += dt;
+      if (unit.state === 'RetractingFlame' && unit.stateElapsed_s >= retract) {
+        unit.state = 'Moving'; unit.stateElapsed_s = 0;
+      } else if (unit.state === 'ReleasingFlame' && unit.stateElapsed_s >= release) {
+        unit.state = 'Firing'; unit.stateElapsed_s = 0;
+      }
+      return;
+    }
+    if (unit.state === 'Overheated' || unit.state === 'Cooling') {
+      unit.stateElapsed_s += dt;
+      if (unit.state === 'Overheated' && unit.stateElapsed_s >= (stats.overheat_lock_s ?? 2)) {
+        unit.state = 'Cooling'; unit.stateElapsed_s = 0;
+      } else if (unit.state === 'Cooling') {
+        unit.weaponHeat = Math.max(0, unit.weaponHeat - (stats.cooling_rate_s ?? 45) * dt);
+        if (unit.weaponHeat <= (stats.cooling_threshold ?? 25)) { unit.state = 'Idle'; unit.stateElapsed_s = 0; }
+      }
+      return;
+    }
+    const target = this.humanTarget(unit, getUnitModule('flamethrower').getAttackProfile());
+    if (!target) { unit.targetId = null; if (unit.state !== 'Moving') unit.state = 'Idle'; return; }
+    unit.targetId = target.id;
+    unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
+    if (unit.state === 'Moving') return;
+    unit.attackElapsed_s += dt;
+    if (unit.attackElapsed_s >= (stats.damage_tick_interval_s ?? 0.15)) {
+      unit.attackElapsed_s = 0;
+      unit.weaponHeat += stats.heat_per_tick ?? 8;
+      if (unit.weaponHeat >= (stats.heat_max ?? 100)) { unit.state = 'Overheated'; unit.stateElapsed_s = 0; return; }
+      unit.state = 'Firing';
+      events.push(this.createProjectile(unit, target, time_s));
+    }
+  }
+
+  private updateEngineer(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
+    const stats = getUnitModule('engineer').getStats();
+    if (unit.state === 'Deploying' || unit.state === 'Dismantling') {
+      unit.stateElapsed_s += dt;
+      const duration = unit.state === 'Deploying' ? (stats.deploy_duration_s ?? 2) : (stats.dismantle_duration_s ?? 1.5);
+      if (unit.stateElapsed_s >= duration) { unit.state = unit.state === 'Deploying' ? 'Deployed' : 'Idle'; unit.stateElapsed_s = 0; unit.targetId = null; }
+      return;
+    }
+    if (unit.state === 'Overheated' || unit.state === 'Cooling') {
+      unit.stateElapsed_s += dt;
+      if (unit.state === 'Overheated' && unit.stateElapsed_s >= (stats.gun_overheat_lock_s ?? 2.5)) { unit.state = 'Cooling'; unit.stateElapsed_s = 0; }
+      else if (unit.state === 'Cooling') {
+        unit.weaponHeat = Math.max(0, unit.weaponHeat - (stats.gun_cooling_rate_s ?? 45) * dt);
+        if (unit.weaponHeat <= (stats.gun_cooling_threshold ?? 25)) { unit.state = 'Deployed'; unit.stateElapsed_s = 0; }
+      }
+      return;
+    }
+    if (unit.state !== 'Deployed') return;
+    unit.stateElapsed_s += dt;
+    if (unit.stateElapsed_s < (stats.target_refresh_s ?? 0.15)) return;
+    unit.stateElapsed_s = 0;
+    const target = this.humanTarget(unit, { damage: stats.gun_damage ?? 4, interval_s: 1 / (stats.gun_rate_per_s ?? 10), range_px: stats.gun_range_px ?? 300, projectileKind: 'machine_gun', splashRadius_px: 0 });
+    unit.targetId = target?.id ?? null;
+    if (!target) return;
+    unit.attackElapsed_s += (stats.target_refresh_s ?? 0.15);
+    if (unit.attackElapsed_s >= 1 / (stats.gun_rate_per_s ?? 10)) {
+      unit.attackElapsed_s = 0; unit.weaponHeat += stats.gun_heat_per_shot ?? 3.3;
+      if (unit.weaponHeat >= (stats.gun_heat_max ?? 100)) { unit.state = 'Overheated'; unit.stateElapsed_s = 0; return; }
+      events.push(this.createProjectile(unit, target, time_s));
+    }
+  }
+
+  private gutBehavior(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
+    if (unit.state === 'StoredInGut' || unit.state === 'Suicidal') return;
+    unit.weaponCooldown_s = Math.max(0, unit.weaponCooldown_s - dt);
+    const candidates = this.zombies.filter(candidate => candidate.id !== unit.id && candidate.unitType === 'normal_zombie' &&
+      candidate.state !== 'Dead' && candidate.state !== 'StoredInGut' && !candidate.storedInGutById &&
+      Math.hypot(candidate.position.x - unit.position.x, candidate.position.y - unit.position.y) <= 180)
+      .sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1));
+    while (unit.storedGutUnitIds.length < 5 && candidates.length) {
+      const target = candidates.shift()!;
+      target.state = 'StoredInGut'; target.storedInGutById = unit.id; target.active = true;
+      unit.storedGutUnitIds.push(target.id);
+      events.push({ type: 'gut_swallowed', time_s, data: { gutId: unit.id, zombieId: target.id } });
+    }
+    if (unit.weaponCooldown_s <= 0 && unit.storedGutUnitIds.length && unit.hp < unit.maxHp) {
+      const thrownId = unit.storedGutUnitIds.shift()!;
+      const thrown = this.store.get(thrownId);
+      if (thrown) {
+        thrown.state = 'Suicidal'; thrown.storedInGutById = null; thrown.stateElapsed_s = 0;
+        thrown.suicideTriggerId = unit.id;
+        unit.weaponCooldown_s = 1.2;
+        events.push({ type: 'gut_thrown', time_s, data: { gutId: unit.id, zombieId: thrown.id, targetPosition: { ...unit.position } } });
+      }
+    }
   }
 
   private nearest(unit: Unit, faction: Unit['faction'], range = Infinity, clearShot = false): Unit | undefined {
@@ -118,6 +264,18 @@ export class CombatSystem {
     return nearest;
   }
 
+  private humanTarget(unit: Unit, profile: AttackProfile | null): Unit | undefined {
+    if (!profile) return undefined;
+    const candidates = this.zombies.filter(target => target.active && target.hp > 0 && target.state !== 'Dead' &&
+      Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y) <= profile.range_px &&
+      !this.map.firstBlockingTerrain(unit.position, target.position, 0, true));
+    if (unit.unitType === 'sniper') {
+      const special = candidates.filter(target => target.unitType === 'gut_zombie');
+      if (special.length) return special.sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1))[0];
+    }
+    return candidates.sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1))[0];
+  }
+
   private distance(a: Unit, b: Unit): number {
     return Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
   }
@@ -133,7 +291,7 @@ export class CombatSystem {
     const moving = unit.state === 'Moving';
     const profile = getUnitModule(unit.unitType).getAttackProfile();
     if (!profile) return;
-    const target = this.nearest(unit, 'zombie', profile.range_px, true);
+    const target = this.humanTarget(unit, profile);
     unit.targetId = target?.id ?? null;
     if (!target) {
       unit.attackElapsed_s = 0;

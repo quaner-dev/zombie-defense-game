@@ -28,14 +28,14 @@ export class UnitView {
         if(infected)this.infectionPulses.set(infected.id,{x:infected.position.x,y:infected.position.y,started:time});
       }
     }
-    for(const [id,pulse] of this.meleePulses){
+    for(const [id,pulse] of Array.from(this.meleePulses)){
       const age=time-pulse.started;
       if(age>=.24){this.meleePulses.delete(id);continue;}
       const progress=Math.max(0,age/.24);
       g.strokeColor=color(palette.warning,Math.round(220*(1-progress)));g.lineWidth=2;
       g.circle(pulse.x,-pulse.y,8+progress*18);g.stroke();
     }
-    for(const [id,pulse] of this.infectionPulses){
+    for(const [id,pulse] of Array.from(this.infectionPulses)){
       const age=time-pulse.started;
       if(age>=.4){this.infectionPulses.delete(id);continue;}
       const progress=Math.max(0,age/.4);
@@ -43,7 +43,7 @@ export class UnitView {
       g.circle(pulse.x,-pulse.y,10+progress*22);g.stroke();
     }
     const selectedIds=new Set(selection??[]);
-    for(const id of this.selectionStarted.keys())if(!selectedIds.has(id))this.selectionStarted.delete(id);
+    for(const id of Array.from(this.selectionStarted.keys()))if(!selectedIds.has(id))this.selectionStarted.delete(id);
     for(const u of units){
       let fade=1;
       if(u.state==='Dead'){

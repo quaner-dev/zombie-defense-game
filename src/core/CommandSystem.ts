@@ -64,6 +64,13 @@ export class CommandSystem {
     const positions = formationPositions(selected.length, target, this.map, unitConfig.movement.arrival_spacing_px)
       .map((point, index) => this.map.walkablePoint(point, selected[index].radius_px ?? 7));
     selected.forEach((unit, i) => {
+      if (unit.unitType === 'engineer' && (unit.state === 'Deployed' || unit.state === 'Cooling' || unit.state === 'Overheated')) {
+        if (unit.state === 'Deployed' || unit.state === 'Cooling') { unit.state = 'Dismantling'; unit.stateElapsed_s = 0; unit.targetId = null; }
+        return;
+      }
+      if (unit.unitType === 'flamethrower' && (unit.state === 'Firing' || unit.state === 'Aiming')) {
+        unit.state = 'RetractingFlame'; unit.stateElapsed_s = 0; unit.targetId = null;
+      }
       const from = unit.state;
       unit.moveTarget = positions[i];
       unit.targetId = null;

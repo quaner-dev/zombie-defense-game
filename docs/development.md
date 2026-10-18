@@ -88,6 +88,7 @@ node --test test/workflows/source-workflows.test.mjs
 | 症状 | 检查 |
 |---|---|
 | generated/core 不存在或画面规则过旧 | 在完整源码目录 npm ci 后 sync:core；确认 AssetDB 重导入；不要修改生成 JS |
+| 点击故事/演练时报 `Cannot read properties of undefined (reading 'defend')` | 使用显式 `Array.from` 的修复源码，重新 sync:core 并构建；按下方步骤核对启动日志中的核心包版本 |
 | JSON import、tsx 或 Node API 错误 | 检查独立 Node 版本是否与 v26.7.0 记录一致；其他版本先验证再声明支持 |
 | esbuild 安装脚本策略警告/二进制不可用 | 记录 npm 的真实提示，检查本地审批策略；以 sync/bundle 是否实际成功为准，勿全局盲目关闭限制 |
 | 场景 missing script、Canvas 重叠 | 保留 .meta，检查首条错误，采用上手文档的新场景挂组件流程 |
@@ -95,5 +96,22 @@ node --test test/workflows/source-workflows.test.mjs
 | 卡顿后战斗钟落后 | controller 每次 update 截 dt 到 50ms，是现有 stall 策略；不是完整墙钟追赶 |
 | 工作流测试下载失败 | 检查网络与 npm registry；报告未验证，不伪称源码交付回归通过 |
 | 字体、触摸、安全区、平台能力异常 | Creator/设备核查，cc 替身测试不能诊断真实引擎渲染；确认 performance.now 可用且单调 |
+
+### 微信入口的 defend 异常与构建版本核对
+
+此异常发生在初始士兵布阵：路线查询返回 `undefined`，随后读取 `route.defend`。当构建把 `[...map.keys()]` 转成 `[].concat(map.keys())` 时，结果是包含一个迭代器对象的数组，无法通过该对象查到路线。修复使用 `Array.from` 显式转换集合，并让数组循环直接访问索引；士兵、弹道、门状态和界面中的同类集合迭代也采用此规则。新增的 `test/adapter/array-iteration-build.test.ts` 模拟数组拼接与索引循环，验证错误复现、故事/演练入口、战斗弹道和重开。该测试不是实际 Creator 平台构建。
+
+`assets/scripts/generated/core.js` 是生成物，只更新 `src/` 不会自动更新编辑器和微信导出包。同步脚本会在声明检查通过后写出核心，并打印由核心内容计算出的 `Build: core-…`；启动日志 `bootstrap.controller-module-ready` 中的 `data.coreBuild` 应与之相同。
+
+在更新后的完整源码根目录执行（依赖缺失时先 `npm ci`）：
+
+```sh
+npm run sync:core
+npm run test:scenes
+npm run typecheck:cocos
+npm run check:cocos-bundle
+```
+
+所有命令成功后，在 Creator 等待资源导入完成，必要时对 `assets/scripts/generated/core.js` 执行重新导入。重新构建微信小游戏，建议输出到新的构建目录，再让微信开发者工具打开该目录，清除缓存并重新编译。启动时搜索 `bootstrap.controller-module-ready`，确认 `coreBuild` 与本地同步命令输出一致，再检查故事模式、两个演练场景和重开。若仍报错，保留版本标识及第一条 `session.action:failed` 的完整日志，这样可以区分构建未更新与新的运行错误。
 
 性能采集字段、调试器获取 controller 方法和设备数据要求见 [性能采集](../README-cocos.md#performance-capture-task-7)。

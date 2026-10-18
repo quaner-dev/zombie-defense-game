@@ -1,11 +1,12 @@
 export type BattleResult = 'running' | 'win' | 'lose';
 
 export interface Point { x: number; y: number }
-export type HumanUnitType = 'rifleman' | 'flamethrower' | 'shield';
-export type ZombieUnitType = 'normal_zombie' | 'fat_zombie' | 'zombie_mother';
+export type HumanUnitType = 'rifleman' | 'flamethrower' | 'shield' | 'sniper' | 'engineer';
+export type ZombieUnitType = 'normal_zombie' | 'fat_zombie' | 'zombie_mother' | 'gut_zombie';
 export type UnitType = HumanUnitType | ZombieUnitType;
-export type UnitState = 'Idle' | 'Moving' | 'Aiming' | 'Firing' |
-  'Advancing' | 'Climbing' | 'Breached' | 'Attacking' | 'Dead';
+export type UnitState = 'Idle' | 'Moving' | 'Aiming' | 'Firing' | 'Deploying' | 'Deployed' |
+  'Dismantling' | 'RetractingFlame' | 'ReleasingFlame' | 'Overheated' | 'Cooling' |
+  'Suicidal' | 'StoredInGut' | 'Advancing' | 'Climbing' | 'Breached' | 'Attacking' | 'Dead';
 
 export interface Unit {
   id: string;
@@ -27,6 +28,13 @@ export interface Unit {
   climbingWallId: string | null;
   climbTarget: Point | null;
   stackLevel: number;
+  weaponHeat: number;
+  weaponCooldown_s: number;
+  stateElapsed_s: number;
+  facing: Point;
+  storedGutUnitIds: string[];
+  storedInGutById: string | null;
+  suicideTriggerId: string | null;
   active: boolean;
 }
 
@@ -57,7 +65,23 @@ export interface BattleSnapshot {
   waveIndex: number;
   breachedRoutes: string[];
   result: BattleResult;
+  stats: CombatStatsSnapshot;
+  generationComplete: boolean;
 }
+
+export interface CombatStat {
+  unitType: HumanUnitType;
+  spawned: number;
+  aliveAtEnd: number;
+  kills: number;
+  damage: number;
+}
+
+export interface CombatStatsSnapshot {
+  byUnitType: Record<HumanUnitType, CombatStat>;
+}
+
+export type DamageKind = 'bullet' | 'sniper' | 'flame' | 'melee' | 'machine_gun' | 'explosion';
 
 export type BattleEvent =
   | GroupCommandEvent
@@ -70,12 +94,18 @@ export type BattleEvent =
   | TimedEvent<'damage', DamageEventData>
   | TimedEvent<'door_damaged', { id: string; hp: number; maxHp: number; destroyed: boolean; sourceId: string; amount: number }>
   | TimedEvent<'door_destroyed', { doorId: string; sourceId: string }>
-  | TimedEvent<'unit_died', { unitId: string; faction: Unit['faction'] }>
+  | TimedEvent<'unit_died', { unitId: string; faction: Unit['faction']; killerId: string | null; killerUnitType: UnitType | null; damageKind: DamageKind | null }>
   | TimedEvent<'unit_state_changed', { unitId: string; from: UnitState; to: UnitState }>
   | TimedEvent<'route_breached', { routeId: string; unitId: string }>
   | TimedEvent<'wall_climb_started', { wallId: string; stackCount: number; requiredStack: number; unitIds: string[] }>
   | TimedEvent<'wall_climbed', { unitId: string; wallId: string | null }>
   | TimedEvent<'unit_infected', { sourceId: string; humanId: string; zombieId: string }>
+  | TimedEvent<'weapon_state_changed', { unitId: string; from: UnitState; to: UnitState; heat: number }>
+  | TimedEvent<'generation_complete', { generated: number; target: number }>
+  | TimedEvent<'gut_swallowed', { gutId: string; zombieId: string }>
+  | TimedEvent<'gut_thrown', { gutId: string; zombieId: string; targetPosition: Point }>
+  | TimedEvent<'gut_released', { gutId: string; zombieIds: string[] }>
+  | TimedEvent<'zombie_exploded', { zombieId: string; sourceGutId: string; position: Point }>
   | TimedEvent<string, unknown>
   | TimedEvent<'running' | 'win' | 'lose', { result: BattleResult }>;
 
@@ -107,4 +137,11 @@ export interface ProjectileEventData {
 }
 export interface ProjectileImpactData { projectileId: string; targetId: string; position: Point }
 export interface ProjectileBlockedData { projectileId: string; wallId: string; position: Point }
-export interface DamageEventData { sourceId: string; targetId: string; amount: number; hp: number }
+export interface DamageEventData {
+  sourceId: string;
+  targetId: string;
+  amount: number;
+  appliedAmount: number;
+  hp: number;
+  damageKind: DamageKind;
+}

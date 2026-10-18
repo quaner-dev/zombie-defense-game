@@ -80,7 +80,7 @@ export class ProjectileTracks {
     this.hits=this.hits.filter(h=>time-h.time<.12);
     this.trails=this.trails.filter(t=>time-t.time<.10);
     this.muzzles=this.muzzles.filter(m=>time-m.time<.08);
-    return [...this.active.values()].map(t=>{
+    return Array.from(this.active.values(),t=>{
       const distance=Math.hypot(t.destination.x-t.origin.x,t.destination.y-t.origin.y);
       const effectiveSpeed=t.speed_px_per_s??speed;
       const age=Math.max(0,time-t.time);

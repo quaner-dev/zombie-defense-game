@@ -4,11 +4,16 @@ import { fatZombieModule } from './FatZombieModule.js';
 import { normalZombieModule } from './NormalZombieModule.js';
 import { riflemanModule } from './RiflemanModule.js';
 import { shieldModule } from './ShieldModule.js';
+import { sniperModule } from './SniperModule.js';
+import { engineerModule } from './EngineerModule.js';
 import { zombieMotherModule } from './ZombieMotherModule.js';
+import { gutZombieModule } from './GutZombieModule.js';
 import type { HumanModule, UnitModule, ZombieModule } from './UnitModule.js';
 export const UNIT_MODULES: Record<UnitType, UnitModule> = {
   rifleman: riflemanModule, flamethrower: flamethrowerModule, shield: shieldModule,
+  sniper: sniperModule, engineer: engineerModule,
   normal_zombie: normalZombieModule, fat_zombie: fatZombieModule, zombie_mother: zombieMotherModule,
+  gut_zombie: gutZombieModule,
 };
 export const HUMAN_UNIT_TYPES: readonly HumanUnitType[] = Object.freeze(Object.values(UNIT_MODULES)
   .filter((module): module is HumanModule => module.faction === 'human')

@@ -1,10 +1,13 @@
 import type { UnitStore } from './UnitStore.js';
 import type { BattleEvent, BattleResult } from './types.js';
+import type { CombatStats } from './CombatStats.js';
 
 export class ResultSystem {
   private result: BattleResult = 'running';
 
-  public constructor(private readonly store: UnitStore) {}
+  public constructor(private readonly store: UnitStore, private readonly stats?: CombatStats) {}
+
+  public getStats() { return this.stats?.snapshot(this.store.all()); }
 
   public getResult(): BattleResult { return this.result; }
 

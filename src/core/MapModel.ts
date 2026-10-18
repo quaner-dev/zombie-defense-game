@@ -102,10 +102,13 @@ export class MapModel {
       }
     };
     for (const route of definition.routes) {
-      for (const [index, point] of route.waypoints.entries()) {
-        validatePoint(point, index === 0);
+      for (let index = 0; index < route.waypoints.length; index++) {
+        validatePoint(route.waypoints[index], index === 0);
       }
       validatePoint(route.spawn, true);
+      if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
+        throw new Error(`Map route ${route.id} is missing a valid defend point`);
+      }
       validatePoint(route.defend);
       const end = route.waypoints[route.waypoints.length - 1];
       if (!end || end.y < this.defense_line_y) {
@@ -141,7 +144,7 @@ export class MapModel {
     }
   }
 
-  public getDoorStates(): DoorState[] { return [...this.doors.values()].map(door => ({ ...door })); }
+  public getDoorStates(): DoorState[] { return Array.from(this.doors.values(), door => ({ ...door })); }
 
   public damageDoor(id: string, damage: number): DoorState | null {
     const door = this.doors.get(id);
@@ -345,7 +348,8 @@ export class MapModel {
       graph.destinations.set(key, distances);
     }
     let best: Waypoint | null = null, length = Infinity;
-    for (const [i, corner] of graph.corners.entries()) {
+    for (let i = 0; i < graph.corners.length; i++) {
+      const corner = graph.corners[i];
       const approach = Math.hypot(corner.x - start.x, corner.y - start.y);
       if (approach < 1e-6 || approach + distances[i] >= length ||
           this.firstBlockingTerrain(start, corner, radius, ignoreDoors)) continue;
@@ -419,7 +423,8 @@ export class MapModel {
     return this.routes.get(id);
   }
 
-  public routeIds(): string[] { return [...this.routes.keys()]; }
+  // Creator may lower iterator spread to array concat; materialize it explicitly.
+  public routeIds(): string[] { return Array.from(this.routes.keys()); }
 
   public getSpawnPoint(id: string): SpawnPointDefinition | undefined {
     return this.spawnPoints.get(id);

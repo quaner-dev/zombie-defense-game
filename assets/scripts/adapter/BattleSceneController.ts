@@ -1,5 +1,5 @@
 import { _decorator, Camera, Canvas, Color, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
-import { BattleSession, unitConfig } from '../generated/core.js';
+import { BattleSession, CORE_BUILD_ID, unitConfig } from '../generated/core.js';
 import { fitMap, type Frame } from './contracts';
 import { arrow, color, graphics, palette, uiNode } from './drawing';
 import { MapView } from './MapView';
@@ -12,7 +12,7 @@ import { optionalWeChatVibration, VibrationAdapter } from './VibrationAdapter';
 import { diagnostics } from './RuntimeDiagnostics';
 const {ccclass}=_decorator;
 diagnostics.install();
-diagnostics.info('bootstrap.controller-module-ready');
+diagnostics.info('bootstrap.controller-module-ready',{coreBuild:CORE_BUILD_ID});
 @ccclass('BattleSceneController')
 export class BattleSceneController extends Component {
   public readonly performance=new PerfBudget();

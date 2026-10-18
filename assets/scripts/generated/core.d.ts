@@ -5,3 +5,5 @@ export type { Unit, Point, BattleSnapshot, BattleEvent } from '../../../dist/coc
 export type { MapModel } from '../../../dist/cocos-types/src/core/MapModel.js';
 export { default as mapConfig } from '../../../config/map.json';
 export { default as unitConfig } from '../../../config/units.json';
+
+export declare const CORE_BUILD_ID: string;

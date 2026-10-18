@@ -15,17 +15,41 @@ interface PendingWave {
   spawns: PendingSpawn[];
 }
 
+export interface ContinuousSpawnDefinition {
+  totalTarget: number;
+  interval_s: number;
+  batchSize: number;
+  spawnPoints: string[];
+  distribution: Record<string, number>;
+  specialRatios?: { gut_zombie?: number };
+}
+
 /** Turns scheduled wave declarations into time-based admissions at the map edge. */
 export class SpawnSystem {
   private pending: PendingWave[] = [];
   private spawned = 0;
   private offsets = new Map<string, number>();
+  private continuous: ContinuousSpawnDefinition | null = null;
+  private nextContinuousTime_s = 0;
+  private continuousGenerated = 0;
+  private continuousGutSpawned = 0;
+  private continuousCompletionEmitted = false;
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
   public reset(): void { this.pending = []; this.spawned = 0; this.offsets.clear(); }
   public get spawnedCount(): number { return this.spawned; }
   public hasPending(): boolean { return this.pending.length > 0; }
+  public configureContinuous(definition: ContinuousSpawnDefinition): void {
+    this.continuous = definition;
+    this.nextContinuousTime_s = 0;
+    this.continuousGenerated = 0;
+    this.continuousGutSpawned = 0;
+    this.continuousCompletionEmitted = false;
+  }
+  public isGenerationComplete(): boolean {
+    return this.continuous ? this.continuousGenerated >= this.continuous.totalTarget : false;
+  }
 
   public enqueue(event: WaveSpawnEventData): void {
     this.pending.push({
@@ -41,6 +65,46 @@ export class SpawnSystem {
 
   public update(time_s: number): BattleEvent[] {
     const events: BattleEvent[] = [];
+    if (this.continuous) {
+      while (this.continuousGenerated < this.continuous.totalTarget && this.nextContinuousTime_s <= time_s + 1e-9) {
+        const remaining = this.continuous.totalTarget - this.continuousGenerated;
+        const count = Math.min(this.continuous.batchSize, remaining);
+        const specialTarget = Math.ceil(this.continuous.totalTarget * (this.continuous.specialRatios?.gut_zombie ?? 0));
+        const batchSpawns: WaveSpawnEventData['spawns'] = [];
+        for (let index = 0; index < count; index++) {
+          const pointIndex = index % this.continuous.spawnPoints.length;
+          const spawnPoint = this.continuous.spawnPoints[pointIndex];
+          const route = this.map.routeIds()[pointIndex % Math.max(1, this.map.routeIds().length)];
+          const unitType = this.continuousGutSpawned < specialTarget ? 'gut_zombie' : 'normal_zombie';
+          const key = spawnPoint;
+          const offset = this.offsets.get(key) ?? 0;
+          const positions = this.map.spawnPositions(route, 1, spawnPoint, offset);
+          this.offsets.set(key, offset + positions.length);
+          for (const position of positions) {
+            const radius = getZombieModule(unitType).getStats().diameter_px / 2;
+            this.store.spawn(unitType, this.map.walkablePoint(position, radius), route, spawnPoint);
+            this.spawned++;
+          }
+          this.continuousGenerated++;
+          if (unitType === 'gut_zombie') this.continuousGutSpawned++;
+          const existing = batchSpawns.find(item => item.unitType === unitType && item.spawnPoint === spawnPoint);
+          if (existing) existing.count++;
+          else batchSpawns.push({ unitType, route, spawnPoint, count: 1 });
+        }
+        events.push({ type: 'zombie_batch_spawn', time_s: this.nextContinuousTime_s, data: {
+          waveIndex: 0, batchIndex: Math.floor(this.continuousGenerated / this.continuous.batchSize) - 1,
+          batchSize: count, spawns: batchSpawns,
+        } });
+        this.nextContinuousTime_s += this.continuous.interval_s;
+      }
+      if (this.isGenerationComplete() && !this.continuousCompletionEmitted) {
+        this.continuousCompletionEmitted = true;
+        events.push({ type: 'generation_complete', time_s, data: {
+          generated: this.continuousGenerated, target: this.continuous.totalTarget,
+        } });
+      }
+      return events;
+    }
     const due = this.pending.sort((a, b) => a.nextBatchTime_s - b.nextBatchTime_s || a.waveIndex - b.waveIndex);
     for (const wave of due) {
       while (wave.nextBatchTime_s <= time_s + 1e-9 && wave.spawns.some(item => item.remaining > 0)) {

@@ -99,11 +99,12 @@ export class HudController {
     const scale=this.menuScale=Math.min(1,safe.width/1040,safe.height/1800);
     this.menuTitle.node.setPosition(cx,cy+620*scale);this.menuTitle.node.setScale(scale,scale,1);
     this.menuHint.node.setPosition(cx,cy-610*scale);this.menuHint.node.setScale(scale,scale,1);
-    for(const [i,box] of this.modeBoxes.entries()){
+    for(let i=0;i<this.modeBoxes.length;i++){
+      const box=this.modeBoxes[i];
       Object.assign(box,{x:cx-430*scale,y:cy+(i===0?120:-220)*scale,width:860*scale,height:240*scale});
       this.modeLabels[i].node.setPosition(cx,box.y+box.height/2);this.modeLabels[i].node.setScale(scale,scale,1);
     }
-    for(const [i] of SCENES.entries()){
+    for(let i=0;i<SCENES.length;i++){
       const box=this.sceneBoxes[i];
       Object.assign(box,{x:cx-430*scale,y:cy+(240-i*360)*scale-150*scale,width:860*scale,height:300*scale});
       this.sceneLabels[i].node.setPosition(cx+90*scale,box.y+box.height/2);this.sceneLabels[i].node.setScale(scale,scale,1);
@@ -154,7 +155,7 @@ export class HudController {
       this.waveBanner.node.active=false;this.backdrop(255);this.buttons();
       this.menuTitle.string=this.session.screen==='menu'?'四向僵尸防守\n选择出发方式':'场景演练\n选择作战地点';
       this.menuHint.string=this.session.screen==='menu'?'每个场景抵御 3 波尸潮\n按住士兵并拖动，利用墙体调整阵地':'选择任一场景开始独立挑战\n故事模式从小屋开始，通关后进入大楼楼下';
-      if(this.session.screen==='scenes')for(const [i,scene] of SCENES.entries())this.thumbnail(scene,this.sceneBoxes[i]);
+      if(this.session.screen==='scenes')for(let i=0;i<SCENES.length;i++)this.thumbnail(SCENES[i],this.sceneBoxes[i]);
       return;
     }
     if(s.result!=='running')this.backdrop(178);

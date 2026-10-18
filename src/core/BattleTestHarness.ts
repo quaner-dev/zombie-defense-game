@@ -9,6 +9,7 @@ import { CombatSystem } from './CombatSystem.js';
 import { ProjectileSystem } from './ProjectileSystem.js';
 import { ResultSystem } from './ResultSystem.js';
 import { SpawnSystem } from './SpawnSystem.js';
+import { CombatStats } from './CombatStats.js';
 import type { BattleConfig, BattleEvent, BattleSnapshot, HumanUnitType, Unit } from './types.js';
 import { HUMAN_UNIT_TYPES } from './units/index.js';
 
@@ -33,6 +34,7 @@ export class BattleTestHarness {
   private projectiles: ProjectileSystem | null = null;
   private results: ResultSystem | null = null;
   private spawnSystem: SpawnSystem | null = null;
+  private readonly stats = new CombatStats();
 
   public constructor(
     config: BattleConfig = DEFAULT_BATTLE_CONFIG,
@@ -46,6 +48,7 @@ export class BattleTestHarness {
   }
 
   public start(levelId: string, _seed: number): void {
+    this.started = false;
     this.snapshot = this.initialSnapshot();
     this.events = [];
     this.deploymentTime_s = 0;
@@ -58,26 +61,38 @@ export class BattleTestHarness {
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
+    if (this.waveManager.getMapId() === 'LV02_building_courtyard') {
+      this.spawnSystem.configureContinuous({
+        totalTarget: 720, interval_s: 0.35, batchSize: 10,
+        spawnPoints: ['north', 'south', 'east', 'west'],
+        distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 },
+        specialRatios: { gut_zombie: 0.05 },
+      });
+    }
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
-    this.combat = new CombatSystem(this.units, this.mapModel);
+    this.stats.reset();
+    this.combat = new CombatSystem(this.units, this.mapModel, this.stats);
     this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = this.mapModel.routeIds();
-    if (!routes.length) throw new Error(`Level ${this.levelId} map ${this.waveManager.getMapId()} must define at least one route`);
+    if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
     const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
     // Deploy one squad around the middle route instead of splitting it across lanes.
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
     if (!route) {
-      throw new Error(`Level ${this.levelId} map ${this.waveManager.getMapId()} references missing deployment route ${routeId}`);
+      throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} references missing deployment route ${routeId}`);
     }
     if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
-      throw new Error(`Level ${this.levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
+      throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
     }
-    for (const [index, position] of formationPositions(this.initialHumanCount, route.defend, this.mapModel).entries()) {
+    const positions = formationPositions(this.initialHumanCount, route.defend, this.mapModel);
+    for (let index = 0; index < positions.length; index++) {
+      const position = positions[index];
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
+      this.stats.register(unit);
       unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
     this.started = true;
@@ -190,13 +205,16 @@ export class BattleTestHarness {
   }
 
   private allZombieBatchesSpawned(): boolean {
-    return this.waveManager?.allWavesSpawned() === true && !this.spawnSystem?.hasPending();
+    return this.spawnSystem?.isGenerationComplete() === true ||
+      (this.waveManager?.allWavesSpawned() === true && !this.spawnSystem?.hasPending());
   }
 
   private resolveFrame(): void {
     const living = this.units.living();
     this.snapshot.aliveHumans = living.filter(unit => unit.faction === 'human').length;
     this.snapshot.aliveZombies = living.filter(unit => unit.faction === 'zombie').length;
+    this.snapshot.generationComplete = this.allZombieBatchesSpawned();
+    this.snapshot.stats = this.stats.snapshot(this.units.all());
     for (const unit of this.units.all()) {
       if (unit.breached && !this.snapshot.breachedRoutes.includes(unit.routeId)) {
         this.snapshot.breachedRoutes.push(unit.routeId);
@@ -216,6 +234,8 @@ export class BattleTestHarness {
       waveIndex: 0,
       breachedRoutes: [],
       result: 'running',
+      stats: this.stats.snapshot(this.units.all()),
+      generationComplete: false,
     };
   }
 }

@@ -18,12 +18,12 @@ export class ProjectileSystem {
   }
 
   public getProjectiles(): Projectile[] {
-    return cloneData([...this.projectiles.values()]);
+    return cloneData(Array.from(this.projectiles.values()));
   }
 
   /** A terminal battle cancels in-flight shots without applying later damage. */
   public expireAll(time_s: number): BattleEvent[] {
-    const events = [...this.projectiles.keys()].map(projectileId => ({
+    const events = Array.from(this.projectiles.keys(), projectileId => ({
       type: 'projectile_expired', time_s, data: { projectileId },
     }));
     this.projectiles.clear();
@@ -34,7 +34,7 @@ export class ProjectileSystem {
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     for (const shot of this.combat.drainShots()) this.projectiles.set(shot.id, shot);
     const events: BattleEvent[] = [];
-    for (const shot of this.projectiles.values()) {
+    for (const shot of Array.from(this.projectiles.values())) {
       const previous = { ...shot.position }, previousElapsed = shot.elapsed_s;
       const distance = Math.hypot(shot.destination.x - shot.origin.x, shot.destination.y - shot.origin.y);
       const flightDuration = Math.min(distance / shot.speed_px_per_s, shot.max_flight_time_s);
@@ -98,9 +98,24 @@ export class ProjectileSystem {
         // A target that moved behind cover during flight cannot receive a remote
         // hit through a wall when the projectile reaches its captured destination.
         if (shot.splashRadius_px > 0) applyFlameTick(terminalTime_s);
+        else if (shot.projectileKind === 'sniper') {
+          const dx = shot.destination.x - shot.origin.x, dy = shot.destination.y - shot.origin.y;
+          const length = Math.max(1, Math.hypot(dx, dy));
+          const maxTargets = shot.penetrationCount ?? 3;
+          const hitTargets = this.store.living().filter(candidate => candidate.faction === 'zombie' &&
+            !this.map.firstBlockingTerrain(shot.origin, candidate.position, 0, true) &&
+            Math.abs((candidate.position.x - shot.origin.x) * dy - (candidate.position.y - shot.origin.y) * dx) / length <= Math.max(10, candidate.radius_px) &&
+            ((candidate.position.x - shot.origin.x) * dx + (candidate.position.y - shot.origin.y) * dy) >= 0)
+            .sort((a, b) => Math.hypot(a.position.x - shot.origin.x, a.position.y - shot.origin.y) - Math.hypot(b.position.x - shot.origin.x, b.position.y - shot.origin.y) || (a.id < b.id ? -1 : 1))
+            .slice(0, maxTargets);
+          const multiplier = shot.penetrationDamageMultiplier ?? 0.8;
+          hitTargets.forEach((candidate, index) => {
+            events.push(...this.combat.applyDamage(candidate.id, shot.damage * Math.pow(multiplier, index), shot.sourceId, terminalTime_s, 'sniper', shot.origin));
+          });
+        }
         else if (target && !this.map.firstBlockingTerrain(shot.origin, target.position, 0, true) &&
             !this.map.firstBlockingTerrain(shot.position, target.position, 0, true)) {
-          events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+          events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s, shot.projectileKind === 'machine_gun' ? 'machine_gun' : 'bullet', shot.origin));
         }
       }
       if (shot.elapsed_s + 1e-9 >= duration) {

@@ -13,7 +13,7 @@ export class MovementSystem {
     const starts = new Map(humans.map(unit => [unit.id, { ...unit.position }]));
     const tolerance = unitConfig.movement.arrival_tolerance_px;
     for (const unit of this.store.living()) {
-      if (unit.state !== 'Moving' || !unit.moveTarget) continue;
+      if (unit.state !== 'Moving' || !unit.moveTarget || unit.state === 'Dismantling' || unit.state === 'Deploying' || unit.state === 'Deployed' || unit.state === 'RetractingFlame' || unit.state === 'ReleasingFlame' || unit.state === 'Overheated' || unit.state === 'Cooling') continue;
       const remaining = Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y);
       const radius = unit.radius_px ?? 7;
       const waypoint = this.map ? this.map.nextWaypoint(unit.position, unit.moveTarget, radius) : unit.moveTarget;

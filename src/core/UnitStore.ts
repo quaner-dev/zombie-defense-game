@@ -20,7 +20,9 @@ export class UnitStore {
       state: module.initialState,
       routeId, targetId: null, moveTarget: null,
       attackElapsed_s: 0, breached: false, spawnPointId, climbingWallId: null,
-      climbTarget: null, stackLevel: 0, active: true,
+      climbTarget: null, stackLevel: 0, weaponHeat: 0, weaponCooldown_s: 0,
+      stateElapsed_s: 0, facing: { x: 0, y: -1 }, storedGutUnitIds: [],
+      storedInGutById: null, suicideTriggerId: null, active: true,
     };
     const unit = Object.assign(this.pool.pop() ?? {}, fresh) as Unit;
     this.units.set(unit.id, unit);
@@ -28,9 +30,9 @@ export class UnitStore {
   }
 
   public get(id: string): Unit | undefined { return this.units.get(id); }
-  public all(): Unit[] { return [...this.units.values()]; }
+  public all(): Unit[] { return Array.from(this.units.values()); }
   public living(): Unit[] {
-    return this.all().filter(unit => unit.active && unit.hp > 0 && unit.state !== 'Dead');
+    return this.all().filter(unit => unit.active && unit.hp > 0 && unit.state !== 'Dead' && unit.state !== 'StoredInGut');
   }
 
   public transform(id: string, unitType: UnitType): Unit | undefined {
@@ -52,6 +54,13 @@ export class UnitStore {
     unit.climbingWallId = null;
     unit.climbTarget = null;
     unit.stackLevel = 0;
+    unit.weaponHeat = 0;
+    unit.weaponCooldown_s = 0;
+    unit.stateElapsed_s = 0;
+    unit.facing = { x: 0, y: -1 };
+    unit.storedGutUnitIds = [];
+    unit.storedInGutById = null;
+    unit.suicideTriggerId = null;
     return unit;
   }
 
@@ -66,6 +75,11 @@ export class UnitStore {
     unit.climbingWallId = null;
     unit.climbTarget = null;
     unit.stackLevel = 0;
+    unit.stateElapsed_s = 0;
+    unit.weaponCooldown_s = 0;
+    unit.storedGutUnitIds = [];
+    unit.storedInGutById = null;
+    unit.suicideTriggerId = null;
     return true;
   }
 
@@ -80,6 +94,6 @@ export class UnitStore {
   }
 
   public clear(): void {
-    for (const id of this.units.keys()) this.remove(id);
+    for (const unit of this.all()) this.remove(unit.id);
   }
 }

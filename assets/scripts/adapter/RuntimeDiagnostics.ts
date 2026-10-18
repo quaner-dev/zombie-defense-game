@@ -25,7 +25,7 @@ function snapshot(value:unknown,seen=new Set<object>(),depth=0):unknown {
     const result:Record<string,unknown>={};
     // Error properties are often non-enumerable, including across JS realms.
     const keys=new Set([...Object.keys(value).slice(0,80),'name','message','stack']);
-    for(const key of keys){
+    for(const key of Array.from(keys)){
       try{const item=(value as Record<string,unknown>)[key];if(item!==undefined)result[key]=snapshot(item,seen,depth+1);}
       catch{result[key]='[Unreadable]';}
     }
