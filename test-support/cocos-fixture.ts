@@ -4,7 +4,7 @@ import vm from 'node:vm';
 
 // Only the unavailable cc event/render boundary is doubled. Production controller,
 // HUD, InputManager, DragCommand and bundled core all execute unchanged.
-export function fixture(real=false,platform?:unknown,diagnostics:{console:unknown}={console:{warn(){}}},initialViewport?:{origin:{x:number;y:number};size:{width:number;height:number};safe?:{x:number;y:number;width:number;height:number}}) {
+export function fixture(real=false,platform?:unknown,diagnostics:{console:unknown}={console:{warn(){}}},initialViewport?:{origin:{x:number;y:number};size:{width:number;height:number};safe?:{x:number;y:number;width:number;height:number}},atMenu=false) {
   const listeners=new Map<string,{fn:Function;owner:any}[]>();
   const input={on(type:string,fn:Function,owner:any){listeners.set(type,[...(listeners.get(type)??[]),{fn,owner}]);},
     off(type:string,fn:Function,owner:any){listeners.set(type,(listeners.get(type)??[]).filter(l=>l.fn!==fn||l.owner!==owner));}};
@@ -47,6 +47,9 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
   if(!real)Object.assign(controller,{controls,hud,units:{clear(){}},projectiles:{clear(){}},draw:()=>hud.render()});
   const touch=(type:string,id:number,x:number,y:number)=>{for(const l of listeners.get(type)??[])l.fn.call(l.owner,{getID:()=>id,getUILocation:()=>({x,y})});};
   const button=(index:number,type:string,id=1)=>{const b=hud.boxes[index];touch(type,id,b.x+b.width/2,b.y+b.height/2);};
+  // Existing combat regressions enter through the production story button.
+  // New flow regressions opt into the untouched initial menu with atMenu=true.
+  if(real&&!atMenu){button(0,'start');button(0,'end');}
   const group=()=>{const u=controller.session.battle.getUnits().find((u:any)=>u.faction==='human');return {x:u.position.x,y:2400-u.position.y};};
   return {viewport,controller,hud,controls,root,touch,button,group,unitView:new exports.UnitView(new Node('Field')),platform,setTime:(ms:number)=>{now=ms;},advanceTime:(ms:number)=>{now+=ms;}};
 }

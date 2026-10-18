@@ -19,6 +19,7 @@ Cocos 版本锁定 3.8.8，声明依赖也是 `@cocos/creator-types@3.8.8`。esb
 | `npm test` | pretest 先同步，再由 Node 默认发现完整测试；含较慢性能和源码工作流测试 |
 | `npm run test:adapter` | pretest:adapter 先同步，再运行适配层测试 |
 | `npm run test-adapter` | 上一命令的兼容别名 |
+| `npm run test:scenes` | 先同步核心，再验证场景配置、模式入口、选关、重开和故事推进 |
 | `npm run test:acceptance` | 直接使用源码核心的验收测试，不依赖生成包 |
 | `npm run acceptance:report` | 默认覆盖已保存的 JSON 报告；场景断言失败也写报告并返回非零 |
 | `npm run test:performance` | 先同步；时钟/生命周期回归含一次完整战斗和 19 次快速重开，不是设备基准 |
@@ -41,8 +42,9 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 |---|---|
 | [map.json](../config/map.json) | 1080×2400、战场边界、防线、112px 选择半径、四边出生点、墙体 terrain；地图默认注册键为 default，map_id 是描述字段 |
 | [levels.json](../config/levels.json) | LV01_zombie_wave 的 mapId、按时排序的 waves、各路类型与数量；默认 0/7/20s、50/100/200 只 |
+| [scenes/courtyard.json](../config/scenes/courtyard.json) | 第二关的矩形建筑、出生点、三波、文案与配色；由 src/scenes/index.ts 的列表接入 |
 | [units.json](../config/units.json) | 生命、速度、攻击、弹道与阵形；当前步枪0.35s一发、僵尸60HP/41.9px/s/0.13s |
-| [core/config.ts](../src/core/config.ts) | 3s 布阵、50 初始人类；不是所有参数都在 JSON |
+| [core/config.ts](../src/core/config.ts) | 3s 布阵、当前默认 15 初始人类；不是所有参数都在 JSON |
 
 有效出生阵列示例（map.json 中的一个字段，不是完整配置）：
 
@@ -60,7 +62,7 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 
 - `test/core`：单位、命令、波次、移动、战斗、结果与生命周期边界。
 - `test/acceptance`：W1–W7、整局、报告及固定本路后撤。
-- `test/adapter`：坐标/手势契约、真实 controller/input/view 结合 cc 边界替身、固定步进分段等价及移动组选中 ID。
+- `test/adapter`：坐标/手势契约、真实 controller/input/view 结合 cc 边界替身、固定步进分段等价及移动中捕获的单兵 ID。
 - `test/performance`：统计、一次实际适配战斗和 19 次快速重开清理；不含真实渲染器、堆或 GPU。
 - [source-workflows.test.mjs](../test/workflows/source-workflows.test.mjs)：复制无 Git/依赖/生成物的源码，真实 npm ci，验证入口自动再生、损坏产物替换、含空格路径及 foreign cwd；会下载依赖。
 
@@ -76,7 +78,7 @@ node --test test/workflows/source-workflows.test.mjs
 
 ## 编辑器与构建
 
-遵循 [上手流程](getting-started.md)，同步后用 Creator 3.8.8 导入并保存 Battle.scene。当前场景在加载时建立 Canvas、UI Camera、Graphics 与 Labels，无需贴图或 prefab；没有主菜单或独立 Result 场景。Web Mobile 与 WeChat Mini Game 都通过 Creator Project → Build，选择 Battle 启动场景。微信还需本地授权的 AppID、开发者工具和真机；仓库没有经验证的无人值守构建命令，也不把凭据写入文档或配置。
+遵循 [上手流程](getting-started.md)，同步后用 Creator 3.8.8 导入并保存 Battle.scene。当前场景在加载时建立 Canvas、UI Camera、Graphics 与 Labels，无需贴图或 prefab；模式选择、场景演练与结算均在通用 Battle 场景中呈现。新增场景的模块约定见 [场景设计稿](10-story-scenes-design.md)。Web Mobile 与 WeChat Mini Game 都通过 Creator Project → Build，选择 Battle 启动场景。微信还需本地授权的 AppID、开发者工具和真机；仓库没有经验证的无人值守构建命令，也不把凭据写入文档或配置。
 
 正常构建不运行 `scripts/author-cocos-scene.py`。它是依赖历史官方场景样本输入的一次性生成工具，不是源码交付可保证复现的入口；若需重建用编辑器流程，并保留资产 UUID。
 
@@ -88,7 +90,7 @@ node --test test/workflows/source-workflows.test.mjs
 | JSON import、tsx 或 Node API 错误 | 检查独立 Node 版本是否与 v26.7.0 记录一致；其他版本先验证再声明支持 |
 | esbuild 安装脚本策略警告/二进制不可用 | 记录 npm 的真实提示，检查本地审批策略；以 sync/bundle 是否实际成功为准，勿全局盲目关闭限制 |
 | 场景 missing script、Canvas 重叠 | 保留 .meta，检查首条错误，采用上手文档的新场景挂组件流程 |
-| 切后台后不动、轻点无命令 | 主动 RESUME；确认群体至少两人、拖拽阈值、HUD 排除与冷却 |
+| 切后台后不动、轻点无命令 | 主动 RESUME；确认按下点附近有活兵、拖拽阈值、HUD 排除与冷却 |
 | 卡顿后战斗钟落后 | controller 每次 update 截 dt 到 50ms，是现有 stall 策略；不是完整墙钟追赶 |
 | 工作流测试下载失败 | 检查网络与 npm registry；报告未验证，不伪称源码交付回归通过 |
 | 字体、触摸、安全区、平台能力异常 | Creator/设备核查，cc 替身测试不能诊断真实引擎渲染；确认 performance.now 可用且单调 |

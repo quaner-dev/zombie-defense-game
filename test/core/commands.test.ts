@@ -29,7 +29,7 @@ function setup() {
   return { store, commands, movement };
 }
 
-test('radius selects every living rifleman through 112px, not nearest or diagonal outsiders', () => {
+test('radius selects only the nearest living human through 112px', () => {
   const { store, commands } = setup();
   const a = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   const b = store.spawn('rifleman', { x: 372, y: 400 }, 'A');
@@ -40,10 +40,10 @@ test('radius selects every living rifleman through 112px, not nearest or diagona
   const event = commands.issueMoveAt(300, 400, 600, 800, 2)!;
   assert.equal(event.type, 'group_command');
   assert.equal(event.time_s, 2);
-  assert.deepEqual(event.data.unitIds, [a.id, b.id]);
+  assert.deepEqual(event.data.unitIds, [a.id]);
   assert.deepEqual(event.data.target, { x: 600, y: 800 });
   assert.deepEqual([a.state, b.state, outside.state, dead.state, zombie.state],
-    ['Moving', 'Moving', 'Idle', 'Dead', 'Advancing']);
+    ['Moving', 'Idle', 'Idle', 'Dead', 'Advancing']);
 });
 
 test('blank area produces no command while an isolated individual can be moved', () => {
@@ -60,16 +60,16 @@ test('formation is deterministic, loosely scattered around its target, clamped a
   const a = store.spawn('rifleman', { x: 300, y: 400 }, 'A');
   const b = store.spawn('rifleman', { x: 320, y: 400 }, 'A');
   a.targetId = b.id;
-  commands.issueMoveAt(300, 400, 600, 800, 0);
+  commands.issueMoveGroup([a.id, b.id], 600, 800, 0);
   const destinations = [a.moveTarget!, b.moveTarget!];
   assert.notDeepEqual(destinations[0], destinations[1]);
   assert.ok(Math.abs(destinations.reduce((sum,p)=>sum+p.x,0)/2-600)<1e-9);
   assert.ok(Math.abs(destinations.reduce((sum,p)=>sum+p.y,0)/2-800)<1e-9);
   assert.equal(a.targetId, null);
-  commands.issueMoveAt(300, 400, 600, 800, 1);
+  commands.issueMoveGroup([a.id, b.id], 600, 800, 1);
   assert.notDeepEqual(a.moveTarget, b.moveTarget);
   for (const [x, y] of [[-100, -100], [2000, 3000]]) {
-    commands.issueMoveAt(300, 400, x, y, 2);
+    commands.issueMoveGroup([a.id, b.id], x, y, 2);
     for (const unit of [a, b]) {
       assert.ok(unit.moveTarget!.x >= 60 && unit.moveTarget!.x <= 1020);
       assert.ok(unit.moveTarget!.y >= 180 && unit.moveTarget!.y <= 2160);
@@ -157,17 +157,20 @@ test('a soldier walks around a wall and resumes idle on the other side', () => {
   assert.equal(events[0].type, 'unit_state_changed');
 });
 
-test('harness publishes Moving transitions for each selected unit and replacement actually redirects movement', () => {
+test('harness publishes a Moving transition for the nearest selected unit and redirects it', () => {
   const harness = new BattleTestHarness();
   harness.start('LV01_zombie_wave', 1);
   harness.endDeployment();
+  const beforeCommand = harness.getUnits().filter(u => u.faction === 'human');
+  const selected = beforeCommand.sort((a, b) => Math.hypot(a.position.x - 540, a.position.y - 1370) -
+    Math.hypot(b.position.x - 540, b.position.y - 1370) || a.id.localeCompare(b.id))[0];
   harness.issueMoveAt(540, 1370, 180, 1370);
   const transitions = harness.getEvents().filter(e => e.type === 'unit_state_changed');
-  assert.equal(transitions.length, 17);
+  assert.equal(transitions.length, 1);
   assert.ok(transitions.every(e => (e.data as { to: string }).to === 'Moving'));
   harness.advance(0.1);
-  const before = harness.getUnits().find(u => u.routeId === 'B')!;
-  harness.issueMoveAt(530, 1370, 900, 1370);
+  const before = harness.getUnits().find(u => u.id === selected.id)!;
+  harness.issueMoveGroup([selected.id], 900, 1370);
   harness.advance(0.1);
   const after = harness.getUnits().find(u => u.id === before.id)!;
   assert.ok(after.position.x > before.position.x);
@@ -175,23 +178,25 @@ test('harness publishes Moving transitions for each selected unit and replacemen
   assert.equal(harness.getEvents().filter(e => e.type === 'group_command').length, 2);
 });
 
-test('harness deploys 50 riflemen, moves a group, preserves public snapshot, and resets on restart', () => {
+test('harness deploys its configured soldiers, moves one, preserves the snapshot, and resets on restart', () => {
   const harness = new BattleTestHarness();
   harness.issueMoveAt(540, 1370, 180, 1370);
   harness.start('LV01_zombie_wave', 1);
-  assert.equal(harness.getUnits().length, 50);
+  const initialHumans = harness.getUnits().filter(u => u.faction === 'human');
+  assert.equal(initialHumans.length, harness.getInitialHumans());
   harness.issueMoveAt(540, 1370, 180, 1370);
   const command = harness.getEvents().filter(e => e.type === 'group_command');
   assert.equal(command.length, 1);
   const moving = harness.getUnits().filter(u => u.state === 'Moving');
-  assert.equal(moving.length, 17);
+  assert.equal(moving.length, 1);
   harness.advance(1);
-  assert.ok(harness.getUnits().some(u => u.state === 'Moving' && u.position.x < 500));
+  const movingAfterAdvance = harness.getUnits().find(u => u.id === moving[0].id);
+  assert.ok(movingAfterAdvance && movingAfterAdvance.state === 'Moving' && movingAfterAdvance.position.x < 520);
   assert.equal(harness.getSnapshot().time_s, 0);
   harness.advance(20);
   assert.ok(harness.getUnits().filter(u => u.faction === 'human').every(u => u.state !== 'Moving' && u.moveTarget === null));
   harness.start('LV01_zombie_wave', 1);
-  assert.equal(harness.getUnits().length, 50);
+  assert.equal(harness.getUnits().filter(u => u.faction === 'human').length, harness.getInitialHumans());
   assert.deepEqual(harness.getEvents(), []);
   assert.ok(harness.getUnits().every(u => u.state === 'Idle' && u.moveTarget === null));
   const copy = harness.getUnits();

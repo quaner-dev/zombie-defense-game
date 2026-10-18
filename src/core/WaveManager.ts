@@ -1,9 +1,11 @@
 import levelsJson from '../../config/levels.json' with { type: 'json' };
-import type { BattleEvent } from './types.js';
+import { SCENES } from '../scenes/index.js';
+import type { BattleEvent, WaveSpawnEventData } from './types.js';
 import type { MapModel } from './MapModel.js';
+import type { ZombieUnitType } from './types.js';
 
 export interface WaveSpawn {
-  unitType: string;
+  unitType: ZombieUnitType;
   route: string;
   count: number;
   spawnPoint?: string;
@@ -11,6 +13,8 @@ export interface WaveSpawn {
 
 export interface WaveDefinition {
   battleTime_s: number;
+  batchSize?: number;
+  batchInterval_s?: number;
   spawns: WaveSpawn[];
 }
 
@@ -32,14 +36,12 @@ export interface WaveScheduler {
   validateMap(map: MapModel): void;
 }
 
-export interface WaveSpawnEventData {
-  waveIndex: number;
-  battleTime_s: number;
-  spawns: WaveSpawn[];
-}
+export type { WaveSpawnEventData } from './types.js';
 
-const LEVEL_DEFINITIONS: Record<string, LevelDefinition> =
-  levelsJson as unknown as Record<string, LevelDefinition>;
+const LEVEL_DEFINITIONS: Record<string, LevelDefinition> = {
+  ...levelsJson as unknown as Record<string, LevelDefinition>,
+  ...Object.fromEntries(SCENES.map(scene => [scene.levelId, scene.level])),
+};
 
 /**
  * Emits each scheduled wave exactly once when battle time reaches its time.
@@ -62,6 +64,8 @@ export class WaveManager implements WaveScheduler {
         data: {
           waveIndex: this.nextWaveIndex,
           battleTime_s: wave.battleTime_s,
+          batchSize: wave.batchSize ?? Number.MAX_SAFE_INTEGER,
+          batchInterval_s: wave.batchInterval_s ?? 0,
           spawns: wave.spawns.map((spawn) => ({ ...spawn })),
         } satisfies WaveSpawnEventData,
       });
@@ -76,6 +80,12 @@ export class WaveManager implements WaveScheduler {
 
   public validateMap(map: MapModel): void {
     for (const wave of this.level.waves) {
+      if (wave.batchSize !== undefined && (!Number.isInteger(wave.batchSize) || wave.batchSize < 1)) {
+        throw new Error('Wave batch size must be a positive integer');
+      }
+      if (wave.batchInterval_s !== undefined && (!Number.isFinite(wave.batchInterval_s) || wave.batchInterval_s < 0)) {
+        throw new Error('Wave batch interval must be finite and non-negative');
+      }
       for (const spawn of wave.spawns) {
         if (!map.getRoute(spawn.route)) throw new Error(`Unknown spawn route: ${spawn.route}`);
         if (spawn.spawnPoint && !map.getSpawnPoint(spawn.spawnPoint)) {

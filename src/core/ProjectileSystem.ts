@@ -1,5 +1,4 @@
 import { cloneData } from './cloneData.js';
-import config from '../../config/units.json' with { type: 'json' };
 import type { CombatSystem, Projectile } from './CombatSystem.js';
 import type { MapModel } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
@@ -36,13 +35,12 @@ export class ProjectileSystem {
     for (const shot of this.projectiles.values()) {
       const previous = { ...shot.position }, previousElapsed = shot.elapsed_s;
       const distance = Math.hypot(shot.destination.x - shot.origin.x, shot.destination.y - shot.origin.y);
-      const duration = Math.min(distance / config.projectile.speed_px_per_s,
-        config.projectile.max_flight_time_s);
+      const duration = Math.min(distance / shot.speed_px_per_s, shot.max_flight_time_s);
       // Respect launch time and stop at arrival/lifetime even for oversized updates.
       shot.elapsed_s = Math.min(duration, shot.elapsed_s + Math.min(seconds,
         Math.max(0, time_s - shot.spawnedAt_s - shot.elapsed_s)));
       const fraction = distance === 0 ? 1 : Math.min(1,
-        shot.elapsed_s * config.projectile.speed_px_per_s / distance);
+        shot.elapsed_s * shot.speed_px_per_s / distance);
       shot.position = {
         x: shot.origin.x + (shot.destination.x - shot.origin.x) * fraction,
         y: shot.origin.y + (shot.destination.y - shot.origin.y) * fraction,
@@ -66,10 +64,20 @@ export class ProjectileSystem {
         data: { projectileId: shot.id, targetId: shot.targetId, position: { ...shot.position } } });
       const target = this.store.get(shot.targetId);
       // A target that moved behind cover during flight cannot receive a remote
-      // hit through the wall when the bullet reaches its captured destination.
+      // hit through the wall when the projectile reaches its captured destination.
       if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) &&
           !this.map.firstBlockingTerrain(shot.position, target.position)) {
-        events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+        if (shot.splashRadius_px > 0) {
+          const impacted = this.store.living().filter(candidate => candidate.faction === 'zombie' &&
+            Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px &&
+            !this.map.firstBlockingTerrain(shot.origin, candidate.position) &&
+            !this.map.firstBlockingTerrain(shot.position, candidate.position));
+          for (const candidate of impacted) {
+            events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, terminalTime_s));
+          }
+        } else {
+          events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+        }
       }
       events.push({ type: 'projectile_expired', time_s: terminalTime_s, data: { projectileId: shot.id } });
       this.projectiles.delete(shot.id);

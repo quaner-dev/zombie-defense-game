@@ -1,4 +1,6 @@
 export { BattleSession } from './BattleSession.js';
+export { SCENES } from '../scenes/index.js';
+export type { SceneDefinition } from '../scenes/types.js';
 export type { Unit, Point, BattleSnapshot, BattleEvent } from '../core/types.js';
 export type { MapModel } from '../core/MapModel.js';
 export { default as mapConfig } from '../../config/map.json' with { type: 'json' };

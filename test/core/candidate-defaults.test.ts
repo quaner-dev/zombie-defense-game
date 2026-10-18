@@ -4,7 +4,7 @@ import units from '../../config/units.json' with { type: 'json' };
 import map from '../../config/map.json' with { type: 'json' };
 import { MapModel, type MapDefinition } from '../../src/core/MapModel.js';
 
-test('calibrated defaults increase rifle cadence and zombie HP while preserving movement and damage', () => {
+test('balance defaults cap soldiers, increase rifle damage and double unit size', () => {
   assert.equal(units.normal_zombie.speed_px_per_s, 41.9);
   assert.equal(units.normal_zombie.attack_interval_s, 0.13);
   assert.equal(units.rifleman.attack_range_px, 260);
@@ -15,8 +15,10 @@ test('calibrated defaults increase rifle cadence and zombie HP while preserving 
   assert.equal(units.normal_zombie.hitPoints, 60);
   assert.equal(units.rifleman.attack_interval_s, 0.35);
   assert.equal(units.normal_zombie.damagePerHit, 10);
-  assert.equal(units.rifleman.damagePerHit, 10);
-  assert.deepEqual((map as any).spawn_layout, { columns: 25, spacing_px: 22 });
+  assert.equal(units.rifleman.damagePerHit, 30);
+  assert.equal(units.rifleman.diameter_px, 28);
+  assert.equal(units.normal_zombie.diameter_px, 32);
+  assert.deepEqual((map as any).spawn_layout, { columns: 25, spacing_px: 44 });
   assert.ok(map.routes.every(r => !('spawn_layout' in r)));
 });
 
@@ -27,8 +29,8 @@ test('zombies spawn in distinct spreads along all four battlefield edges', () =>
     assert.equal(new Set(positions.map(p => `${p.x},${p.y}`)).size, 50);
     if (side === 'north') assert.ok(positions.every(p => p.y < 230));
     if (side === 'south') assert.ok(positions.every(p => p.y > 2110));
-    if (side === 'east') assert.ok(positions.every(p => p.x > 990));
-    if (side === 'west') assert.ok(positions.every(p => p.x < 90));
+    if (side === 'east') assert.ok(positions.every(p => p.x >= 60 && p.x <= 1020 && p.y >= 180 && p.y <= 2160));
+    if (side === 'west') assert.ok(positions.every(p => p.x >= 60 && p.x <= 1020 && p.y >= 180 && p.y <= 2160));
   }
   const definition = structuredClone(map) as unknown as MapDefinition;
   (definition as any).spawn_layout = { columns: 3, spacing_px: 1000 };

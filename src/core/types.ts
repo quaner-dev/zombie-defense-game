@@ -1,7 +1,9 @@
 export type BattleResult = 'running' | 'win' | 'lose';
 
 export interface Point { x: number; y: number }
-export type UnitType = 'rifleman' | 'normal_zombie';
+export type HumanUnitType = 'rifleman' | 'flamethrower' | 'shield';
+export type ZombieUnitType = 'normal_zombie' | 'fat_zombie' | 'zombie_mother';
+export type UnitType = HumanUnitType | ZombieUnitType;
 export type UnitState = 'Idle' | 'Moving' | 'Aiming' | 'Firing' |
   'Advancing' | 'Climbing' | 'Breached' | 'Attacking' | 'Dead';
 
@@ -13,6 +15,7 @@ export interface Unit {
   velocity: Point;
   hp: number;
   maxHp: number;
+  radius_px: number;
   speed_px_per_s: number;
   state: UnitState;
   routeId: string;
@@ -33,14 +36,17 @@ export interface MoveGroupCommand {
   issuedAt_s: number;
 }
 
-export interface GroupCommandEvent extends BattleEvent {
+export interface GroupCommandEvent {
   type: 'group_command';
+  time_s: number;
   data: MoveGroupCommand;
 }
 
 export interface BattleConfig {
   deploymentDuration_s: number;
   initialHumans: number;
+  /** Relative weights used to compose the initial human squad. */
+  initialHumanTypeWeights?: Partial<Record<HumanUnitType, number>>;
 }
 
 export interface BattleSnapshot {
@@ -53,8 +59,47 @@ export interface BattleSnapshot {
   result: BattleResult;
 }
 
-export interface BattleEvent {
-  type: string;
-  time_s: number;
-  data: unknown;
+export type BattleEvent =
+  | GroupCommandEvent
+  | TimedEvent<'wave_spawn', WaveSpawnEventData>
+  | TimedEvent<'zombie_batch_spawn', ZombieBatchSpawnEventData>
+  | TimedEvent<'projectile_spawned', ProjectileEventData>
+  | TimedEvent<'projectile_hit', ProjectileImpactData>
+  | TimedEvent<'projectile_blocked', ProjectileBlockedData>
+  | TimedEvent<'projectile_expired', { projectileId: string }>
+  | TimedEvent<'damage', DamageEventData>
+  | TimedEvent<'unit_died', { unitId: string; faction: Unit['faction'] }>
+  | TimedEvent<'unit_state_changed', { unitId: string; from: UnitState; to: UnitState }>
+  | TimedEvent<'route_breached', { routeId: string; unitId: string }>
+  | TimedEvent<'wall_climb_started', { wallId: string; stackCount: number; requiredStack: number; unitIds: string[] }>
+  | TimedEvent<'wall_climbed', { unitId: string; wallId: string | null }>
+  | TimedEvent<'unit_infected', { sourceId: string; humanId: string; zombieId: string }>
+  | TimedEvent<string, unknown>
+  | TimedEvent<'running' | 'win' | 'lose', { result: BattleResult }>;
+
+export interface TimedEvent<T extends string, D> { type: T; time_s: number; data: D }
+export interface WaveSpawn { unitType: ZombieUnitType; route: string; count: number; spawnPoint?: string }
+export interface WaveSpawnEventData {
+  waveIndex: number; battleTime_s: number; batchSize: number; batchInterval_s: number; spawns: WaveSpawn[];
 }
+export interface ZombieBatchSpawnEventData { waveIndex: number; batchIndex: number; batchSize: number; spawns: WaveSpawn[] }
+export interface ProjectileEventData {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  origin: Point;
+  destination: Point;
+  position: Point;
+  damage: number;
+  /** Visual and simulation identity of the projectile. */
+  projectileKind: 'bullet' | 'flame';
+  /** Zero means a single-target hit; positive values are splash radii. */
+  splashRadius_px: number;
+  speed_px_per_s: number;
+  max_flight_time_s: number;
+  spawnedAt_s: number;
+  elapsed_s: number;
+}
+export interface ProjectileImpactData { projectileId: string; targetId: string; position: Point }
+export interface ProjectileBlockedData { projectileId: string; wallId: string; position: Point }
+export interface DamageEventData { sourceId: string; targetId: string; amount: number; hp: number }

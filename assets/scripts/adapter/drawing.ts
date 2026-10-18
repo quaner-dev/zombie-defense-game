@@ -1,6 +1,6 @@
 import { Color, Graphics, Layers, Node, UITransform } from 'cc';
 import type { Point } from './contracts';
-export const palette={bg:'#0B0B0F',wall:'#7A7A85',human:'#63D68F',zombie:'#9F8BE8',command:'#6ED4DB',warning:'#E06E88'};
+export const palette={bg:'#0B0B0F',wall:'#7A7A85',human:'#63D68F',flame:'#F04438',flameGlow:'#FFB340',shield:'#B9D7E8',zombie:'#9F8BE8',fatZombie:'#CB7356',zombieMother:'#D5C84E',command:'#6ED4DB',warning:'#E06E88'};
 export function color(hex:string,alpha=255):Color {const c=new Color();Color.fromHEX(c,hex);c.a=alpha;return c;}
 export function uiNode(name:string,parent:Node,width=1080,height=2400):Node {
   const n=new Node(name);n.layer=Layers.Enum.UI_2D;n.parent=parent;

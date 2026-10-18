@@ -16,6 +16,8 @@
     "test:coverage:core": "node --import tsx --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include='src/**/*.ts' test/core/*.test.ts",
     "test:coverage:adapter": "npm run sync:core && node --import tsx --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include='assets/scripts/adapter/*.ts' --test-coverage-include='src/adapter/*.ts' test/adapter/*.test.ts",
     "test:adapter": "node --import tsx --test test/adapter/*.test.ts",
+    "pretest:scenes": "npm run sync:core",
+    "test:scenes": "node --import tsx --test test/core/scenes.test.ts test/adapter/scene-flow.test.ts",
     "test-adapter": "npm run test:adapter",
     "sync:core": "node scripts/sync-cocos-core.mjs",
     "typecheck:cocos": "npm run sync:core && tsc -p tsconfig.cocos.json",

@@ -37,7 +37,7 @@ test('event cursors return only unseen events and detached nested payloads', () 
   harness.start('LV01_zombie_wave', 1);
   harness.endDeployment();
   const first = harness.readEvents(0);
-  assert.equal(first.cursor, 1);
+  assert.equal(first.cursor, 2);
   assert.equal(first.events[0].type, 'wave_spawn');
   (first.events[0].data as { spawns: { count: number }[] }).spawns[0].count = -1;
   assert.equal((harness.readEvents(0).events[0].data as { spawns: { count: number }[] }).spawns[0].count, 13);
@@ -73,7 +73,7 @@ test('non-tick-aligned deployment moves units before starting the battle clock',
   assert.equal(harness.getSnapshot().spawnedZombies, 0);
   harness.advance(0.025);
   assert.equal(harness.getSnapshot().time_s, 0);
-  assert.equal(harness.getSnapshot().spawnedZombies, 50);
+  assert.equal(harness.getSnapshot().spawnedZombies, 5);
   const moved = harness.getUnits().find(unit => unit.id === ids[0])!;
   assert.ok(moved.position.x > humans[0].position.x);
   harness.advance(0.05);
@@ -109,8 +109,8 @@ test('registered levels and maps can select multiple configured spawn routes', (
   const harness = new BattleTestHarness();
   harness.start('two-route-level-fixture', 1);
   assert.equal(harness.getWaveCount(), 1);
-  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'A').length, 25);
-  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'B').length, 25);
+  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'A').length, 8);
+  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'B').length, 7);
   harness.advance(3.05);
   assert.deepEqual(harness.getUnits().filter(unit => unit.faction === 'zombie').map(unit => unit.routeId), ['B', 'B']);
 });
@@ -229,7 +229,7 @@ test('zero-distance projectile arrives once at launch time and still applies dam
   const events = projectiles.update(0, 2);
   assert.equal(events.filter(event => event.type === 'projectile_hit').length, 1);
   assert.ok(events.every(event => event.time_s === 2));
-  assert.equal(zombie.hp, 50);
+  assert.equal(zombie.hp, 30);
   assert.deepEqual(projectiles.getProjectiles(), []);
   assert.deepEqual(projectiles.update(1, 3), []);
 });

@@ -1,4 +1,3 @@
-import mapConfig from '../../config/map.json' with { type: 'json' };
 import unitConfig from '../../config/units.json' with { type: 'json' };
 import type { MapModel } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
@@ -35,17 +34,24 @@ export class CommandSystem {
   public issueMoveAt(x: number, y: number, targetX: number, targetY: number,
     time_s: number): GroupCommandEvent | null {
     if (![x, y, targetX, targetY, time_s].every(Number.isFinite)) return null;
-    const selected = this.store.living().filter(unit => unit.unitType === 'rifleman' &&
-      Math.hypot(unit.position.x - x, unit.position.y - y) <= mapConfig.unit_selection_radius);
-    return this.issueMoveGroup(selected.map(unit => unit.id), targetX, targetY, time_s);
+    // A tap controls one soldier. Choose the closest living human inside the
+    // touch tolerance so a dense formation can still be micro-managed without
+    // accidentally redirecting the whole squad.
+    const selected = this.store.living()
+      .filter(unit => unit.faction === 'human' &&
+        Math.hypot(unit.position.x - x, unit.position.y - y) <= this.map.unit_selection_radius)
+      .sort((a, b) => Math.hypot(a.position.x - x, a.position.y - y) -
+        Math.hypot(b.position.x - x, b.position.y - y) ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return this.issueMoveGroup(selected.length ? [selected[0].id] : [], targetX, targetY, time_s);
   }
 
-  /** Only unique living riflemen from the captured selection may receive a replacement. */
+  /** Only unique living human soldiers from the captured selection may receive a replacement. */
   public issueMoveGroup(unitIds: readonly string[], targetX: number, targetY: number,
     time_s: number): GroupCommandEvent | null {
     if (![targetX, targetY, time_s].every(Number.isFinite)) return null;
     const ids = new Set(unitIds);
-    const selected = this.store.living().filter(unit => unit.unitType === 'rifleman' && ids.has(unit.id));
+    const selected = this.store.living().filter(unit => unit.faction === 'human' && ids.has(unit.id));
     // A captured single survivor remains controllable after the rest of the selection dies.
     if (selected.length < 1) return null;
     const { left, top, right, bottom } = this.map.battle_bounds;
@@ -56,7 +62,7 @@ export class CommandSystem {
     // Each soldier converges on a personal spot near the finger, independent of
     // the old squad shape. Small offsets keep arrivals from occupying one pixel.
     const positions = formationPositions(selected.length, target, this.map, unitConfig.movement.arrival_spacing_px)
-      .map(point => this.map.walkablePoint(point, 7));
+      .map((point, index) => this.map.walkablePoint(point, selected[index].radius_px ?? 7));
     selected.forEach((unit, i) => {
       const from = unit.state;
       unit.moveTarget = positions[i];

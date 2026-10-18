@@ -2,21 +2,59 @@
   "rifleman": {
     "hitPoints": 100,
     "speed_px_per_s": 48,
-    "damagePerHit": 10,
+    "diameter_px": 28,
+    "damagePerHit": 30,
     "attack_interval_s": 0.35,
     "attack_range_px": 260
   },
+  "flamethrower": {
+    "hitPoints": 110,
+    "speed_px_per_s": 44,
+    "diameter_px": 30,
+    "damagePerHit": 24,
+    "attack_interval_s": 0.6,
+    "attack_range_px": 190,
+    "area_radius_px": 72,
+    "projectile_speed_px_per_s": 520,
+    "projectile_max_flight_time_s": 0.45
+  },
+  "shield": {
+    "hitPoints": 220,
+    "speed_px_per_s": 40,
+    "diameter_px": 34,
+    "damagePerHit": 20,
+    "attack_interval_s": 0.5,
+    "attack_range_px": 220
+  },
   "movement": {
     "arrival_tolerance_px": 12,
-    "formation_spacing_px": 24,
-    "arrival_spacing_px": 16
+    "formation_spacing_px": 48,
+    "arrival_spacing_px": 32
   },
   "normal_zombie": {
     "hitPoints": 60,
     "speed_px_per_s": 41.9,
+    "diameter_px": 32,
     "damagePerHit": 10,
     "attack_interval_s": 0.13,
     "attack_range_px": 28
+  },
+  "fat_zombie": {
+    "hitPoints": 150,
+    "speed_px_per_s": 27,
+    "diameter_px": 42,
+    "damagePerHit": 18,
+    "attack_interval_s": 0.35,
+    "attack_range_px": 32
+  },
+  "zombie_mother": {
+    "hitPoints": 95,
+    "speed_px_per_s": 34,
+    "diameter_px": 36,
+    "damagePerHit": 8,
+    "attack_interval_s": 0.55,
+    "attack_range_px": 30,
+    "infectsSoldiers": true
   },
   "projectile": {
     "speed_px_per_s": 900,

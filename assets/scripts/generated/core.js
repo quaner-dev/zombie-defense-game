@@ -15,9 +15,11 @@ function cloneData(value) {
 }
 
 // src/core/config.ts
+var MAX_HUMANS = 15;
 var DEFAULT_BATTLE_CONFIG = {
   deploymentDuration_s: 3,
-  initialHumans: 50
+  initialHumans: 15,
+  initialHumanTypeWeights: { rifleman: 3, flamethrower: 1, shield: 1 }
 };
 
 // config/map.json
@@ -28,7 +30,7 @@ var map_default = {
   spawn_bounds: { top: -180 },
   defense_line_y: 1200,
   unit_selection_radius: 112,
-  spawn_layout: { columns: 25, spacing_px: 22 },
+  spawn_layout: { columns: 25, spacing_px: 44 },
   routes: [
     {
       id: "A",
@@ -69,9 +71,165 @@ var map_default = {
   ]
 };
 
+// config/levels.json
+var levels_default = {
+  LV01_zombie_wave: {
+    mapId: "default",
+    waves: [
+      {
+        battleTime_s: 0,
+        batchSize: 5,
+        batchInterval_s: 1,
+        spawns: [
+          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 13 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 13 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 12 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 12 }
+        ]
+      },
+      {
+        battleTime_s: 7,
+        batchSize: 5,
+        batchInterval_s: 1,
+        spawns: [
+          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 21 },
+          { unitType: "fat_zombie", route: "A", spawnPoint: "north", count: 2 },
+          { unitType: "zombie_mother", route: "A", spawnPoint: "north", count: 2 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 25 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 25 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 25 }
+        ]
+      },
+      {
+        battleTime_s: 20,
+        batchSize: 5,
+        batchInterval_s: 1,
+        spawns: [
+          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 11 },
+          { unitType: "fat_zombie", route: "A", spawnPoint: "north", count: 2 },
+          { unitType: "zombie_mother", route: "A", spawnPoint: "north", count: 2 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 15 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "east", count: 15 },
+          { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 20 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 20 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 20 },
+          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 20 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "north", count: 15 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "south", count: 15 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 },
+          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 15 }
+        ]
+      }
+    ]
+  }
+};
+
+// src/scenes/cabin.ts
+var cabin = {
+  id: "cabin",
+  title: "\u5C0F\u5C4B\u7A81\u56F4",
+  subtitle: "\u7B2C\u4E00\u5E55 \xB7 \u5C0F\u5C4B\u5185\u90E8",
+  briefing: "\u5C38\u6F6E\u6B63\u5728\u903C\u8FD1\u3002\u5229\u7528\u5C4B\u5185\u9694\u5899\u6536\u62E2\u961F\u4F0D\uFF0C\u5B88\u4F4F\u4E09\u6CE2\u8FDB\u653B\uFF0C\u5BFB\u627E\u79BB\u5F00\u5C0F\u5C4B\u7684\u673A\u4F1A\u3002",
+  objective: "\u62B5\u5FA1 3 \u6CE2\u5C38\u6F6E\uFF0C\u81F3\u5C11\u4E00\u540D\u58EB\u5175\u5B58\u6D3B",
+  mapId: "LV01_four_sides",
+  levelId: "LV01_zombie_wave",
+  map: map_default,
+  level: levels_default.LV01_zombie_wave,
+  presentation: {
+    floorColor: "#17191E",
+    wallColor: "#7A7A85",
+    wallOutlineColor: "#A4A4AF",
+    decorations: [
+      { kind: "floor", color: "#24262C", bounds: { left: 120, top: 800, right: 960, bottom: 1800 } }
+    ]
+  }
+};
+
+// config/scenes/courtyard.json
+var courtyard_default = {
+  id: "courtyard",
+  title: "\u697C\u4E0B\u96C6\u7ED3",
+  subtitle: "\u7B2C\u4E8C\u5E55 \xB7 \u5927\u697C\u697C\u4E0B",
+  briefing: "\u51B2\u51FA\u5C0F\u5C4B\u540E\uFF0C\u961F\u4F0D\u6765\u5230\u5927\u697C\u4E4B\u95F4\u3002\u5BBD\u539A\u7684\u5EFA\u7B51\u5899\u4F53\u906E\u4F4F\u5C04\u7EBF\uFF0C\u6CBF\u8857\u9053\u8F6C\u79FB\uFF0C\u5B88\u4F4F\u4E09\u6CE2\u5C38\u6F6E\u3002",
+  objective: "\u5229\u7528\u5EFA\u7B51\u4E4B\u95F4\u7684\u901A\u9053\u62B5\u5FA1 3 \u6CE2\u5C38\u6F6E",
+  mapId: "LV02_building_courtyard",
+  levelId: "LV02_courtyard_wave",
+  presentation: {
+    floorColor: "#19252C",
+    wallColor: "#596B79",
+    wallOutlineColor: "#91A6B6",
+    decorations: [
+      { kind: "floor", color: "#25343B", bounds: { left: 420, top: 180, right: 660, bottom: 2160 } },
+      { kind: "floor", color: "#25343B", bounds: { left: 60, top: 1120, right: 1020, bottom: 1440 } },
+      { kind: "stripe", color: "#B29D64", bounds: { left: 524, top: 300, right: 540, bottom: 940 } },
+      { kind: "stripe", color: "#B29D64", bounds: { left: 524, top: 1640, right: 540, bottom: 2040 } }
+    ]
+  },
+  map: {
+    design_size: { width: 1080, height: 2400 },
+    battle_bounds: { left: 60, top: 180, right: 1020, bottom: 2160 },
+    defense_line_y: 1200,
+    unit_selection_radius: 112,
+    spawn_layout: { columns: 25, spacing_px: 44 },
+    routes: [
+      { id: "A", spawn: { x: 180, y: 180 }, defend: { x: 420, y: 1280 }, width: 240, waypoints: [{ x: 180, y: 180 }, { x: 420, y: 1280 }] },
+      { id: "B", spawn: { x: 540, y: 180 }, defend: { x: 540, y: 1280 }, width: 240, waypoints: [{ x: 540, y: 180 }, { x: 540, y: 1280 }] },
+      { id: "C", spawn: { x: 900, y: 180 }, defend: { x: 660, y: 1280 }, width: 240, waypoints: [{ x: 900, y: 180 }, { x: 660, y: 1280 }] }
+    ],
+    spawnPoints: [
+      { id: "north", x: 540, y: 180, side: "north", width: 900 },
+      { id: "south", x: 540, y: 2160, side: "south", width: 900 },
+      { id: "east", x: 1020, y: 1280, side: "east", width: 400 },
+      { id: "west", x: 60, y: 1280, side: "west", width: 400 }
+    ],
+    terrain: [
+      { id: "northwest-building", kind: "wall", bounds: { left: 160, top: 460, right: 400, bottom: 1080 }, blocksMovement: true, stackRequired: 3 },
+      { id: "northeast-building", kind: "wall", bounds: { left: 680, top: 460, right: 920, bottom: 1080 }, blocksMovement: true, stackRequired: 3 },
+      { id: "southwest-building", kind: "wall", bounds: { left: 160, top: 1480, right: 400, bottom: 1960 }, blocksMovement: true, stackRequired: 3 },
+      { id: "southeast-building", kind: "wall", bounds: { left: 680, top: 1480, right: 920, bottom: 1960 }, blocksMovement: true, stackRequired: 3 }
+    ]
+  },
+  level: {
+    mapId: "LV02_building_courtyard",
+    waves: [
+      { battleTime_s: 0, batchSize: 5, batchInterval_s: 1, spawns: [
+        { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 15 },
+        { unitType: "normal_zombie", route: "C", spawnPoint: "south", count: 15 }
+      ] },
+      { battleTime_s: 14, batchSize: 5, batchInterval_s: 1, spawns: [
+        { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
+        { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 },
+        { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 15 }
+      ] },
+      { battleTime_s: 30, batchSize: 5, batchInterval_s: 1, spawns: [
+        { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 15 },
+        { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 15 },
+        { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
+        { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 }
+      ] }
+    ]
+  }
+};
+
+// src/scenes/courtyard.ts
+var courtyard = courtyard_default;
+
+// src/scenes/index.ts
+var SCENES = [cabin, courtyard];
+function getScene(id) {
+  const scene = SCENES.find((scene2) => scene2.id === id);
+  if (!scene) throw new Error(`Unknown scene: ${id}`);
+  return scene;
+}
+function sceneForLevel(levelId) {
+  return SCENES.find((scene) => scene.levelId === levelId);
+}
+
 // src/core/MapModel.ts
 var MAP_DEFINITIONS = {
-  default: map_default
+  default: map_default,
+  ...Object.fromEntries(SCENES.map((scene) => [scene.mapId, scene.map]))
 };
 var MapModel = class _MapModel {
   constructor(definition) {
@@ -83,11 +241,15 @@ var MapModel = class _MapModel {
     __publicField(this, "defense_line_y");
     __publicField(this, "spawn_top");
     __publicField(this, "terrain");
-    var _a;
+    __publicField(this, "design_size");
+    __publicField(this, "unit_selection_radius");
+    var _a, _b, _c;
+    this.design_size = { ...(_a = definition.design_size) != null ? _a : { width: 1080, height: 2400 } };
+    this.unit_selection_radius = (_b = definition.unit_selection_radius) != null ? _b : 112;
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
     this.spawn_top = definition.spawn_bounds === void 0 ? this.battle_bounds.top : definition.spawn_bounds.top;
-    this.terrain = ((_a = definition.terrain) != null ? _a : []).map((item) => ({ ...item, bounds: { ...item.bounds } }));
+    this.terrain = ((_c = definition.terrain) != null ? _c : []).map((item) => ({ ...item, bounds: { ...item.bounds } }));
     const { left, top, right, bottom } = this.battle_bounds;
     if (!Number.isFinite(this.spawn_top) || this.spawn_top > top) {
       throw new Error("Map spawn bounds top must be finite and at or above battlefield top");
@@ -354,52 +516,11 @@ var MapModel = class _MapModel {
   }
 };
 
-// config/levels.json
-var levels_default = {
-  LV01_zombie_wave: {
-    mapId: "default",
-    waves: [
-      {
-        battleTime_s: 0,
-        spawns: [
-          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 13 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 13 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 12 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 12 }
-        ]
-      },
-      {
-        battleTime_s: 7,
-        spawns: [
-          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 25 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 25 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 25 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 25 }
-        ]
-      },
-      {
-        battleTime_s: 20,
-        spawns: [
-          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 15 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 15 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "east", count: 15 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 20 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 20 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 20 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 20 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "north", count: 15 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "south", count: 15 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 15 }
-        ]
-      }
-    ]
-  }
-};
-
 // src/core/WaveManager.ts
-var LEVEL_DEFINITIONS = levels_default;
+var LEVEL_DEFINITIONS = {
+  ...levels_default,
+  ...Object.fromEntries(SCENES.map((scene) => [scene.levelId, scene.level]))
+};
 var WaveManager = class _WaveManager {
   constructor(level) {
     __publicField(this, "level", level);
@@ -407,6 +528,7 @@ var WaveManager = class _WaveManager {
   }
   /** Emits all waves whose battle time is due at or before battleTime. */
   update(battleTime) {
+    var _a, _b;
     const events = [];
     while (this.nextWaveIndex < this.level.waves.length) {
       const wave = this.level.waves[this.nextWaveIndex];
@@ -417,6 +539,8 @@ var WaveManager = class _WaveManager {
         data: {
           waveIndex: this.nextWaveIndex,
           battleTime_s: wave.battleTime_s,
+          batchSize: (_a = wave.batchSize) != null ? _a : Number.MAX_SAFE_INTEGER,
+          batchInterval_s: (_b = wave.batchInterval_s) != null ? _b : 0,
           spawns: wave.spawns.map((spawn) => ({ ...spawn }))
         }
       });
@@ -429,6 +553,12 @@ var WaveManager = class _WaveManager {
   }
   validateMap(map) {
     for (const wave of this.level.waves) {
+      if (wave.batchSize !== void 0 && (!Number.isInteger(wave.batchSize) || wave.batchSize < 1)) {
+        throw new Error("Wave batch size must be a positive integer");
+      }
+      if (wave.batchInterval_s !== void 0 && (!Number.isFinite(wave.batchInterval_s) || wave.batchInterval_s < 0)) {
+        throw new Error("Wave batch interval must be finite and non-negative");
+      }
       for (const spawn of wave.spawns) {
         if (!map.getRoute(spawn.route)) throw new Error(`Unknown spawn route: ${spawn.route}`);
         if (spawn.spawnPoint && !map.getSpawnPoint(spawn.spawnPoint)) {
@@ -461,27 +591,179 @@ var units_default = {
   rifleman: {
     hitPoints: 100,
     speed_px_per_s: 48,
-    damagePerHit: 10,
+    diameter_px: 28,
+    damagePerHit: 30,
     attack_interval_s: 0.35,
     attack_range_px: 260
   },
+  flamethrower: {
+    hitPoints: 110,
+    speed_px_per_s: 44,
+    diameter_px: 30,
+    damagePerHit: 24,
+    attack_interval_s: 0.6,
+    attack_range_px: 190,
+    area_radius_px: 72,
+    projectile_speed_px_per_s: 520,
+    projectile_max_flight_time_s: 0.45
+  },
+  shield: {
+    hitPoints: 220,
+    speed_px_per_s: 40,
+    diameter_px: 34,
+    damagePerHit: 20,
+    attack_interval_s: 0.5,
+    attack_range_px: 220
+  },
   movement: {
     arrival_tolerance_px: 12,
-    formation_spacing_px: 24,
-    arrival_spacing_px: 16
+    formation_spacing_px: 48,
+    arrival_spacing_px: 32
   },
   normal_zombie: {
     hitPoints: 60,
     speed_px_per_s: 41.9,
+    diameter_px: 32,
     damagePerHit: 10,
     attack_interval_s: 0.13,
     attack_range_px: 28
+  },
+  fat_zombie: {
+    hitPoints: 150,
+    speed_px_per_s: 27,
+    diameter_px: 42,
+    damagePerHit: 18,
+    attack_interval_s: 0.35,
+    attack_range_px: 32
+  },
+  zombie_mother: {
+    hitPoints: 95,
+    speed_px_per_s: 34,
+    diameter_px: 36,
+    damagePerHit: 8,
+    attack_interval_s: 0.55,
+    attack_range_px: 30,
+    infectsSoldiers: true
   },
   projectile: {
     speed_px_per_s: 900,
     max_flight_time_s: 0.35
   }
 };
+
+// src/core/units/UnitModule.ts
+function readUnitStats(unitType) {
+  return units_default[unitType];
+}
+function rangedAttack(stats, projectileKind, splashRadius_px = 0) {
+  if (stats.damagePerHit === void 0 || stats.attack_interval_s === void 0 || stats.attack_range_px === void 0) {
+    throw new Error(`Unit ${projectileKind} is missing ranged attack stats`);
+  }
+  return {
+    damage: stats.damagePerHit,
+    interval_s: stats.attack_interval_s,
+    range_px: stats.attack_range_px,
+    projectileKind,
+    splashRadius_px,
+    projectileSpeed_px_per_s: stats.projectile_speed_px_per_s,
+    projectileMaxFlightTime_s: stats.projectile_max_flight_time_s
+  };
+}
+function meleeAttack(stats, infectsOnHit = false) {
+  if (stats.damagePerHit === void 0 || stats.attack_interval_s === void 0 || stats.attack_range_px === void 0) {
+    throw new Error("Zombie is missing melee attack stats");
+  }
+  return {
+    damage: stats.damagePerHit,
+    interval_s: stats.attack_interval_s,
+    range_px: stats.attack_range_px,
+    infectsOnHit
+  };
+}
+
+// src/core/units/FlamethrowerModule.ts
+var flamethrowerModule = {
+  unitType: "flamethrower",
+  faction: "human",
+  initialState: "Idle",
+  getStats: () => readUnitStats("flamethrower"),
+  getAttackProfile: () => {
+    var _a;
+    const stats = readUnitStats("flamethrower");
+    return rangedAttack(stats, "flame", (_a = stats.area_radius_px) != null ? _a : 0);
+  }
+};
+
+// src/core/units/FatZombieModule.ts
+var fatZombieModule = {
+  unitType: "fat_zombie",
+  faction: "zombie",
+  initialState: "Advancing",
+  getStats: () => readUnitStats("fat_zombie"),
+  getAttackProfile: () => null,
+  getMeleeAttackProfile: () => meleeAttack(readUnitStats("fat_zombie"))
+};
+
+// src/core/units/NormalZombieModule.ts
+var normalZombieModule = {
+  unitType: "normal_zombie",
+  faction: "zombie",
+  initialState: "Advancing",
+  getStats: () => readUnitStats("normal_zombie"),
+  getAttackProfile: () => null,
+  getMeleeAttackProfile: () => meleeAttack(readUnitStats("normal_zombie"))
+};
+
+// src/core/units/RiflemanModule.ts
+var riflemanModule = {
+  unitType: "rifleman",
+  faction: "human",
+  initialState: "Idle",
+  getStats: () => readUnitStats("rifleman"),
+  getAttackProfile: () => rangedAttack(readUnitStats("rifleman"), "bullet")
+};
+
+// src/core/units/ShieldModule.ts
+var shieldModule = {
+  unitType: "shield",
+  faction: "human",
+  initialState: "Idle",
+  getStats: () => readUnitStats("shield"),
+  getAttackProfile: () => rangedAttack(readUnitStats("shield"), "bullet")
+};
+
+// src/core/units/ZombieMotherModule.ts
+var zombieMotherModule = {
+  unitType: "zombie_mother",
+  faction: "zombie",
+  initialState: "Advancing",
+  getStats: () => readUnitStats("zombie_mother"),
+  getAttackProfile: () => null,
+  getMeleeAttackProfile: () => {
+    var _a;
+    const stats = readUnitStats("zombie_mother");
+    return meleeAttack(stats, (_a = stats.infectsSoldiers) != null ? _a : true);
+  }
+};
+
+// src/core/units/index.ts
+var UNIT_MODULES = {
+  rifleman: riflemanModule,
+  flamethrower: flamethrowerModule,
+  shield: shieldModule,
+  normal_zombie: normalZombieModule,
+  fat_zombie: fatZombieModule,
+  zombie_mother: zombieMotherModule
+};
+var HUMAN_UNIT_TYPES = Object.freeze(Object.values(UNIT_MODULES).filter((module) => module.faction === "human").map((module) => module.unitType));
+function getUnitModule(unitType) {
+  return UNIT_MODULES[unitType];
+}
+function getZombieModule(unitType) {
+  const module = UNIT_MODULES[unitType];
+  if (!module.getMeleeAttackProfile) throw new Error(`Unit ${unitType} has no zombie melee profile`);
+  return module;
+}
 
 // src/core/UnitStore.ts
 var UnitStore = class {
@@ -491,18 +773,20 @@ var UnitStore = class {
     __publicField(this, "nextId", 1);
   }
   spawn(unitType, position, routeId, spawnPointId = null) {
-    var _a;
-    const config = units_default[unitType];
+    var _a, _b;
+    const module = getUnitModule(unitType);
+    const config = module.getStats();
     const fresh = {
       id: `unit-${this.nextId++}`,
       unitType,
-      faction: unitType === "rifleman" ? "human" : "zombie",
+      faction: module.faction,
       position: { ...position },
       velocity: { x: 0, y: 0 },
       hp: config.hitPoints,
       maxHp: config.hitPoints,
+      radius_px: ((_a = config.diameter_px) != null ? _a : module.faction === "human" ? 14 : 16) / 2,
       speed_px_per_s: config.speed_px_per_s,
-      state: unitType === "rifleman" ? "Idle" : "Advancing",
+      state: module.initialState,
       routeId,
       targetId: null,
       moveTarget: null,
@@ -514,7 +798,7 @@ var UnitStore = class {
       stackLevel: 0,
       active: true
     };
-    const unit = Object.assign((_a = this.pool.pop()) != null ? _a : {}, fresh);
+    const unit = Object.assign((_b = this.pool.pop()) != null ? _b : {}, fresh);
     this.units.set(unit.id, unit);
     return unit;
   }
@@ -526,6 +810,28 @@ var UnitStore = class {
   }
   living() {
     return this.all().filter((unit) => unit.active && unit.hp > 0 && unit.state !== "Dead");
+  }
+  transform(id, unitType) {
+    var _a;
+    const unit = this.units.get(id);
+    if (!unit || !unit.active || unit.hp <= 0 || unit.state === "Dead") return void 0;
+    const module = getUnitModule(unitType);
+    const stats = module.getStats();
+    unit.unitType = unitType;
+    unit.faction = module.faction;
+    unit.hp = stats.hitPoints;
+    unit.maxHp = stats.hitPoints;
+    unit.radius_px = ((_a = stats.diameter_px) != null ? _a : module.faction === "human" ? 14 : 16) / 2;
+    unit.speed_px_per_s = stats.speed_px_per_s;
+    unit.velocity = { x: 0, y: 0 };
+    unit.state = module.initialState;
+    unit.targetId = null;
+    unit.moveTarget = null;
+    unit.attackElapsed_s = 0;
+    unit.climbingWallId = null;
+    unit.climbTarget = null;
+    unit.stackLevel = 0;
+    return unit;
   }
   kill(id) {
     const unit = this.units.get(id);
@@ -585,21 +891,24 @@ var CommandSystem = class {
   }
   issueMoveAt(x, y, targetX, targetY, time_s) {
     if (![x, y, targetX, targetY, time_s].every(Number.isFinite)) return null;
-    const selected = this.store.living().filter((unit) => unit.unitType === "rifleman" && Math.hypot(unit.position.x - x, unit.position.y - y) <= map_default.unit_selection_radius);
-    return this.issueMoveGroup(selected.map((unit) => unit.id), targetX, targetY, time_s);
+    const selected = this.store.living().filter((unit) => unit.faction === "human" && Math.hypot(unit.position.x - x, unit.position.y - y) <= this.map.unit_selection_radius).sort((a, b) => Math.hypot(a.position.x - x, a.position.y - y) - Math.hypot(b.position.x - x, b.position.y - y) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return this.issueMoveGroup(selected.length ? [selected[0].id] : [], targetX, targetY, time_s);
   }
-  /** Only unique living riflemen from the captured selection may receive a replacement. */
+  /** Only unique living human soldiers from the captured selection may receive a replacement. */
   issueMoveGroup(unitIds, targetX, targetY, time_s) {
     if (![targetX, targetY, time_s].every(Number.isFinite)) return null;
     const ids = new Set(unitIds);
-    const selected = this.store.living().filter((unit) => unit.unitType === "rifleman" && ids.has(unit.id));
+    const selected = this.store.living().filter((unit) => unit.faction === "human" && ids.has(unit.id));
     if (selected.length < 1) return null;
     const { left, top, right, bottom } = this.map.battle_bounds;
     const target = {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY))
     };
-    const positions = formationPositions(selected.length, target, this.map, units_default.movement.arrival_spacing_px).map((point) => this.map.walkablePoint(point, 7));
+    const positions = formationPositions(selected.length, target, this.map, units_default.movement.arrival_spacing_px).map((point, index) => {
+      var _a;
+      return this.map.walkablePoint(point, (_a = selected[index].radius_px) != null ? _a : 7);
+    });
     selected.forEach((unit, i) => {
       const from = unit.state;
       unit.moveTarget = positions[i];
@@ -628,14 +937,15 @@ var MovementSystem = class {
     __publicField(this, "map", map);
   }
   update(seconds, time_s) {
-    var _a;
+    var _a, _b;
     const events = [];
     if (!Number.isFinite(seconds) || seconds < 0) return events;
     const tolerance = units_default.movement.arrival_tolerance_px;
     for (const unit of this.store.living()) {
       if (unit.state !== "Moving" || !unit.moveTarget) continue;
       const remaining = Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y);
-      const waypoint = this.map ? this.map.nextWaypoint(unit.position, unit.moveTarget, 7) : unit.moveTarget;
+      const radius = (_a = unit.radius_px) != null ? _a : 7;
+      const waypoint = this.map ? this.map.nextWaypoint(unit.position, unit.moveTarget, radius) : unit.moveTarget;
       if (!waypoint) {
         unit.state = "Idle";
         unit.moveTarget = null;
@@ -652,18 +962,18 @@ var MovementSystem = class {
       const dy = waypoint.y - unit.position.y;
       const distance = Math.hypot(dx, dy);
       const step = remaining <= tolerance ? 0 : Math.min(distance, seconds * unit.speed_px_per_s);
-      unit.targetId = null;
       if (distance > 0 && step > 0) {
         const destination = {
           x: unit.position.x + dx / distance * step,
           y: unit.position.y + dy / distance * step
         };
-        const wall = (_a = this.map) == null ? void 0 : _a.firstBlockingTerrain(unit.position, destination, 7);
+        const wall = (_b = this.map) == null ? void 0 : _b.firstBlockingTerrain(unit.position, destination, radius);
         if (wall) {
           unit.position = wall.point;
           unit.state = "Idle";
           unit.moveTarget = null;
           unit.velocity = { x: 0, y: 0 };
+          unit.targetId = null;
           events.push({
             type: "unit_state_changed",
             time_s,
@@ -701,6 +1011,9 @@ var CombatSystem = class {
     __publicField(this, "shots", []);
   }
   createProjectile(source, target, time_s) {
+    var _a, _b;
+    const profile = getUnitModule(source.unitType).getAttackProfile();
+    if (!profile) throw new Error(`Unit ${source.unitType} cannot create a projectile`);
     const shot = {
       id: `projectile-${this.nextProjectileId++}`,
       sourceId: source.id,
@@ -708,7 +1021,11 @@ var CombatSystem = class {
       origin: { ...source.position },
       destination: { ...target.position },
       position: { ...source.position },
-      damage: units_default.rifleman.damagePerHit,
+      damage: profile.damage,
+      splashRadius_px: profile.splashRadius_px,
+      projectileKind: profile.projectileKind,
+      speed_px_per_s: (_a = profile.projectileSpeed_px_per_s) != null ? _a : units_default.projectile.speed_px_per_s,
+      max_flight_time_s: (_b = profile.projectileMaxFlightTime_s) != null ? _b : units_default.projectile.max_flight_time_s,
       spawnedAt_s: time_s,
       elapsed_s: 0
     };
@@ -741,7 +1058,7 @@ var CombatSystem = class {
     const events = [];
     for (const unit of this.store.living()) {
       if (!unit.active || unit.hp <= 0 || unit.state === "Dead") continue;
-      if (unit.unitType === "rifleman") this.rifle(unit, dt, time_s, events);
+      if (unit.faction === "human") this.rangedHuman(unit, dt, time_s, events);
       else {
         this.zombie(unit, dt, time_s, events);
         const side = unit.spawnPointId ? (_b = (_a = this.map.getSpawnPoint(unit.spawnPointId)) == null ? void 0 : _a.side) != null ? _b : null : null;
@@ -766,31 +1083,39 @@ var CombatSystem = class {
     unit.state = to;
     events.push({ type: "unit_state_changed", time_s, data: { unitId: unit.id, from, to } });
   }
-  rifle(unit, dt, time_s, events) {
+  rangedHuman(unit, dt, time_s, events) {
     var _a;
-    if (unit.state === "Moving") {
-      unit.targetId = null;
-      unit.attackElapsed_s = 0;
-      return;
-    }
-    const target = this.nearest(unit, "zombie", units_default.rifleman.attack_range_px, true);
+    const moving = unit.state === "Moving";
+    const profile = getUnitModule(unit.unitType).getAttackProfile();
+    if (!profile) return;
+    const target = this.nearest(unit, "zombie", profile.range_px, true);
     unit.targetId = (_a = target == null ? void 0 : target.id) != null ? _a : null;
     if (!target) {
       unit.attackElapsed_s = 0;
-      this.state(unit, "Idle", time_s, events);
+      if (!moving) this.state(unit, "Idle", time_s, events);
+      return;
+    }
+    if (moving) {
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= profile.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - profile.interval_s);
+        this.state(unit, "Firing", time_s, events);
+        events.push(this.createProjectile(unit, target, time_s));
+        this.state(unit, "Moving", time_s, events);
+      }
       return;
     }
     this.state(unit, "Aiming", time_s, events);
     unit.attackElapsed_s += dt;
-    if (unit.attackElapsed_s + 1e-9 >= units_default.rifleman.attack_interval_s) {
-      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - units_default.rifleman.attack_interval_s);
+    if (unit.attackElapsed_s + 1e-9 >= profile.interval_s) {
+      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - profile.interval_s);
       this.state(unit, "Firing", time_s, events);
       events.push(this.createProjectile(unit, target, time_s));
       this.state(unit, "Aiming", time_s, events);
     }
   }
   zombie(unit, dt, time_s, events) {
-    var _a;
+    var _a, _b;
     if (unit.climbingWallId && unit.climbTarget) {
       this.climb(unit, dt, time_s, events);
       return;
@@ -803,17 +1128,18 @@ var CombatSystem = class {
       this.state(unit, "Idle", time_s, events);
       return;
     }
-    const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, 8);
-    const required = (_a = obstruction == null ? void 0 : obstruction.terrain.stackRequired) != null ? _a : Infinity;
+    const radius = (_a = unit.radius_px) != null ? _a : 8;
+    const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, radius);
+    const required = (_b = obstruction == null ? void 0 : obstruction.terrain.stackRequired) != null ? _b : Infinity;
     const stack = obstruction && Number.isFinite(required) && Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= 40 ? this.wallStack(unit, target, obstruction.terrain, obstruction.point) : [];
-    let approach = this.map.walkablePoint(target.position, 8);
-    let waypoint = stack.length >= required ? target.position : this.map.nextWaypoint(unit.position, approach, 8);
+    let approach = this.map.walkablePoint(target.position, radius);
+    let waypoint = stack.length >= required ? target.position : this.map.nextWaypoint(unit.position, approach, radius);
     if (!waypoint) {
       const blockedTargetId = target.id;
       const alternatives = this.store.living().filter((candidate) => candidate.faction === "human" && candidate.id !== blockedTargetId).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       for (const candidate of alternatives) {
-        const candidateApproach = this.map.walkablePoint(candidate.position, 8);
-        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, 8);
+        const candidateApproach = this.map.walkablePoint(candidate.position, radius);
+        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, radius);
         if (waypoint) {
           target = candidate;
           approach = candidateApproach;
@@ -823,8 +1149,9 @@ var CombatSystem = class {
     }
     unit.targetId = target.id;
     const distance = this.distance(unit, target);
-    const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position, 0);
-    if (distance > units_default.normal_zombie.attack_range_px + 1e-9 || meleeBlocked) {
+    const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position);
+    const attack = getZombieModule(unit.unitType).getMeleeAttackProfile();
+    if (distance > attack.range_px + 1e-9 || meleeBlocked) {
       unit.attackElapsed_s = 0;
       this.state(unit, "Advancing", time_s, events);
       if (!waypoint) return;
@@ -833,13 +1160,13 @@ var CombatSystem = class {
       const direct = waypoint.x === approach.x && waypoint.y === approach.y && !meleeBlocked;
       const step = Math.min(
         pathDistance,
-        direct ? Math.max(0, distance - units_default.normal_zombie.attack_range_px) : Infinity,
+        direct ? Math.max(0, distance - attack.range_px) : Infinity,
         unit.speed_px_per_s * dt
       );
       const dx = (waypoint.x - unit.position.x) / pathDistance;
       const dy = (waypoint.y - unit.position.y) / pathDistance;
       const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
-      const hit = this.map.firstBlockingTerrain(unit.position, destination, 8);
+      const hit = this.map.firstBlockingTerrain(unit.position, destination, radius);
       if (hit) {
         if (stack.length >= required) {
           stack.forEach((member, index) => {
@@ -848,11 +1175,11 @@ var CombatSystem = class {
             member.climbingWallId = hit.terrain.id;
             member.stackLevel = index % required + 1;
             member.climbTarget = vertical ? {
-              x: member.position.x < (b.left + b.right) / 2 ? b.right + 10 : b.left - 10,
+              x: member.position.x < (b.left + b.right) / 2 ? b.right + member.radius_px : b.left - member.radius_px,
               y: Math.max(b.top, Math.min(b.bottom, member.position.y))
             } : {
               x: Math.max(b.left, Math.min(b.right, member.position.x)),
-              y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + 10 : b.top - 10
+              y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + member.radius_px : b.top - member.radius_px
             };
             this.state(member, "Climbing", time_s, events);
           });
@@ -876,10 +1203,27 @@ var CombatSystem = class {
     }
     this.state(unit, "Attacking", time_s, events);
     unit.attackElapsed_s += dt;
-    if (unit.attackElapsed_s + 1e-9 >= units_default.normal_zombie.attack_interval_s) {
-      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - units_default.normal_zombie.attack_interval_s);
-      events.push(...this.applyDamage(target.id, units_default.normal_zombie.damagePerHit, unit.id, time_s));
+    if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+      if (attack.infectsOnHit && target.faction === "human") {
+        const infected = this.infect(target, unit, time_s, events);
+        if (!infected) events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
+      } else {
+        events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
+      }
     }
+  }
+  infect(target, source, time_s, events) {
+    if (!target.active || target.hp <= 0 || target.state === "Dead") return false;
+    const oldId = target.id;
+    const infected = this.store.transform(oldId, "normal_zombie");
+    if (!infected) return false;
+    events.push({ type: "unit_infected", time_s, data: {
+      sourceId: source.id,
+      humanId: oldId,
+      zombieId: infected.id
+    } });
+    return true;
   }
   climb(unit, dt, time_s, events) {
     const target = unit.climbTarget;
@@ -925,8 +1269,8 @@ var CombatSystem = class {
     }).concat(unit).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   }
   separateZombies() {
+    var _a, _b;
     const zombies = this.store.living().filter((unit) => unit.faction === "zombie" && !unit.climbingWallId);
-    const minDistance = 17;
     const { left, top, right, bottom } = this.map.battle_bounds;
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < zombies.length; i++) {
@@ -935,6 +1279,7 @@ var CombatSystem = class {
           const b = zombies[j];
           let dx = b.position.x - a.position.x, dy = b.position.y - a.position.y;
           let distance = Math.hypot(dx, dy);
+          const minDistance = ((_a = a.radius_px) != null ? _a : 8) + ((_b = b.radius_px) != null ? _b : 8) + 1;
           if (distance >= minDistance) continue;
           if (distance < 1e-6) {
             const angle = ((i + 1) * 2.399963229728653 + (j + 1) * 0.7548776662466927) % (Math.PI * 2);
@@ -953,13 +1298,17 @@ var CombatSystem = class {
     }
   }
   separatedPosition(unit, offset, left, top, right, bottom) {
+    var _a;
     let point = {
       x: Math.max(left, Math.min(right, unit.position.x + offset.x)),
       y: Math.max(top, Math.min(bottom, unit.position.y + offset.y))
     };
-    const collision = this.map.terrain.find((terrain) => terrain.blocksMovement && this.map.terrainContains(point, terrain, 8));
+    const collision = this.map.terrain.find((terrain) => {
+      var _a2;
+      return terrain.blocksMovement && this.map.terrainContains(point, terrain, (_a2 = unit.radius_px) != null ? _a2 : 8);
+    });
     if (!collision) return point;
-    if (!this.map.terrainContains(unit.position, collision, 8)) return { ...unit.position };
+    if (!this.map.terrainContains(unit.position, collision, (_a = unit.radius_px) != null ? _a : 8)) return { ...unit.position };
     const vertical = collision.bounds.bottom - collision.bounds.top >= collision.bounds.right - collision.bounds.left;
     point = vertical ? { x: unit.position.x, y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) } : { x: Math.max(left, Math.min(right, unit.position.x + offset.x)), y: unit.position.y };
     return point;
@@ -997,17 +1346,14 @@ var ProjectileSystem = class {
     for (const shot of this.projectiles.values()) {
       const previous = { ...shot.position }, previousElapsed = shot.elapsed_s;
       const distance = Math.hypot(shot.destination.x - shot.origin.x, shot.destination.y - shot.origin.y);
-      const duration = Math.min(
-        distance / units_default.projectile.speed_px_per_s,
-        units_default.projectile.max_flight_time_s
-      );
+      const duration = Math.min(distance / shot.speed_px_per_s, shot.max_flight_time_s);
       shot.elapsed_s = Math.min(duration, shot.elapsed_s + Math.min(
         seconds,
         Math.max(0, time_s - shot.spawnedAt_s - shot.elapsed_s)
       ));
       const fraction = distance === 0 ? 1 : Math.min(
         1,
-        shot.elapsed_s * units_default.projectile.speed_px_per_s / distance
+        shot.elapsed_s * shot.speed_px_per_s / distance
       );
       shot.position = {
         x: shot.origin.x + (shot.destination.x - shot.origin.x) * fraction,
@@ -1034,7 +1380,14 @@ var ProjectileSystem = class {
       });
       const target = this.store.get(shot.targetId);
       if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) && !this.map.firstBlockingTerrain(shot.position, target.position)) {
-        events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+        if (shot.splashRadius_px > 0) {
+          const impacted = this.store.living().filter((candidate) => candidate.faction === "zombie" && Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px && !this.map.firstBlockingTerrain(shot.origin, candidate.position) && !this.map.firstBlockingTerrain(shot.position, candidate.position));
+          for (const candidate of impacted) {
+            events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, terminalTime_s));
+          }
+        } else {
+          events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+        }
       }
       events.push({ type: "projectile_expired", time_s: terminalTime_s, data: { projectileId: shot.id } });
       this.projectiles.delete(shot.id);
@@ -1062,11 +1415,101 @@ var ResultSystem = class {
   }
 };
 
+// src/core/SpawnSystem.ts
+var SpawnSystem = class {
+  constructor(store, map) {
+    __publicField(this, "store", store);
+    __publicField(this, "map", map);
+    __publicField(this, "pending", []);
+    __publicField(this, "spawned", 0);
+  }
+  reset() {
+    this.pending = [];
+    this.spawned = 0;
+  }
+  get spawnedCount() {
+    return this.spawned;
+  }
+  hasPending() {
+    return this.pending.length > 0;
+  }
+  enqueue(event) {
+    var _a, _b;
+    this.pending.push({
+      waveIndex: event.waveIndex,
+      nextBatchTime_s: event.battleTime_s,
+      batchSize: (_a = event.batchSize) != null ? _a : Number.MAX_SAFE_INTEGER,
+      batchInterval_s: (_b = event.batchInterval_s) != null ? _b : 0,
+      batchIndex: 0,
+      cursor: 0,
+      offsets: /* @__PURE__ */ new Map(),
+      spawns: event.spawns.map((spawn) => ({ spawn: { ...spawn }, remaining: spawn.count }))
+    });
+  }
+  update(time_s) {
+    var _a, _b, _c, _d, _e;
+    const events = [];
+    const due = this.pending.sort((a, b) => a.nextBatchTime_s - b.nextBatchTime_s || a.waveIndex - b.waveIndex);
+    for (const wave of due) {
+      while (wave.nextBatchTime_s <= time_s + 1e-9 && wave.spawns.some((item) => item.remaining > 0)) {
+        const batchSpawns = [];
+        const totalByKey = /* @__PURE__ */ new Map();
+        for (const item of wave.spawns) {
+          const key = (_a = item.spawn.spawnPoint) != null ? _a : `route:${item.spawn.route}`;
+          totalByKey.set(key, ((_b = totalByKey.get(key)) != null ? _b : 0) + item.spawn.count);
+        }
+        let admitted = 0;
+        while (admitted < wave.batchSize && wave.spawns.some((item) => item.remaining > 0)) {
+          let selected;
+          let selectedIndex = -1;
+          for (let offset2 = 0; offset2 < wave.spawns.length; offset2++) {
+            const index = (wave.cursor + offset2) % wave.spawns.length;
+            if (wave.spawns[index].remaining > 0) {
+              selected = wave.spawns[index];
+              selectedIndex = index;
+              break;
+            }
+          }
+          if (!selected) break;
+          const spawn = selected.spawn;
+          const key = (_c = spawn.spawnPoint) != null ? _c : `route:${spawn.route}`;
+          const offset = (_d = wave.offsets.get(key)) != null ? _d : 0;
+          const positions = this.map.spawnPositions(spawn.route, totalByKey.get(key), spawn.spawnPoint).slice(offset, offset + 1);
+          wave.offsets.set(key, offset + positions.length);
+          for (const position of positions) {
+            this.store.spawn(spawn.unitType, position, spawn.route, (_e = spawn.spawnPoint) != null ? _e : null);
+            this.spawned++;
+          }
+          selected.remaining--;
+          admitted++;
+          wave.cursor = (selectedIndex + 1) % wave.spawns.length;
+          const existing = batchSpawns.find((item) => item.route === spawn.route && item.spawnPoint === spawn.spawnPoint && item.unitType === spawn.unitType);
+          if (existing) existing.count++;
+          else batchSpawns.push({ ...spawn, count: 1 });
+        }
+        if (admitted > 0) events.push({ type: "zombie_batch_spawn", time_s: wave.nextBatchTime_s, data: {
+          waveIndex: wave.waveIndex,
+          batchIndex: wave.batchIndex++,
+          batchSize: admitted,
+          spawns: batchSpawns
+        } });
+        wave.nextBatchTime_s += wave.batchInterval_s;
+        if (wave.batchInterval_s === 0) {
+          wave.nextBatchTime_s = wave.spawns.some((item) => item.remaining > 0) ? time_s : Infinity;
+        }
+      }
+    }
+    this.pending = this.pending.filter((wave) => wave.spawns.some((item) => item.remaining > 0));
+    return events;
+  }
+};
+
 // src/core/BattleTestHarness.ts
 var _BattleTestHarness = class _BattleTestHarness {
   constructor(config = DEFAULT_BATTLE_CONFIG, createWaveScheduler = WaveManager.load) {
     __publicField(this, "createWaveScheduler", createWaveScheduler);
     __publicField(this, "config");
+    __publicField(this, "initialHumanCount");
     __publicField(this, "snapshot");
     __publicField(this, "events", []);
     __publicField(this, "deploymentTime_s", 0);
@@ -1083,7 +1526,9 @@ var _BattleTestHarness = class _BattleTestHarness {
     __publicField(this, "combat", null);
     __publicField(this, "projectiles", null);
     __publicField(this, "results", null);
+    __publicField(this, "spawnSystem", null);
     this.config = config;
+    this.initialHumanCount = Number.isFinite(config.initialHumans) ? Math.min(MAX_HUMANS, Math.max(0, Math.floor(config.initialHumans))) : 0;
     this.snapshot = this.initialSnapshot();
     this.movement = new MovementSystem(this.units);
   }
@@ -1098,6 +1543,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.waveManager = this.createWaveScheduler(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
+    this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.combat = new CombatSystem(this.units, this.mapModel);
@@ -1106,14 +1552,30 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error("Map must define at least one route");
+    const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
+    let humanIndex = 0;
     for (const [index, routeId] of routes.entries()) {
-      const count = Math.floor(this.config.initialHumans / routes.length) + (index < this.config.initialHumans % routes.length ? 1 : 0);
+      const count = Math.floor(this.initialHumanCount / routes.length) + (index < this.initialHumanCount % routes.length ? 1 : 0);
       const route = this.mapModel.getRoute(routeId);
       for (const position of formationPositions(count, route.defend, this.mapModel)) {
-        this.units.spawn("rifleman", position, routeId);
+        this.units.spawn(humanTypes[humanIndex++ % humanTypes.length], position, routeId);
       }
     }
     this.started = true;
+  }
+  humanSpawnTypes(count) {
+    var _a;
+    const weights = (_a = this.config.initialHumanTypeWeights) != null ? _a : { rifleman: 1 };
+    const types = HUMAN_UNIT_TYPES.filter((type) => {
+      var _a2;
+      return Number.isFinite(weights[type]) && ((_a2 = weights[type]) != null ? _a2 : 0) > 0;
+    });
+    if (!types.length) return ["rifleman"];
+    const pattern = types.flatMap((type) => {
+      var _a2;
+      return Array(Math.max(1, Math.floor((_a2 = weights[type]) != null ? _a2 : 0))).fill(type);
+    });
+    return Array.from({ length: Math.max(1, count) }, (_, i) => pattern[i % pattern.length]);
   }
   endDeployment() {
     if (!this.started || this.snapshot.result !== "running") return;
@@ -1178,6 +1640,9 @@ var _BattleTestHarness = class _BattleTestHarness {
     var _a, _b;
     return (_b = (_a = this.waveManager) == null ? void 0 : _a.getWaveCount()) != null ? _b : 0;
   }
+  getInitialHumans() {
+    return this.initialHumanCount;
+  }
   getEvents() {
     return cloneData(this.events);
   }
@@ -1189,29 +1654,21 @@ var _BattleTestHarness = class _BattleTestHarness {
     return { cursor: this.events.length, events: cloneData(this.events.slice(cursor)) };
   }
   runWaves() {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     if (!this.waveManager) return;
     for (const event of this.waveManager.update(this.battleTime_s)) {
       this.events.push(event);
       const data = event.data;
-      const offsets = /* @__PURE__ */ new Map();
-      for (const spawn of data.spawns) {
-        const key = (_a = spawn.spawnPoint) != null ? _a : `route:${spawn.route}`;
-        const total = data.spawns.filter((item) => {
-          var _a2;
-          return ((_a2 = item.spawnPoint) != null ? _a2 : `route:${item.route}`) === key;
-        }).reduce((sum, item) => sum + item.count, 0);
-        const offset = (_b = offsets.get(key)) != null ? _b : 0;
-        const positions = this.mapModel.spawnPositions(spawn.route, total, spawn.spawnPoint).slice(offset, offset + spawn.count);
-        offsets.set(key, offset + spawn.count);
-        for (const position of positions) {
-          this.units.spawn(spawn.unitType, position, spawn.route, (_c = spawn.spawnPoint) != null ? _c : null);
-        }
-        this.snapshot.spawnedZombies += spawn.count;
-        this.snapshot.aliveZombies += spawn.count;
-      }
+      (_a = this.spawnSystem) == null ? void 0 : _a.enqueue(data);
       this.snapshot.waveIndex = data.waveIndex + 1;
     }
+    const batchEvents = (_c = (_b = this.spawnSystem) == null ? void 0 : _b.update(this.battleTime_s)) != null ? _c : [];
+    this.events.push(...batchEvents);
+    this.snapshot.spawnedZombies = (_e = (_d = this.spawnSystem) == null ? void 0 : _d.spawnedCount) != null ? _e : this.snapshot.spawnedZombies;
+  }
+  allZombieBatchesSpawned() {
+    var _a, _b;
+    return ((_a = this.waveManager) == null ? void 0 : _a.allWavesSpawned()) === true && !((_b = this.spawnSystem) == null ? void 0 : _b.hasPending());
   }
   resolveFrame() {
     const living = this.units.living();
@@ -1222,14 +1679,14 @@ var _BattleTestHarness = class _BattleTestHarness {
         this.snapshot.breachedRoutes.push(unit.routeId);
       }
     }
-    this.events.push(...this.results.update(this.waveManager.allWavesSpawned(), this.battleTime_s));
+    this.events.push(...this.results.update(this.allZombieBatchesSpawned(), this.battleTime_s));
     this.snapshot.result = this.results.getResult();
     if (this.snapshot.result !== "running") this.events.push(...this.projectiles.expireAll(this.battleTime_s));
   }
   initialSnapshot() {
     return {
       time_s: 0,
-      aliveHumans: this.config.initialHumans,
+      aliveHumans: this.initialHumanCount,
       aliveZombies: 0,
       spawnedZombies: 0,
       waveIndex: 0,
@@ -1243,10 +1700,14 @@ var BattleTestHarness = _BattleTestHarness;
 
 // src/adapter/BattleSession.ts
 var BattleSession = class {
-  constructor() {
-    __publicField(this, "battle", new BattleTestHarness());
-    __publicField(this, "levelId", "LV01_zombie_wave");
-    __publicField(this, "paused", false);
+  constructor(battle = new BattleTestHarness()) {
+    __publicField(this, "battle", battle);
+    __publicField(this, "levelId", SCENES[0].levelId);
+    __publicField(this, "scene", SCENES[0]);
+    __publicField(this, "previewMap", MapModel.load(SCENES[0].mapId));
+    __publicField(this, "screen", "menu");
+    __publicField(this, "mode", "story");
+    __publicField(this, "paused", true);
     __publicField(this, "deploymentRemaining", DEFAULT_BATTLE_CONFIG.deploymentDuration_s);
     __publicField(this, "events", []);
     __publicField(this, "cursor", 0);
@@ -1257,9 +1718,51 @@ var BattleSession = class {
   get waveCount() {
     return this.battle.getWaveCount();
   }
+  get initialHumans() {
+    return this.battle.getInitialHumans();
+  }
+  get activeScene() {
+    return this.scene;
+  }
+  get map() {
+    return this.screen === "battle" ? this.battle.getMapModel() : this.previewMap;
+  }
+  get nextScene() {
+    return this.mode === "story" ? SCENES[SCENES.indexOf(this.scene) + 1] : void 0;
+  }
+  get canAdvance() {
+    return this.screen === "battle" && this.snapshot.result === "win" && !!this.nextScene;
+  }
+  startStory() {
+    this.mode = "story";
+    this.restart(SCENES[0].levelId);
+  }
+  startScene(sceneId) {
+    const scene = getScene(sceneId);
+    this.mode = "practice";
+    this.restart(scene.levelId);
+  }
+  showSceneSelection() {
+    this.screen = "scenes";
+    this.paused = true;
+    this.events = [];
+  }
+  returnToMenu() {
+    this.screen = "menu";
+    this.paused = true;
+    this.events = [];
+  }
+  advanceScene() {
+    if (!this.canAdvance) return false;
+    this.restart(this.nextScene.levelId);
+    return true;
+  }
   restart(levelId = this.levelId) {
+    var _a;
     this.levelId = levelId;
+    this.scene = (_a = sceneForLevel(levelId)) != null ? _a : SCENES[0];
     this.battle.start(this.levelId, 1);
+    this.screen = "battle";
     this.paused = false;
     this.deploymentRemaining = DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
     this.cursor = 0;
@@ -1267,7 +1770,7 @@ var BattleSession = class {
   }
   tick(dt) {
     this.events = [];
-    if (this.paused || this.snapshot.result !== "running" || !Number.isFinite(dt) || dt < 0) return;
+    if (this.screen !== "battle" || this.paused || this.snapshot.result !== "running" || !Number.isFinite(dt) || dt < 0) return;
     this.battle.advance(dt);
     this.deploymentRemaining = Math.max(0, this.deploymentRemaining - dt);
     const batch = this.battle.readEvents(this.cursor);
@@ -1275,11 +1778,11 @@ var BattleSession = class {
     this.events = batch.events;
   }
   moveGroup(ids, tx, ty) {
-    if (this.paused || this.snapshot.result !== "running") return false;
+    if (this.screen !== "battle" || this.paused || this.snapshot.result !== "running") return false;
     return this.battle.issueMoveGroup(ids, tx, ty);
   }
   move(x, y, tx, ty) {
-    if (this.paused || this.snapshot.result !== "running") return false;
+    if (this.screen !== "battle" || this.paused || this.snapshot.result !== "running") return false;
     const before = this.battle.readEvents(this.cursor).cursor;
     this.battle.issueMoveAt(x, y, tx, ty);
     return this.battle.readEvents(before).events.some((e) => e.type === "group_command");
@@ -1287,6 +1790,7 @@ var BattleSession = class {
 };
 export {
   BattleSession,
+  SCENES,
   map_default as mapConfig,
   units_default as unitConfig
 };

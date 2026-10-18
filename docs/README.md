@@ -6,6 +6,7 @@
 
 ## 当前使用与实现
 
+- [故事与场景设计稿](10-story-scenes-design.md)：模式入口、小屋→大楼楼下、每关三波、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入两个场景，旧文档中的“只有一关、没有菜单”描述已被本次实现替代。
 - [上手与操作](getting-started.md)：Node 无渲染运行、Creator 首次导入、手势与后撤。
 - [实际架构](architecture.md)：以当前源码为依据的模块和数据流。
 - [开发指南](development.md)：配置、命令、测试、构建和排错。

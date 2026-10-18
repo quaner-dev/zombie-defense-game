@@ -1,5 +1,5 @@
 import { EventTouch, Input, input } from 'cc';
-import { mapConfig, type BattleSession } from '../generated/core.js';
+import type { BattleSession } from '../generated/core.js';
 import { DragCommand, screenToMap, type Frame, type Point } from './contracts';
 import type { PerfBudget } from './PerfBudget';
 import type { HudController, HitBox } from './HudController';
@@ -14,7 +14,7 @@ export class InputManager {
     input.on(Input.EventType.TOUCH_END,this.end,this);input.on(Input.EventType.TOUCH_CANCEL,this.cancelTouch,this);
   }
   private point(e:EventTouch):Point {return e.getUILocation();}
-  private map(e:EventTouch):Point {return screenToMap(this.point(e),this.frame(),mapConfig.battle_bounds);}
+  private map(e:EventTouch):Point {return screenToMap(this.point(e),this.frame(),this.session.map.battle_bounds);}
   private start(e:EventTouch):void {
     const id=e.getID();if(id===null)return;
     const p=this.point(e),button=this.hud.buttonAt(p);
@@ -28,14 +28,18 @@ export class InputManager {
     const m=screenToMap(p,f,{left:0,top:0,right:f.width,bottom:f.height});
     const inside=p.x>=f.x&&p.x<=f.x+f.width*f.scale&&p.y>=f.y&&p.y<=f.y+f.height*f.scale;
     if(!inside||this.session.paused||this.session.snapshot.result!=='running')return;
-    const humans=this.session.battle.getUnits().filter(u=>u.unitType==='rifleman'&&u.hp>0&&u.active);
-    const nearby=humans.filter(u=>Math.hypot(u.position.x-m.x,u.position.y-m.y)<=mapConfig.unit_selection_radius).map(u=>u.id);
-    // Re-sample the fixed circle on every press; touching one member never
-    // expands selection to a previously captured squad. Empty drags select none.
-    if(this.drag.begin(id,p,m,performance.now(),false,true,nearby)){
+    const humans=this.session.battle.getUnits().filter(u=>u.faction==='human'&&u.hp>0&&u.active);
+    const nearby=humans.filter(u=>Math.hypot(u.position.x-m.x,u.position.y-m.y)<=this.session.map.unit_selection_radius)
+      .sort((a,b)=>Math.hypot(a.position.x-m.x,a.position.y-m.y)-Math.hypot(b.position.x-m.x,b.position.y-m.y)||
+        (a.id<b.id?-1:a.id>b.id?1:0));
+    // Re-sample the fixed circle on every press and capture only the closest
+    // soldier. Empty drags select none; a later press never restores an old
+    // multi-unit selection.
+    const selected=nearby.length?[nearby[0].id]:[];
+    if(this.drag.begin(id,p,m,performance.now(),false,true,selected)){
       this.dragFinger=id;
-      this.selectedUnitIds=[...nearby];
-      this.selectionPreview={center:{...m},radius:mapConfig.unit_selection_radius};
+      this.selectedUnitIds=[...selected];
+      this.selectionPreview={center:{...m},radius:this.session.map.unit_selection_radius};
     }
   }
   private move(e:EventTouch):void {

@@ -23,13 +23,17 @@ function replay(cadence:number[], tactical:boolean) {
   const result={snapshot:s.snapshot,units:s.battle.getUnits(),events:s.battle.getEvents()};
   s.tick(100);assert.deepEqual(s.snapshot,result.snapshot);assert.deepEqual(s.battle.getEvents(),result.events);
   assert.deepEqual(result.events.filter(e=>e.type==='wave_spawn').map(e=>e.time_s),[0,7,20]);
-  if(tactical)assert.deepEqual(result.events.filter(e=>e.type==='group_command').map(e=>e.time_s),[0,0,0]);
+  if(tactical){
+    const commands=result.events.filter(e=>e.type==='group_command');
+    assert.deepEqual(commands.map(e=>e.time_s),[0,0,0]);
+    assert.ok(commands.every(e=>(e.data as {unitIds:string[]}).unitIds.length===1));
+  }
   return result;
 }
-for(const tactical of [false,true])test(`exact authoritative replay across single, 50ms, 60fps and jitter (${tactical?'central regroup':'idle'})`,()=>{
+for(const tactical of [false,true])test(`exact authoritative replay across single, 50ms, 60fps and jitter (${tactical?'micro-control':'idle'})`,()=>{
   const expected=replay([120],tactical);
   for(const cadence of [[.05],[1/60],[.007,.083,.019,.041]])assert.deepEqual(replay(cadence,tactical),expected);
-  assert.equal(expected.snapshot.result,tactical?'win':'lose');
+  assert.equal(expected.snapshot.result,'win');
   if(tactical)assert.ok(expected.snapshot.aliveHumans>0);
 });
 

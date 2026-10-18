@@ -75,7 +75,7 @@ test('deployment, pause, terminal freeze and restart are core-driven',()=>{
   const before=s.snapshot; s.tick(100); assert.deepEqual(s.snapshot,before);
   s.restart(); s.tick(0);
   assert.equal(s.events.length,0);
-  assert.equal(s.snapshot.result,'running'); assert.equal(s.snapshot.aliveHumans,50);
+  assert.equal(s.snapshot.result,'running'); assert.equal(s.snapshot.aliveHumans,15);
   assert.equal(s.deploymentRemaining,3); assert.equal(s.paused,false); assert.equal(s.events.length,0);
 });
 test('engine path works without structuredClone or Array.at',()=>{
@@ -83,6 +83,6 @@ test('engine path works without structuredClone or Array.at',()=>{
   const originalAt=Array.prototype.at;
   try { globalThis.structuredClone=undefined as any;Array.prototype.at=undefined as any;
     const b=new BattleTestHarness(); b.start('LV01_zombie_wave',1); b.endDeployment(); b.advance(10);
-    assert.ok(b.getUnits().length>50); assert.ok(b.getEvents().length>1);
+    assert.ok(b.getUnits().length>15); assert.ok(b.getEvents().length>1);
   } finally {globalThis.structuredClone=original;Array.prototype.at=originalAt;}
 });

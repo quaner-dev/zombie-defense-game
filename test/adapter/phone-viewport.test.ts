@@ -42,9 +42,9 @@ test('393x852: drawn field, camera frustum and HUD agree with actual touch comma
   near(renderedButton.x,b.x+130);near(renderedButton.y,b.y+50);
   f.touch('start',2,renderedButton.x,renderedButton.y);c.update(.016);f.touch('end',2,renderedButton.x,renderedButton.y);
   assert.equal(c.session.paused,true);
-  // Actual Graphics radii stay small; no combat/unit-size tuning to conceal layout bugs.
-  near(c.units.g.calls.find((call:any)=>call.kind==='circle').args[2],10.5);
-  near(7*c.field.scale.x*pixelsPerDesignUnit,7*(2030/2400)*(852/2400));
+  // The display radius is doubled while screen-to-map input coordinates remain unchanged.
+  near(c.units.g.calls.find((call:any)=>call.kind==='circle').args[2],21);
+  near(14*c.field.scale.x*pixelsPerDesignUnit,14*(2030/2400)*(852/2400));
 });
 
 for(const safe of [{x:40,y:80,width:1000,height:2200},{x:0,y:0,width:0,height:0}])

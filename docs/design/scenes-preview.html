@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>尸潮防线 · 场景与故事设计稿</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1114;--panel:#141d22;--line:#2a3b43;--text:#e6edeb;--muted:#91a5aa;--accent:#b7ee8d;--blue:#89cddc}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,"Microsoft YaHei",sans-serif;line-height:1.7}button{font:inherit;cursor:pointer}header{padding:28px max(6vw,22px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}header strong{font-size:20px;letter-spacing:4px}header span,.muted{color:var(--muted);font-size:13px}main{max-width:1200px;padding:48px 24px 80px;margin:auto}.eyebrow{font-size:12px;letter-spacing:3px;color:var(--accent);margin-bottom:16px}h1{font-size:clamp(34px,5vw,64px);line-height:1.15;letter-spacing:2px;margin:0 0 22px}h2{margin:8px 0;font-size:26px}p{color:var(--muted);max-width:650px}button:focus-visible{outline:3px solid var(--accent);outline-offset:5px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:38px}.card{background:var(--panel);border:1px solid var(--line);padding:30px;border-radius:4px;text-align:left;color:var(--text);transition:border .2s,transform .2s}.card:hover{border-color:var(--accent);transform:translateY(-3px)}.num{font:12px ui-monospace,monospace;color:var(--accent);letter-spacing:3px}.card .arrow{color:var(--accent);font-size:25px}.pill{display:inline-block;padding:4px 10px;border:1px solid var(--line);font-size:12px;color:var(--blue);margin:10px 6px 0 0}.route{border-top:1px solid var(--line);margin-top:48px;padding-top:22px;display:flex;gap:24px;flex-wrap:wrap;font-size:14px;color:var(--muted)}.route b{color:var(--text);font-weight:500}.back{background:none;border:0;color:var(--muted);padding:0;margin-bottom:26px}.stage{display:grid;grid-template-columns:minmax(280px,440px) 1fr;gap:56px;margin-top:32px}.map{background:#101a20;border:1px solid var(--line);padding:12px;position:relative}.map svg{width:100%;height:520px;display:block}.map small{display:block;text-align:center;font-size:12px;color:var(--muted);padding:8px}.description{padding-top:12px}.waves{display:flex;gap:10px;margin:24px 0}.wave{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:10px 16px}.wave.active{color:var(--bg);background:var(--accent);border-color:var(--accent)}.wave-detail{min-height:100px;border-left:2px solid var(--accent);padding-left:18px}.primary{background:var(--accent);border:0;color:#182219;padding:13px 22px;font-weight:600;margin:24px 12px 0 0}.secondary{background:none;border:1px solid var(--line);color:var(--text);padding:12px 22px}.thumb{float:right;width:110px;height:180px;margin-left:20px}.thumb svg{width:100%;height:100%}.notice{padding:14px 18px;border:1px solid var(--line);font-size:13px;color:var(--muted);margin-top:30px}.future{margin-top:54px;padding-top:26px;border-top:1px solid var(--line)}.future-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.future-grid article{padding:20px;background:var(--panel)}.future-grid h3{margin:0;font-size:17px}.future-grid p{font-size:14px}.hidden{display:none}@media(max-width:700px){header{align-items:flex-start;flex-direction:column}.cards,.stage,.future-grid{grid-template-columns:1fr}.stage{gap:24px}.map svg{height:440px}main{padding-top:30px}.card{padding:22px}.route{gap:12px}}
+</style>
+</head>
+<body>
+<header><strong>尸潮防线</strong><span>场景与故事 / 交互设计稿 / 01—02</span></header>
+<main>
+<section id="menu">
+<div class="eyebrow">从一间小屋，到整座城市</div><h1>选择你的<br>下一处阵地。</h1>
+<p>带领队伍穿过尸潮。每个地点三波进攻，利用隔墙、街角和建筑之间的通道，找到生存的路线。</p>
+<div class="cards">
+<button class="card" onclick="openScene('cabin','story')"><div class="num">01 / 故事模式</div><h2>从小屋出发</h2><p>先守住屋内阵地，再前往大楼楼下。<br>按章节推进，每一关都是新的作战空间。</p><span class="pill">2 个场景</span><span class="pill">每场 3 波</span><div class="arrow">开始故事 →</div></button>
+<button class="card" onclick="show('selection')"><div class="num">02 / 场景演练</div><h2>选择作战地点</h2><p>自由选择已接入的地图，独立练习布阵、<br>集结与转角移动，熟悉每一条后撤路线。</p><span class="pill">自由选关</span><span class="pill">每场 3 波</span><div class="arrow">查看场景 →</div></button>
+</div>
+<div class="route"><b>故事路线</b><span>01 小屋突围</span><span>→</span><span>02 楼下集结</span><span>→ 暂时安全</span></div>
+</section>
+<section id="selection" class="hidden">
+<button class="back" onclick="show('menu')">← 返回模式选择</button><div class="eyebrow">场景演练</div><h1>先熟悉地形。</h1><p>两张地图均可直接进入；演练结算后可以重试或返回选择。</p>
+<div class="cards" id="scene-cards"></div>
+</section>
+<section id="scene" class="hidden">
+<button class="back" id="scene-back">← 返回</button><div class="eyebrow" id="chapter"></div><h1 id="scene-title"></h1>
+<div class="stage"><div class="map"><div id="map"></div><small>绿色：初始队伍　紫色：来敌方向　灰色：墙体</small></div><div class="description">
+<div id="tags"></div><p id="briefing"></p><h2 id="theme"></h2><p id="tactics"></p>
+<div class="waves" id="waves"></div><div class="wave-detail" id="wave-detail"></div>
+<button class="primary" id="complete"></button><button class="secondary" onclick="setWave(0)">重看布阵</button>
+<div class="notice">这是流程和空间设计预览。波次按钮展示进攻安排，“模拟通关”用于查看章节衔接；实际战斗在 Cocos 项目中运行。</div>
+</div></div>
+</section>
+<section class="future"><div class="eyebrow">后续场景 · 内容提案</div><div class="future-grid">
+<article><h3>03 / 地下停车场</h3><p>长条停车岛与立柱分割视线。从坡道防守到侧路包夹，保留一条撤退通道。</p><span class="pill">路口火力分配</span></article>
+<article><h3>04 / 商业街</h3><p>连续店铺外墙与窄巷。沿街逐段转移，避免队形在多次转角后被拉长。</p><span class="pill">街角与队形</span></article>
+<article><h3>05 / 撤离广场</h3><p>开阔广场、公交站与撤离平台。守住火力点，也为队伍留出离开的路线。</p><span class="pill">防守与撤离</span></article>
+</div><p class="muted">以上为设计储备，当前游戏接入小屋、大楼楼下两个场景。</p></section>
+</main>
+<script>
+const scenes={
+ cabin:{title:'小屋突围',chapter:'第一幕 · 小屋内部',theme:'隔墙之间，收拢火力。',briefing:'尸潮正在逼近。利用屋内隔墙收拢队伍，守住三波进攻，寻找离开小屋的机会。',tactics:'沿用当前地图。细隔墙切开战场，集中队伍并及时后撤，避免士兵被不同方向的敌人分散。',floor:'#17191e',wall:'#7a7a85',walls:[[350,900,40,360],[690,900,40,360],[420,1060,240,40],[260,1600,100,40]],humans:[[180,1370],[540,1370],[900,1370]],waves:[['0 秒 · 50 只','北、南各 13 只，东、西各 12 只。观察四侧压力，认识选兵与集结。'],['7 秒 · 100 只','四侧各 25 只。前一波尚未清场时，新的尸群已经加入。'],['20 秒 · 200 只','四侧各 50 只。守住队形，完成所有出怪批次后清场。']]},
+ courtyard:{title:'楼下集结',chapter:'第二幕 · 大楼楼下',theme:'绕过宽墙，守住街角。',briefing:'冲出小屋后，队伍来到大楼之间。宽厚的建筑墙体遮住射线，沿街道转移，守住三波尸潮。',tactics:'四块长方形建筑夹出十字通道。中央通道宽 280 像素，横向通道宽 400 像素；由街角提供遮挡，再沿街道转移。',floor:'#19252c',wall:'#596b79',walls:[[160,460,240,620],[680,460,240,620],[160,1480,240,480],[680,1480,240,480]],humans:[[420,1280],[540,1280],[660,1280]],waves:[['0 秒 · 30 只','北、南各 15 只。先熟悉纵向街道和建筑遮挡。'],['14 秒 · 45 只','西、东、北各 15 只。第一次侧面包夹，调整街角站位。'],['30 秒 · 60 只','四侧各 15 只。沿街转移，在四向压力中完成清场。']]}
+};
+let current='cabin',mode='story';
+function mapSvg(id){const s=scenes[id];return `<svg viewBox="0 0 1080 2400" role="img" aria-label="${s.title}俯视布局"><rect width="1080" height="2400" fill="${s.floor}"/>${id==='courtyard'?'<path d="M540 180V2160M60 1280H1020" stroke="#25343b" stroke-width="240"/>':''}<rect x="60" y="180" width="960" height="1980" fill="none" stroke="#43575e" stroke-width="5"/>${s.walls.map(([x,y,w,h])=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${s.wall}" stroke="#b0bec7" stroke-width="4"/>`).join('')}${s.humans.map(([x,y])=>[-1,0,1].map(i=>`<circle cx="${x+i*25}" cy="${y+Math.abs(i)*20}" r="13" fill="#b7ee8d"/>`).join('')).join('')}<g fill="#ae90dc"><path d="M540 225l-30 60h60z"/><path d="M540 2115l-30-60h60z"/><path d="M95 1280l60-30v60z"/><path d="M985 1280l-60-30v60z"/></g></svg>`;}
+function show(id){for(const screen of ['menu','selection','scene'])document.getElementById(screen).classList.toggle('hidden',screen!==id);window.scrollTo(0,0);}
+function openScene(id,selectedMode){current=id;mode=selectedMode;const s=scenes[id];document.getElementById('chapter').textContent=(mode==='story'?'故事模式 / ':'场景演练 / ')+s.chapter;document.getElementById('scene-title').textContent=s.title;document.getElementById('map').innerHTML=mapSvg(id);document.getElementById('briefing').textContent=s.briefing;document.getElementById('theme').textContent=s.theme;document.getElementById('tactics').textContent=s.tactics;document.getElementById('tags').innerHTML=`<span class="pill">3 秒布阵</span><span class="pill">3 波尸潮</span><span class="pill">${id==='cabin'?'屋内细隔墙':'240×620 / 240×480 建筑墙'}</span>`;document.getElementById('waves').innerHTML=s.waves.map((_,i)=>`<button class="wave" onclick="setWave(${i})">第 ${i+1} 波</button>`).join('');document.getElementById('scene-back').onclick=()=>show(mode==='practice'?'selection':'menu');const complete=document.getElementById('complete');complete.textContent=mode==='story'?(id==='cabin'?'模拟通关 → 进入大楼楼下':'模拟通关 → 故事结束'):'模拟通关 → 返回选关';complete.onclick=()=>{if(mode==='story'&&id==='cabin')openScene('courtyard','story');else if(mode==='story'){show('menu');document.querySelector('#menu .eyebrow').textContent='两处阵地已守住 · 队伍暂时安全';}else show('selection');};setWave(0);show('scene');}
+function setWave(index){const s=scenes[current];document.querySelectorAll('.wave').forEach((e,i)=>e.classList.toggle('active',i===index));const detail=document.getElementById('wave-detail');detail.replaceChildren();const title=document.createElement('strong');title.textContent=s.waves[index][0];const p=document.createElement('p');p.textContent=s.waves[index][1];detail.append(title,p);}
+document.getElementById('scene-cards').innerHTML=Object.entries(scenes).map(([id,s])=>`<button class="card" onclick="openScene('${id}','practice')"><div class="thumb">${mapSvg(id)}</div><div class="num">${s.chapter}</div><h2>${s.title}</h2><p>${s.theme}</p><span class="pill">3 波尸潮</span><div class="arrow">进入演练 →</div></button>`).join('');
+</script>
+</body>
+</html>

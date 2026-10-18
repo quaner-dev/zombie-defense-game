@@ -33,41 +33,68 @@ export class DragCommand {
   public reset():void {this.cancel();this.cooldownUntil=-Infinity;}
 }
 interface Event {type:string;time_s:number;data:unknown}
-interface Track {id:string;origin:Point;destination:Point;time:number}
+export type ProjectileTrackKind = 'bullet' | 'flame';
+interface Track {
+  id:string;
+  origin:Point;
+  destination:Point;
+  time:number;
+  kind:ProjectileTrackKind;
+  speed_px_per_s?:number;
+  max_flight_time_s?:number;
+}
 export class ProjectileTracks {
   private active=new Map<string,Track>();
+  // Keep the historical trail/hit/muzzle shapes stable for existing adapters,
+  // while retaining the kind out-of-band for rendering variants.
+  private trailKinds=new WeakMap<object,ProjectileTrackKind>();
+  private hitKinds=new WeakMap<object,ProjectileTrackKind>();
+  private muzzleKinds=new WeakMap<object,ProjectileTrackKind>();
   public hits:{position:Point;time:number;blocked:boolean}[]=[];
   public trails:{origin:Point;position:Point;time:number}[]=[];
   public muzzles:{position:Point;time:number}[]=[];
   public consume(events:Event[]):void {
     for(const e of events){
       if(e.type==='projectile_spawned'){
-        const d=e.data as {id:string;origin:Point;destination:Point};
-        this.active.set(d.id,{...d,time:e.time_s});
-        this.muzzles.push({position:d.origin,time:e.time_s});
+        const d=e.data as {id:string;origin:Point;destination:Point;projectileKind?:ProjectileTrackKind;speed_px_per_s?:number;max_flight_time_s?:number};
+        const kind=d.projectileKind??'bullet';
+        this.active.set(d.id,{...d,time:e.time_s,kind});
+        const muzzle={position:d.origin,time:e.time_s};
+        this.muzzles.push(muzzle);this.muzzleKinds.set(muzzle,kind);
       } else if(e.type==='projectile_hit'||e.type==='projectile_blocked'||e.type==='projectile_expired'){
         const d=e.data as {projectileId:string;position:Point};
         const track=this.active.get(d.projectileId);
         if(e.type!=='projectile_expired'&&track){
-          this.hits.push({position:d.position,time:e.time_s,blocked:e.type==='projectile_blocked'});
+          const hit={position:d.position,time:e.time_s,blocked:e.type==='projectile_blocked'};
+          this.hits.push(hit);this.hitKinds.set(hit,track.kind);
           // Retain the traveled segment even when spawn and impact share a frame.
           // Wall impacts use the actual contact point, never the intended target.
-          this.trails.push({origin:track.origin,position:d.position,time:e.time_s});
+          const trail={origin:track.origin,position:d.position,time:e.time_s};
+          this.trails.push(trail);this.trailKinds.set(trail,track.kind);
         }
         this.active.delete(d.projectileId);
       }
     }
   }
-  public positions(time:number,speed:number):{id:string;position:Point;origin:Point}[]{
+  public positions(time:number,speed:number):{id:string;position:Point;origin:Point;kind:ProjectileTrackKind}[]{
     this.hits=this.hits.filter(h=>time-h.time<.12);
     this.trails=this.trails.filter(t=>time-t.time<.10);
     this.muzzles=this.muzzles.filter(m=>time-m.time<.08);
     return [...this.active.values()].map(t=>{
       const distance=Math.hypot(t.destination.x-t.origin.x,t.destination.y-t.origin.y);
-      const f=distance===0?1:Math.min(1,Math.max(0,time-t.time)*speed/distance);
-      return {id:t.id,origin:t.origin,position:{x:t.origin.x+(t.destination.x-t.origin.x)*f,y:t.origin.y+(t.destination.y-t.origin.y)*f}};
+      const effectiveSpeed=t.speed_px_per_s??speed;
+      const age=Math.max(0,time-t.time);
+      const traveled=t.max_flight_time_s===undefined?age*effectiveSpeed:Math.min(age,t.max_flight_time_s)*effectiveSpeed;
+      const f=distance===0?1:Math.min(1,traveled/distance);
+      return {id:t.id,origin:t.origin,kind:t.kind,position:{x:t.origin.x+(t.destination.x-t.origin.x)*f,y:t.origin.y+(t.destination.y-t.origin.y)*f}};
     });
   }
+  public kindForTrail(trail:{origin:Point;position:Point;time:number}):ProjectileTrackKind{return this.trailKinds.get(trail as object)??'bullet';}
+  public kindForHit(hit:{position:Point;time:number;blocked:boolean}):ProjectileTrackKind{return this.hitKinds.get(hit as object)??'bullet';}
+  public kindForMuzzle(muzzle:{position:Point;time:number}):ProjectileTrackKind{return this.muzzleKinds.get(muzzle as object)??'bullet';}
   public get counts(){return {active:this.active.size,hits:this.hits.length};}
-  public clear():void {this.active.clear();this.hits=[];this.trails=[];this.muzzles=[];}
+  public clear():void {
+    this.active.clear();this.hits=[];this.trails=[];this.muzzles=[];
+    this.trailKinds=new WeakMap();this.hitKinds=new WeakMap();this.muzzleKinds=new WeakMap();
+  }
 }

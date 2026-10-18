@@ -5,7 +5,7 @@
   "spawn_bounds": { "top": -180 },
   "defense_line_y": 1200,
   "unit_selection_radius": 112,
-  "spawn_layout": { "columns": 25, "spacing_px": 22 },
+  "spawn_layout": { "columns": 25, "spacing_px": 44 },
   "routes": [
     {
       "id": "A",

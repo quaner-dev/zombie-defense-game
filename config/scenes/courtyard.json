@@ -1,0 +1,64 @@
+{
+  "id": "courtyard",
+  "title": "楼下集结",
+  "subtitle": "第二幕 · 大楼楼下",
+  "briefing": "冲出小屋后，队伍来到大楼之间。宽厚的建筑墙体遮住射线，沿街道转移，守住三波尸潮。",
+  "objective": "利用建筑之间的通道抵御 3 波尸潮",
+  "mapId": "LV02_building_courtyard",
+  "levelId": "LV02_courtyard_wave",
+  "presentation": {
+    "floorColor": "#19252C",
+    "wallColor": "#596B79",
+    "wallOutlineColor": "#91A6B6",
+    "decorations": [
+      { "kind": "floor", "color": "#25343B", "bounds": { "left": 420, "top": 180, "right": 660, "bottom": 2160 } },
+      { "kind": "floor", "color": "#25343B", "bounds": { "left": 60, "top": 1120, "right": 1020, "bottom": 1440 } },
+      { "kind": "stripe", "color": "#B29D64", "bounds": { "left": 524, "top": 300, "right": 540, "bottom": 940 } },
+      { "kind": "stripe", "color": "#B29D64", "bounds": { "left": 524, "top": 1640, "right": 540, "bottom": 2040 } }
+    ]
+  },
+  "map": {
+    "design_size": { "width": 1080, "height": 2400 },
+    "battle_bounds": { "left": 60, "top": 180, "right": 1020, "bottom": 2160 },
+    "defense_line_y": 1200,
+    "unit_selection_radius": 112,
+    "spawn_layout": { "columns": 25, "spacing_px": 44 },
+    "routes": [
+      { "id": "A", "spawn": { "x": 180, "y": 180 }, "defend": { "x": 420, "y": 1280 }, "width": 240, "waypoints": [{ "x": 180, "y": 180 }, { "x": 420, "y": 1280 }] },
+      { "id": "B", "spawn": { "x": 540, "y": 180 }, "defend": { "x": 540, "y": 1280 }, "width": 240, "waypoints": [{ "x": 540, "y": 180 }, { "x": 540, "y": 1280 }] },
+      { "id": "C", "spawn": { "x": 900, "y": 180 }, "defend": { "x": 660, "y": 1280 }, "width": 240, "waypoints": [{ "x": 900, "y": 180 }, { "x": 660, "y": 1280 }] }
+    ],
+    "spawnPoints": [
+      { "id": "north", "x": 540, "y": 180, "side": "north", "width": 900 },
+      { "id": "south", "x": 540, "y": 2160, "side": "south", "width": 900 },
+      { "id": "east", "x": 1020, "y": 1280, "side": "east", "width": 400 },
+      { "id": "west", "x": 60, "y": 1280, "side": "west", "width": 400 }
+    ],
+    "terrain": [
+      { "id": "northwest-building", "kind": "wall", "bounds": { "left": 160, "top": 460, "right": 400, "bottom": 1080 }, "blocksMovement": true, "stackRequired": 3 },
+      { "id": "northeast-building", "kind": "wall", "bounds": { "left": 680, "top": 460, "right": 920, "bottom": 1080 }, "blocksMovement": true, "stackRequired": 3 },
+      { "id": "southwest-building", "kind": "wall", "bounds": { "left": 160, "top": 1480, "right": 400, "bottom": 1960 }, "blocksMovement": true, "stackRequired": 3 },
+      { "id": "southeast-building", "kind": "wall", "bounds": { "left": 680, "top": 1480, "right": 920, "bottom": 1960 }, "blocksMovement": true, "stackRequired": 3 }
+    ]
+  },
+  "level": {
+    "mapId": "LV02_building_courtyard",
+    "waves": [
+      { "battleTime_s": 0, "batchSize": 5, "batchInterval_s": 1, "spawns": [
+        { "unitType": "normal_zombie", "route": "A", "spawnPoint": "north", "count": 15 },
+        { "unitType": "normal_zombie", "route": "C", "spawnPoint": "south", "count": 15 }
+      ] },
+      { "battleTime_s": 14, "batchSize": 5, "batchInterval_s": 1, "spawns": [
+        { "unitType": "normal_zombie", "route": "A", "spawnPoint": "west", "count": 15 },
+        { "unitType": "normal_zombie", "route": "C", "spawnPoint": "east", "count": 15 },
+        { "unitType": "normal_zombie", "route": "B", "spawnPoint": "north", "count": 15 }
+      ] },
+      { "battleTime_s": 30, "batchSize": 5, "batchInterval_s": 1, "spawns": [
+        { "unitType": "normal_zombie", "route": "B", "spawnPoint": "north", "count": 15 },
+        { "unitType": "normal_zombie", "route": "B", "spawnPoint": "south", "count": 15 },
+        { "unitType": "normal_zombie", "route": "A", "spawnPoint": "west", "count": 15 },
+        { "unitType": "normal_zombie", "route": "C", "spawnPoint": "east", "count": 15 }
+      ] }
+    ]
+  }
+}

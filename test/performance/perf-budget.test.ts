@@ -60,7 +60,7 @@ test('actual projectile stream and death caches reset at terminal and across twe
       assert.ok(pools,'real projectile pool must expose its active baseline');
       peak=Math.max(peak,pools.active);deathPeak=Math.max(deathPeak,c.units.retainedDeaths);
       c.session.tick(100);(c as any).draw();
-      assert.equal(c.session.snapshot.result,'lose');
+      assert.equal(c.session.snapshot.result,'win');
     }
     assert.equal(c.projectiles.counts.active,0);assert.equal(c.projectiles.counts.hits,0);
     assert.equal(c.units.retainedDeaths,0);

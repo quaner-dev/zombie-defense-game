@@ -1,5 +1,5 @@
 import { cloneData } from './cloneData.js';
-import { DEFAULT_BATTLE_CONFIG } from './config.js';
+import { DEFAULT_BATTLE_CONFIG, MAX_HUMANS } from './config.js';
 import { MapModel } from './MapModel.js';
 import { WaveManager, type WaveScheduler, type WaveSpawnEventData } from './WaveManager.js';
 import { UnitStore } from './UnitStore.js';
@@ -8,10 +8,13 @@ import { MovementSystem } from './MovementSystem.js';
 import { CombatSystem } from './CombatSystem.js';
 import { ProjectileSystem } from './ProjectileSystem.js';
 import { ResultSystem } from './ResultSystem.js';
-import type { BattleConfig, BattleEvent, BattleSnapshot, Unit, UnitType } from './types.js';
+import { SpawnSystem } from './SpawnSystem.js';
+import type { BattleConfig, BattleEvent, BattleSnapshot, HumanUnitType, Unit } from './types.js';
+import { HUMAN_UNIT_TYPES } from './units/index.js';
 
 export class BattleTestHarness {
   private readonly config: BattleConfig;
+  private readonly initialHumanCount: number;
   private snapshot: BattleSnapshot;
   private events: BattleEvent[] = [];
   private deploymentTime_s = 0;
@@ -29,12 +32,15 @@ export class BattleTestHarness {
   private combat: CombatSystem | null = null;
   private projectiles: ProjectileSystem | null = null;
   private results: ResultSystem | null = null;
+  private spawnSystem: SpawnSystem | null = null;
 
   public constructor(
     config: BattleConfig = DEFAULT_BATTLE_CONFIG,
     private readonly createWaveScheduler: (levelId: string) => WaveScheduler = WaveManager.load,
   ) {
     this.config = config;
+    this.initialHumanCount = Number.isFinite(config.initialHumans)
+      ? Math.min(MAX_HUMANS, Math.max(0, Math.floor(config.initialHumans))) : 0;
     this.snapshot = this.initialSnapshot();
     this.movement = new MovementSystem(this.units);
   }
@@ -51,6 +57,7 @@ export class BattleTestHarness {
     this.waveManager = this.createWaveScheduler(levelId);
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
+    this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.combat = new CombatSystem(this.units, this.mapModel);
@@ -59,15 +66,26 @@ export class BattleTestHarness {
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error('Map must define at least one route');
+    const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
+    let humanIndex = 0;
     for (const [index, routeId] of routes.entries()) {
-      const count = Math.floor(this.config.initialHumans / routes.length) +
-        (index < this.config.initialHumans % routes.length ? 1 : 0);
+      const count = Math.floor(this.initialHumanCount / routes.length) +
+        (index < this.initialHumanCount % routes.length ? 1 : 0);
       const route = this.mapModel.getRoute(routeId)!;
       for (const position of formationPositions(count, route.defend, this.mapModel)) {
-        this.units.spawn('rifleman', position, routeId);
+        this.units.spawn(humanTypes[humanIndex++ % humanTypes.length], position, routeId);
       }
     }
     this.started = true;
+  }
+
+  private humanSpawnTypes(count: number): HumanUnitType[] {
+    const weights = this.config.initialHumanTypeWeights ?? { rifleman: 1 };
+    const types = HUMAN_UNIT_TYPES
+      .filter(type => Number.isFinite(weights[type]) && (weights[type] ?? 0) > 0);
+    if (!types.length) return ['rifleman'];
+    const pattern = types.flatMap(type => Array(Math.max(1, Math.floor(weights[type] ?? 0))).fill(type));
+    return Array.from({ length: Math.max(1, count) }, (_, i) => pattern[i % pattern.length]);
   }
 
   public endDeployment(): void {
@@ -140,6 +158,8 @@ export class BattleTestHarness {
 
   public getWaveCount(): number { return this.waveManager?.getWaveCount() ?? 0; }
 
+  public getInitialHumans(): number { return this.initialHumanCount; }
+
   public getEvents(): BattleEvent[] {
     return cloneData(this.events);
   }
@@ -157,23 +177,16 @@ export class BattleTestHarness {
     for (const event of this.waveManager.update(this.battleTime_s)) {
       this.events.push(event);
       const data = event.data as WaveSpawnEventData;
-      const offsets = new Map<string, number>();
-      for (const spawn of data.spawns) {
-        const key = spawn.spawnPoint ?? `route:${spawn.route}`;
-        const total = data.spawns.filter(item => (item.spawnPoint ?? `route:${item.route}`) === key)
-          .reduce((sum, item) => sum + item.count, 0);
-        const offset = offsets.get(key) ?? 0;
-        const positions = this.mapModel!.spawnPositions(spawn.route, total, spawn.spawnPoint)
-          .slice(offset, offset + spawn.count);
-        offsets.set(key, offset + spawn.count);
-        for (const position of positions) {
-          this.units.spawn(spawn.unitType as UnitType, position, spawn.route, spawn.spawnPoint ?? null);
-        }
-        this.snapshot.spawnedZombies += spawn.count;
-        this.snapshot.aliveZombies += spawn.count;
-      }
+      this.spawnSystem?.enqueue(data);
       this.snapshot.waveIndex = data.waveIndex + 1;
     }
+    const batchEvents = this.spawnSystem?.update(this.battleTime_s) ?? [];
+    this.events.push(...batchEvents);
+    this.snapshot.spawnedZombies = this.spawnSystem?.spawnedCount ?? this.snapshot.spawnedZombies;
+  }
+
+  private allZombieBatchesSpawned(): boolean {
+    return this.waveManager?.allWavesSpawned() === true && !this.spawnSystem?.hasPending();
   }
 
   private resolveFrame(): void {
@@ -185,7 +198,7 @@ export class BattleTestHarness {
         this.snapshot.breachedRoutes.push(unit.routeId);
       }
     }
-    this.events.push(...this.results!.update(this.waveManager!.allWavesSpawned(), this.battleTime_s));
+    this.events.push(...this.results!.update(this.allZombieBatchesSpawned(), this.battleTime_s));
     this.snapshot.result = this.results!.getResult();
     if (this.snapshot.result !== 'running') this.events.push(...this.projectiles!.expireAll(this.battleTime_s));
   }
@@ -193,7 +206,7 @@ export class BattleTestHarness {
   private initialSnapshot(): BattleSnapshot {
     return {
       time_s: 0,
-      aliveHumans: this.config.initialHumans,
+      aliveHumans: this.initialHumanCount,
       aliveZombies: 0,
       spawnedZombies: 0,
       waveIndex: 0,

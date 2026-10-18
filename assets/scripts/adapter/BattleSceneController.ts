@@ -37,10 +37,10 @@ export class BattleSceneController extends Component {
     this.projectiles=new ProjectileViewPool(this.field);this.preview=graphics('CommandPreview',this.field);
     // Canvas origin is its center. This child exposes bottom-left design coordinates.
     const hudRoot=uiNode('HUD',this.root);hudRoot.setPosition(-540,-1200);
-    this.hud=new HudController(hudRoot,this.session,()=>this.restart());
+    this.hud=new HudController(hudRoot,this.session,()=>this.restart(),()=>this.sceneChanged());
     this.controls=new InputManager(this.session,this.hud,()=>this.frame,this.performance);
     view.on('canvas-resize',this.layout,this);game.on(Game.EVENT_HIDE,this.hide,this);
-    this.layout();this.restart();
+    this.sceneChanged();
     diagnosticLog('[ZombieDefense] BattleSceneController.onLoad:complete',{
       camera:cameraNode.name,
       visible:view.getVisibleSize(),
@@ -57,7 +57,8 @@ export class BattleSceneController extends Component {
       ? reportedSafe
       : {x:0,y:0,width:visibleWidth,height:visibleHeight};
     const bottomReserve=150,topReserve=220;
-    this.frame=fitMap({x:safe.x+20,y:safe.y+bottomReserve,width:Math.max(1,safe.width-40),height:Math.max(1,safe.height-topReserve-bottomReserve)},1080,2400);
+    const {width,height}=this.session.map.design_size;
+    this.frame=fitMap({x:safe.x+20,y:safe.y+bottomReserve,width:Math.max(1,safe.width-40),height:Math.max(1,safe.height-topReserve-bottomReserve)},width,height);
     // Graphics uses (map.x, -map.y); place its origin at the fitted map's top-left.
     this.field.setPosition(this.frame.x-540,this.frame.y+this.frame.height*this.frame.scale-1200);
     this.field.setScale(this.frame.scale,this.frame.scale,1);
@@ -70,8 +71,17 @@ export class BattleSceneController extends Component {
     });
   }
   private hide():void {this.performance.suspend();this.session.paused=true;this.controls.cancel();}
+  private sceneChanged():void {
+    this.performance.reset();this.controls.reset();this.vibration.reset();this.hud.reset();this.units.clear();this.projectiles.clear();
+    if(this.field){
+      this.field.active=this.session.screen==='battle';
+      if(this.field.active)this.map.setScene(this.session.map,this.session.activeScene);
+      this.layout();
+    }
+    this.draw();
+  }
   private restart():void {
-    this.performance.reset();this.controls.reset();this.session.restart();this.vibration.reset();this.hud.reset();this.units.clear();this.projectiles.clear();this.draw();
+    this.session.restart();this.sceneChanged();
     diagnosticLog('[ZombieDefense] restart',{
       result:this.session.snapshot.result,
       deployment:this.session.deploymentRemaining,
@@ -89,7 +99,7 @@ export class BattleSceneController extends Component {
         visible:view.getVisibleSize(),
       });
     }
-    const measuring=!this.session.paused&&this.session.snapshot.result==='running';
+    const measuring=this.session.screen==='battle'&&!this.session.paused&&this.session.snapshot.result==='running';
     if(!measuring)this.performance.suspend();
     const start=this.performance.now();
     this.session.tick(Math.min(Math.max(dt,0),.05));
@@ -101,6 +111,7 @@ export class BattleSceneController extends Component {
     if(measuring){this.performance.feedback();this.performance.frame(afterCore-start,afterDraw-afterCore);}
   }
   private draw():void {
+    if(this.session.screen!=='battle'){this.preview.clear();this.hud.render();return;}
     const s=this.session.snapshot,time=s.time_s+(3-this.session.deploymentRemaining);
     this.map.render(s.breachedRoutes,time);
     // Off-map spawn centers must not leak into the physical HUD reserve above
@@ -121,8 +132,10 @@ export class BattleSceneController extends Component {
       // covering a large selection with overlapping circles.
       const soldier=visibleUnits.find(unit=>unit.id===p.unitIds[0]&&unit.hp>0);
       if(soldier){
-        this.preview.strokeColor=color(palette.human,75);this.preview.lineWidth=1;
-        this.preview.circle(soldier.position.x,-soldier.position.y,unitConfig.rifleman.attack_range_px);this.preview.stroke();
+        const unitColor=soldier.unitType==='flamethrower'?palette.flame:soldier.unitType==='shield'?palette.shield:palette.human;
+        this.preview.strokeColor=color(unitColor,75);this.preview.lineWidth=1;
+        const stats=unitConfig[soldier.unitType] as {attack_range_px?:number};
+        if(stats.attack_range_px!==undefined){this.preview.circle(soldier.position.x,-soldier.position.y,stats.attack_range_px);this.preview.stroke();}
       }
     }
     const selection=this.controls.selectionPreview;

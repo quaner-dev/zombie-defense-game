@@ -10,6 +10,6 @@ await build({absWorkingDir:process.cwd(),entryPoints:['src/adapter/cocos-entry.t
 });
 // Official TypeScript emits source declarations, then bundles resolve via this facade.
 execFileSync('node',['node_modules/typescript/bin/tsc','--project','tsconfig.core-sync.json'],{stdio:'inherit'});
-const facade=(await readFile('dist/cocos-types/src/adapter/cocos-entry.d.ts','utf8')).replaceAll('../core/','../../../dist/cocos-types/src/core/').replaceAll("'./BattleSession.js'","'../../../dist/cocos-types/src/adapter/BattleSession.js'").replaceAll('../../config/','../../../config/');
+const facade=(await readFile('dist/cocos-types/src/adapter/cocos-entry.d.ts','utf8')).replaceAll('../core/','../../../dist/cocos-types/src/core/').replaceAll('../scenes/','../../../dist/cocos-types/src/scenes/').replaceAll("'./BattleSession.js'","'../../../dist/cocos-types/src/adapter/BattleSession.js'").replaceAll('../../config/','../../../config/');
 await writeFile('assets/scripts/generated/core.d.ts',facade);
 console.log('Synced browser core and generated type facade from authoritative src/config.');

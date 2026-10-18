@@ -1,4 +1,5 @@
 import mapJson from '../../config/map.json' with { type: 'json' };
+import { SCENES } from '../scenes/index.js';
 
 export interface Waypoint {
   x: number;
@@ -23,6 +24,8 @@ export interface SpawnPointDefinition {
 }
 
 export interface MapDefinition {
+  design_size?: { width: number; height: number };
+  unit_selection_radius?: number;
   battle_bounds: { left: number; top: number; right: number; bottom: number };
   spawn_bounds?: { top: number };
   defense_line_y: number;
@@ -56,6 +59,7 @@ interface NavigationGraph {
 
 const MAP_DEFINITIONS: Record<string, MapDefinition> = {
   default: mapJson as unknown as MapDefinition,
+  ...Object.fromEntries(SCENES.map(scene => [scene.mapId, scene.map])),
 };
 
 /** Loads and exposes map configuration, spawn edges and movement blockers. */
@@ -68,8 +72,12 @@ export class MapModel {
   public readonly defense_line_y: number;
   public readonly spawn_top: number;
   public readonly terrain: readonly TerrainDefinition[];
+  public readonly design_size: { width: number; height: number };
+  public readonly unit_selection_radius: number;
 
   public constructor(private readonly definition: MapDefinition) {
+    this.design_size = { ...(definition.design_size ?? { width: 1080, height: 2400 }) };
+    this.unit_selection_radius = definition.unit_selection_radius ?? 112;
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
     this.spawn_top = definition.spawn_bounds === undefined ? this.battle_bounds.top : definition.spawn_bounds.top;

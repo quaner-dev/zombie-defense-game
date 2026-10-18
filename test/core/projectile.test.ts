@@ -27,7 +27,7 @@ test('projectile flies at 900px/s to captured target point before authoritative 
   assert.deepEqual(projectiles.getProjectiles()[0].position, { x: 630, y: 1370 });
   assert.equal(zombie.hp, 60);
   const events = projectiles.update(0.1, 0.2);
-  assert.equal(zombie.hp, 50);
+  assert.equal(zombie.hp, 30);
   assert.equal(events.filter(e => e.type === 'projectile_hit').length, 1);
   assert.equal(events.filter(e => e.type === 'projectile_expired').length, 1);
   assert.deepEqual(projectiles.getProjectiles(), []);
@@ -40,7 +40,7 @@ test('maximum flight time is 0.35s and resolves exactly once even short of targe
   projectiles.update(0.349, 0.349);
   assert.equal(zombie.hp, 60);
   const events = projectiles.update(0.001, 0.35);
-  assert.equal(zombie.hp, 50);
+  assert.equal(zombie.hp, 30);
   assert.equal(events.filter(e => e.type === 'projectile_hit').length, 1);
   assert.equal(events.filter(e => e.type === 'projectile_expired').length, 1);
   assert.deepEqual(projectiles.update(10, 10.35), []);
@@ -62,7 +62,7 @@ for (const { distance, terminalX, terminalTime } of [
     assert.equal(events.filter(e => e.type === 'projectile_hit').length, 1);
     assert.equal(events.filter(e => e.type === 'projectile_expired').length, 1);
     assert.ok(events.every(e => e.time_s === terminalTime));
-    assert.equal(zombie.hp, 50);
+    assert.equal(zombie.hp, 30);
     assert.deepEqual(projectiles.getProjectiles(), []);
     assert.deepEqual(projectiles.update(1, 4), []);
   });
@@ -94,7 +94,7 @@ test('combat shots are consumed once by projectile simulation', () => {
   projectiles.update(0.05, 0.55);
   assert.equal(projectiles.getProjectiles().length, 1);
   projectiles.update(0.3, 0.85);
-  assert.equal(zombie.hp, 50);
+    assert.equal(zombie.hp, 30);
   assert.deepEqual(projectiles.update(1, 1.85), []);
 });
 
@@ -150,7 +150,7 @@ test('decorative nonblocking terrain permits flight and damage',()=>{
   ]);
   projectiles.spawn(human,zombie,0);
   const events=projectiles.update(.2,.2);
-  assert.equal(zombie.hp,50);
+  assert.equal(zombie.hp,30);
   assert.equal(events.filter(e=>e.type==='damage').length,1);
   assert.equal(events.filter(e=>e.type==='projectile_blocked').length,0);
 });

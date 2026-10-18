@@ -87,16 +87,55 @@ test('clear removes all active units and reuse restores human config without res
 test('harness consumes all configured wave spawns and tracks surviving units', () => {
   const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 50 });
   harness.start('LV01_zombie_wave', 1);
-  harness.advance(20);
+  harness.advance(90);
   const zombies = harness.getUnits().filter(unit => unit.faction === 'zombie');
-  assert.equal(zombies.length, 350);
-  assert.equal(zombies.filter(unit => unit.routeId === 'A').length, 110);
-  assert.equal(zombies.filter(unit => unit.routeId === 'B').length, 130);
-  assert.equal(zombies.filter(unit => unit.routeId === 'C').length, 110);
-  assert.ok(zombies.every(unit => unit.unitType === 'normal_zombie'));
-  assert.equal(new Set(harness.getUnits().map(unit => unit.id)).size, 400);
+  const spawnedByRoute = new Map<string, number>();
+  const spawnedTypes = new Set<string>();
+  for (const event of harness.getEvents().filter(event => event.type === 'zombie_batch_spawn')) {
+    const data = event.data as { spawns: Array<{ route: string; unitType: string; count: number }> };
+    for (const spawn of data.spawns) {
+      spawnedByRoute.set(spawn.route, (spawnedByRoute.get(spawn.route) ?? 0) + spawn.count);
+      spawnedTypes.add(spawn.unitType);
+    }
+  }
+  assert.equal(harness.getSnapshot().spawnedZombies, 350);
+  assert.ok(zombies.length >= 350);
+  assert.equal(spawnedByRoute.get('A'), 110);
+  assert.equal(spawnedByRoute.get('B'), 130);
+  assert.equal(spawnedByRoute.get('C'), 110);
+  assert.ok(spawnedTypes.has('fat_zombie'));
+  assert.ok(spawnedTypes.has('zombie_mother'));
+  assert.ok(zombies.some(unit => unit.unitType === 'fat_zombie'));
+  assert.ok(zombies.some(unit => unit.unitType === 'zombie_mother'));
+  assert.ok(zombies.every(unit => unit.unitType === 'normal_zombie' ||
+    unit.unitType === 'fat_zombie' || unit.unitType === 'zombie_mother'));
+  assert.equal(new Set(harness.getUnits().map(unit => unit.id)).size, 365);
   assert.equal(harness.getSnapshot().aliveHumans,
     harness.getUnits().filter(u => u.faction === 'human' && u.hp > 0).length);
   assert.equal(harness.getSnapshot().aliveZombies, zombies.filter(u => u.hp > 0).length);
-  assert.equal(harness.getSnapshot().spawnedZombies, 350);
+});
+
+test('the fifteen-soldier cap is enforced and surviving soldiers persist when a new wave starts', () => {
+  const harness = new BattleTestHarness({ deploymentDuration_s: 0, initialHumans: 50 });
+  harness.start('LV01_zombie_wave', 1);
+  const soldiers = harness.getUnits().filter(unit => unit.faction === 'human');
+  assert.equal(soldiers.length, 15);
+  const survivor = soldiers[0];
+  const originalType = survivor.unitType;
+  const originalPosition = { ...survivor.position };
+  // getUnits() is intentionally detached; injure the authoritative unit so
+  // the regression covers health persistence rather than a copied snapshot.
+  const authoritative = (harness as any).units.get(survivor.id);
+  authoritative.hp = 63;
+
+  harness.advance(7);
+
+  const afterWave = harness.getUnits().filter(unit => unit.faction === 'human');
+  assert.equal(afterWave.length, 15);
+  const sameSoldier = afterWave.find(unit => unit.id === survivor.id);
+  assert.ok(sameSoldier, 'the original soldier identity remains in the battle');
+  assert.equal(sameSoldier.unitType, originalType);
+  assert.deepEqual(sameSoldier.position, originalPosition, 'wave arrival does not redeploy the soldier');
+  assert.ok(sameSoldier.hp < sameSoldier.maxHp, 'the original soldier remains in its current health state');
+  assert.equal(harness.getSnapshot().spawnedZombies, 45);
 });

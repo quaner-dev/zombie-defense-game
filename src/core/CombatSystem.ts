@@ -2,7 +2,8 @@ import { cloneData } from './cloneData.js';
 import config from '../../config/units.json' with { type: 'json' };
 import type { MapModel, TerrainDefinition, Waypoint } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
-import type { BattleEvent, Point, Unit, UnitState } from './types.js';
+import type { BattleEvent, Point, Unit, UnitState, ZombieUnitType } from './types.js';
+import { getUnitModule, getZombieModule, type ProjectileKind } from './units/index.js';
 
 export interface Projectile {
   id: string;
@@ -12,6 +13,10 @@ export interface Projectile {
   destination: Point;
   position: Point;
   damage: number;
+  splashRadius_px: number;
+  projectileKind: ProjectileKind;
+  speed_px_per_s: number;
+  max_flight_time_s: number;
   spawnedAt_s: number;
   elapsed_s: number;
 }
@@ -24,10 +29,15 @@ export class CombatSystem {
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
   public createProjectile(source: Unit, target: Unit, time_s: number): BattleEvent {
+    const profile = getUnitModule(source.unitType).getAttackProfile();
+    if (!profile) throw new Error(`Unit ${source.unitType} cannot create a projectile`);
     const shot: Projectile = {
       id: `projectile-${this.nextProjectileId++}`, sourceId: source.id, targetId: target.id,
       origin: { ...source.position }, destination: { ...target.position },
-      position: { ...source.position }, damage: config.rifleman.damagePerHit,
+      position: { ...source.position }, damage: profile.damage, splashRadius_px: profile.splashRadius_px,
+      projectileKind: profile.projectileKind,
+      speed_px_per_s: profile.projectileSpeed_px_per_s ?? config.projectile.speed_px_per_s,
+      max_flight_time_s: profile.projectileMaxFlightTime_s ?? config.projectile.max_flight_time_s,
       spawnedAt_s: time_s, elapsed_s: 0,
     };
     this.shots.push(shot);
@@ -61,7 +71,7 @@ export class CombatSystem {
     for (const unit of this.store.living()) {
       // Earlier melee attacks may have killed a unit in this living snapshot.
       if (!unit.active || unit.hp <= 0 || unit.state === 'Dead') continue;
-      if (unit.unitType === 'rifleman') this.rifle(unit, dt, time_s, events);
+      if (unit.faction === 'human') this.rangedHuman(unit, dt, time_s, events);
       else {
         this.zombie(unit, dt, time_s, events);
         // Crossing is a one-time spatial warning, never a combat phase/gate.
@@ -95,23 +105,36 @@ export class CombatSystem {
     events.push({ type: 'unit_state_changed', time_s, data: { unitId: unit.id, from, to } });
   }
 
-  private rifle(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
-    if (unit.state === 'Moving') {
-      unit.targetId = null;
-      unit.attackElapsed_s = 0;
-      return;
-    }
-    const target = this.nearest(unit, 'zombie', config.rifleman.attack_range_px, true);
+  private rangedHuman(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
+    const moving = unit.state === 'Moving';
+    const profile = getUnitModule(unit.unitType).getAttackProfile();
+    if (!profile) return;
+    const target = this.nearest(unit, 'zombie', profile.range_px, true);
     unit.targetId = target?.id ?? null;
     if (!target) {
       unit.attackElapsed_s = 0;
-      this.state(unit, 'Idle', time_s, events);
+      // Movement owns the Moving → Idle transition. Changing state here would
+      // make MovementSystem skip the unit for the rest of this frame.
+      if (!moving) this.state(unit, 'Idle', time_s, events);
+      return;
+    }
+    if (moving) {
+      // A moving soldier keeps its movement state while independently firing.
+      // Briefly publishing Firing preserves the muzzle/animation event
+      // contract without preventing MovementSystem from advancing it.
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= profile.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - profile.interval_s);
+        this.state(unit, 'Firing', time_s, events);
+        events.push(this.createProjectile(unit, target, time_s));
+        this.state(unit, 'Moving', time_s, events);
+      }
       return;
     }
     this.state(unit, 'Aiming', time_s, events);
     unit.attackElapsed_s += dt;
-    if (unit.attackElapsed_s + 1e-9 >= config.rifleman.attack_interval_s) {
-      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - config.rifleman.attack_interval_s);
+    if (unit.attackElapsed_s + 1e-9 >= profile.interval_s) {
+      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - profile.interval_s);
       this.state(unit, 'Firing', time_s, events);
       events.push(this.createProjectile(unit, target, time_s));
       this.state(unit, 'Aiming', time_s, events);
@@ -131,45 +154,47 @@ export class CombatSystem {
       this.state(unit, 'Idle', time_s, events);
       return;
     }
-    const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, 8);
+    const radius = unit.radius_px ?? 8;
+    const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, radius);
     const required = obstruction?.terrain.stackRequired ?? Infinity;
     const stack = obstruction && Number.isFinite(required) &&
       Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= 40
       ? this.wallStack(unit, target, obstruction.terrain, obstruction.point) : [];
     // Nearby crowds may still climb; lone zombies immediately take a route
     // around the wall instead of waiting forever for reinforcements.
-    // A soldier can stand 7px from a wall; the larger 8px zombie must route to
-    // the adjacent free space, then stop in melee range instead of entering it.
-    let approach = this.map.walkablePoint(target.position, 8);
+    // Unit-specific collision radii keep enlarged bodies clear of walls while
+    // still allowing them to route around or climb a barricade.
+    let approach = this.map.walkablePoint(target.position, radius);
     let waypoint = stack.length >= required ? target.position
-      : this.map.nextWaypoint(unit.position, approach, 8);
+      : this.map.nextWaypoint(unit.position, approach, radius);
     if (!waypoint) {
       const blockedTargetId = target.id;
       const alternatives = this.store.living().filter(candidate => candidate.faction === 'human' && candidate.id !== blockedTargetId)
         .sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       for (const candidate of alternatives) {
-        const candidateApproach = this.map.walkablePoint(candidate.position, 8);
-        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, 8);
+        const candidateApproach = this.map.walkablePoint(candidate.position, radius);
+        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, radius);
         if (waypoint) { target = candidate;approach = candidateApproach;break; }
       }
     }
     unit.targetId = target.id;
     const distance = this.distance(unit, target);
-    const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position, 0);
+    const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position);
     // Normalize roundoff from diagonal stop-at-range movement, not gameplay range.
-    if (distance > config.normal_zombie.attack_range_px + 1e-9 || meleeBlocked) {
+    const attack = getZombieModule(unit.unitType as ZombieUnitType).getMeleeAttackProfile();
+    if (distance > attack.range_px + 1e-9 || meleeBlocked) {
       unit.attackElapsed_s = 0;
       this.state(unit, 'Advancing', time_s, events);
       if (!waypoint) return;
       const pathDistance = Math.hypot(waypoint.x - unit.position.x, waypoint.y - unit.position.y);
       if (pathDistance < 1e-9) return;
       const direct = waypoint.x === approach.x && waypoint.y === approach.y && !meleeBlocked;
-      const step = Math.min(pathDistance, direct ? Math.max(0, distance - config.normal_zombie.attack_range_px) : Infinity,
+      const step = Math.min(pathDistance, direct ? Math.max(0, distance - attack.range_px) : Infinity,
         unit.speed_px_per_s * dt);
       const dx = (waypoint.x - unit.position.x) / pathDistance;
       const dy = (waypoint.y - unit.position.y) / pathDistance;
       const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
-      const hit = this.map.firstBlockingTerrain(unit.position, destination, 8);
+      const hit = this.map.firstBlockingTerrain(unit.position, destination, radius);
       if (hit) {
         if (stack.length >= required) {
           stack.forEach((member, index) => {
@@ -178,10 +203,10 @@ export class CombatSystem {
             member.climbingWallId = hit.terrain.id;
             member.stackLevel = index % required + 1;
             member.climbTarget = vertical
-              ? { x: member.position.x < (b.left + b.right) / 2 ? b.right + 10 : b.left - 10,
+              ? { x: member.position.x < (b.left + b.right) / 2 ? b.right + member.radius_px : b.left - member.radius_px,
                 y: Math.max(b.top, Math.min(b.bottom, member.position.y)) }
               : { x: Math.max(b.left, Math.min(b.right, member.position.x)),
-                y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + 10 : b.top - 10 };
+                y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + member.radius_px : b.top - member.radius_px };
             this.state(member, 'Climbing', time_s, events);
           });
           events.push({ type: 'wall_climb_started', time_s, data: {
@@ -202,10 +227,26 @@ export class CombatSystem {
     }
     this.state(unit, 'Attacking', time_s, events);
     unit.attackElapsed_s += dt;
-    if (unit.attackElapsed_s + 1e-9 >= config.normal_zombie.attack_interval_s) {
-      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - config.normal_zombie.attack_interval_s);
-      events.push(...this.applyDamage(target.id, config.normal_zombie.damagePerHit, unit.id, time_s));
+    if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+      unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+      if (attack.infectsOnHit && target.faction === 'human') {
+        const infected = this.infect(target, unit, time_s, events);
+        if (!infected) events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
+      } else {
+        events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
+      }
     }
+  }
+
+  private infect(target: Unit, source: Unit, time_s: number, events: BattleEvent[]): boolean {
+    if (!target.active || target.hp <= 0 || target.state === 'Dead') return false;
+    const oldId = target.id;
+    const infected = this.store.transform(oldId, 'normal_zombie');
+    if (!infected) return false;
+    events.push({ type: 'unit_infected', time_s, data: {
+      sourceId: source.id, humanId: oldId, zombieId: infected.id,
+    }});
+    return true;
   }
 
   private climb(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
@@ -267,7 +308,6 @@ export class CombatSystem {
     // Climbers intentionally overlap in a stack. Crowd pushes during the
     // crossing can otherwise keep them orbiting a shared exit indefinitely.
     const zombies = this.store.living().filter(unit => unit.faction === 'zombie' && !unit.climbingWallId);
-    const minDistance = 17;
     const { left, top, right, bottom } = this.map.battle_bounds;
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < zombies.length; i++) {
@@ -276,6 +316,7 @@ export class CombatSystem {
           const b = zombies[j];
           let dx = b.position.x - a.position.x, dy = b.position.y - a.position.y;
           let distance = Math.hypot(dx, dy);
+          const minDistance = (a.radius_px ?? 8) + (b.radius_px ?? 8) + 1;
           if (distance >= minDistance) continue;
           if (distance < 1e-6) {
             const angle = ((i + 1) * 2.399963229728653 + (j + 1) * 0.7548776662466927) % (Math.PI * 2);
@@ -294,9 +335,9 @@ export class CombatSystem {
     let point = { x: Math.max(left, Math.min(right, unit.position.x + offset.x)),
       y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) };
     const collision = this.map.terrain.find(terrain => terrain.blocksMovement &&
-      this.map.terrainContains(point, terrain, 8));
+      this.map.terrainContains(point, terrain, unit.radius_px ?? 8));
     if (!collision) return point;
-    if (!this.map.terrainContains(unit.position, collision, 8)) return { ...unit.position };
+    if (!this.map.terrainContains(unit.position, collision, unit.radius_px ?? 8)) return { ...unit.position };
     const vertical = collision.bounds.bottom - collision.bounds.top >= collision.bounds.right - collision.bounds.left;
     point = vertical
       ? { x: unit.position.x, y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) }

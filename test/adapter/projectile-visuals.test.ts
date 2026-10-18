@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {ProjectileTracks} from '../../assets/scripts/adapter/contracts.js';
 import {fixture} from '../../test-support/cocos-fixture.js';
 
-const spawn=(id='p',time=1)=>({type:'projectile_spawned',time_s:time,
-  data:{id,origin:{x:100,y:200},destination:{x:280,y:200}}});
+const spawn=(id='p',time=1,projectileKind:'bullet'|'flame'='bullet')=>({type:'projectile_spawned',time_s:time,
+  data:{id,origin:{x:100,y:200},destination:{x:280,y:200},projectileKind,speed_px_per_s:projectileKind==='flame'?520:900}});
 const impact=(type='projectile_hit',x=280)=>({type,time_s:1.1,
   data:{projectileId:'p',position:{x,y:200}}});
 const expired={type:'projectile_expired',time_s:1.1,data:{projectileId:'p'}};
@@ -40,6 +40,18 @@ test('flying bullets draw a traveled line, bright 44px tail, head and muzzle fla
   assert.ok(calls.some((c:any)=>c.kind==='stroke'&&c.width===4));
   assert.ok(calls.some((c:any)=>c.kind==='circle'&&c.fill.hex==='#FFD477'));
   assert.ok(calls.some((c:any)=>c.kind==='circle'&&c.fill.hex==='#FFFFFF'));
+  controller.onDestroy();
+});
+
+test('flame tracks preserve their kind and render a red and orange fire trail',()=>{
+  const tracks=new ProjectileTracks();tracks.consume([spawn('fire',1,'flame')]);
+  assert.equal(tracks.positions(1.05,900)[0].kind,'flame');
+  const {controller}=fixture(true),pool=controller.projectiles;
+  pool.render([spawn('fire',1,'flame')],1.05);
+  const calls=pool.g.calls;
+  assert.ok(calls.some((call:any)=>call.kind==='stroke'&&call.color.hex==='#F04438'));
+  assert.ok(calls.some((call:any)=>call.kind==='stroke'&&call.color.hex==='#FFB340'));
+  assert.ok(calls.some((call:any)=>call.kind==='circle'&&call.fill.hex==='#F04438'));
   controller.onDestroy();
 });
 

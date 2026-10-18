@@ -1,5 +1,7 @@
 # 实际架构
 
+> 场景扩展更新：入口现有故事模式与场景演练，故事顺序为小屋→大楼楼下，每关三波。地点内容集中于 `src/scenes/`，统一提供地图、波次和视觉数据；`BattleSession` 管理入口状态与章节推进，`MapView`、`InputManager`、`CommandSystem` 统一读取当前战斗地图。旧文中未来主菜单/单关范围已由本次实现替代，详见 [场景设计稿](10-story-scenes-design.md)。
+
 > 当前MVP：出生区域不是固定路径，僵尸从出生全场最近索敌、直线追击；警戒线不限制伤害。3秒布阵不可跳过。可选限频短振动已实现、物理效果待验证；阴影/复杂场景及发布延期。[用户Cocos手测表与模板](testing/cocos-manual-checklist.md)。
 
 [返回首页](../README.md) · [开发指南](development.md) · [历史设计索引](README.md)
@@ -39,7 +41,7 @@ flowchart TD
 | [CombatSystem](../src/core/CombatSystem.ts) | 每步最近目标选择、射程/视线检查、全场追击与绕墙、堆叠翻墙、近战；防线仅警告；唯一伤害与死亡权威 |
 | [ProjectileSystem](../src/core/ProjectileSystem.ts) | 核心飞行时间、整段墙体碰撞与到达事件；命中前再次验证遮挡，目标已死或躲入掩体不扣血 |
 | [ResultSystem](../src/core/ResultSystem.ts) | 人类全灭优先失败，否则全波出完且无僵尸、有人类时胜利 |
-| [BattleSession](../src/adapter/BattleSession.ts) | 暂停、重启、引擎 elapsed 桥接、事件游标、群体命令 |
+| [BattleSession](../src/adapter/BattleSession.ts) | 暂停、重启、引擎 elapsed 桥接、事件游标、单兵命令 |
 | [BattleSceneController](../assets/scripts/adapter/BattleSceneController.ts) | 动态 Canvas/Camera、生命周期、布局、tick/draw、后台暂停、统计 |
 | [InputManager](../assets/scripts/adapter/InputManager.ts) / [contracts](../assets/scripts/adapter/contracts.ts) | UI 坐标转换、手势所有权、captured IDs、阈值/冷却、取消与 HUD 排除 |
 | MapView / UnitView / ProjectileViewPool / HudController | 地图、单位与只读 AI 目标、共享 Graphics 弹道/闪光、HUD/结果卡；不决定伤害 |
@@ -65,7 +67,7 @@ BattleSession 接受完整 elapsed，但 controller 每次 update 将传入 dt �
 
 ## 输入到命令
 
-每次按下时 InputManager 仅在半径 112px 内重新捕获活步枪兵，不扩展到旧选中组，空地拖动不框选。DragCommand 复制 `unitIds` 并保存主触点；UnitView 按这些 ID 绘制仍存活兵的圈。释放经过阈值/UI/冷却检查后，调用 `BattleSession.moveGroup` → `issueMoveGroup`，核心去重并滤除死亡、敌方及无效 ID，单兵或部分兵群均可移动，钳制目标并给每名兵分配松手点附近的紧凑个人落点。落点不沿用旧队形，并避开墙体；不在原按下坐标重新空间查询。
+每次按下时 InputManager 仅在半径 112px 内重新捕获距离最近的存活士兵，不扩展到旧选中组，空地拖动不框选。DragCommand 复制单个 `unitId` 并保存主触点；UnitView 按这个 ID 绘制选中兵的圈。释放经过阈值/UI/冷却检查后，调用 `BattleSession.moveGroup` → `issueMoveGroup`，核心去重并滤除死亡、敌方及无效 ID，钳制目标并给该士兵分配松手点附近的个人落点。落点避开墙体；不在原按下坐标重新空间查询。
 
 MapModel 为不同单位半径缓存墙角可见图，以最短距离选择下一路点；目标距离缓存有64项上限。每步按当前目标重算方向，士兵也共用绕墙规则。僵尸对贴墙士兵使用可行走的接近点，避免7px/8px体型差异将目标误判为不可达；翻墙中的单位不参与分离推力，完成后恢复。
 

@@ -62,17 +62,21 @@ test('rifle fires every 0.5s, queues visual flight without immediate damage, and
   assert.equal(combat.update(10, 10).filter(e => e.type === 'projectile_spawned').length, 0);
 });
 
-test('moving riflemen neither acquire targets nor accumulate attack time', () => {
+test('moving riflemen acquire targets, accumulate attack time and fire without stopping', () => {
   const { store, combat } = setup();
   const human = store.spawn('rifleman', { x: 540, y: 1370 }, 'B');
-  store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');
+  const zombie = store.spawn('normal_zombie', { x: 540, y: 1200 }, 'B');
+  zombie.speed_px_per_s = 0;
   human.state = 'Moving';
   human.moveTarget = { x: 900, y: 1370 };
   human.attackElapsed_s = 0.49;
-  assert.equal(ticks(combat, 20).filter(e => e.type === 'projectile_spawned').length, 0);
-  assert.equal(human.targetId, null);
-  assert.equal(human.attackElapsed_s, 0);
+  const movingEvents = ticks(combat, 20);
+  assert.equal(movingEvents.filter(e => e.type === 'projectile_spawned').length, 2);
+  assert.equal(human.targetId, zombie.id);
+  assert.ok(human.attackElapsed_s >= 0 && human.attackElapsed_s < 0.5);
+  assert.equal(human.state, 'Moving');
   human.state = 'Idle';
+  human.attackElapsed_s = 0;
   assert.equal(ticks(combat, 9).filter(e => e.type === 'projectile_spawned').length, 0);
   assert.equal(ticks(combat, 1).filter(e => e.type === 'projectile_spawned').length, 1);
 });
@@ -324,11 +328,11 @@ test('overlapping zombies keep separate positions after a crowd movement update'
 test('a lone zombie touching a wall takes collision-free steps and reaches the soldier', () => {
   const map = MapModel.load(), { store, combat } = setup(map);
   const human = store.spawn('rifleman', { x: 540, y: 1150 }, 'B');human.state = 'Moving';
-  const zombie = store.spawn('normal_zombie', { x: 540, y: 1052 }, 'B');
-  for (let i = 0; i < 300 && human.hp === 100; i++) {
+  const zombie = store.spawn('normal_zombie', { x: 540, y: 1044 }, 'B');
+  for (let i = 0; i < 1000 && human.hp === 100; i++) {
     const before = { ...zombie.position };
     combat.update(.05, (i + 1) * .05);
-    assert.equal(map.firstBlockingTerrain(before, zombie.position, 8), null);
+    assert.equal(map.firstBlockingTerrain(before, zombie.position, zombie.radius_px), null);
     assert.equal(zombie.climbingWallId, null);
   }
   assert.ok(human.hp < 100);
@@ -341,7 +345,7 @@ test('a thin wall inside melee range causes a detour instead of a permanent stop
     bounds: { left: 500, top: 600, right: 502, bottom: 800 } }];
   const map = new MapModel(definition), { store, combat } = setup(map);
   const human = store.spawn('rifleman', { x: 512, y: 700 }, 'B');human.state = 'Moving';
-  const zombie = store.spawn('normal_zombie', { x: 492, y: 700 }, 'B');
+  const zombie = store.spawn('normal_zombie', { x: 480, y: 700 }, 'B');
   combat.update(.05, .05);
   assert.ok(Math.hypot(zombie.velocity.x, zombie.velocity.y) > 0);
   assert.equal(human.hp, 100);
