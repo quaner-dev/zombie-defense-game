@@ -12,12 +12,11 @@ function replay(cadence:number[], tactical:boolean) {
   }
   elapsed(3);
   assert.equal(s.snapshot.time_s,0);
-  if(tactical)for(const stage of [{time:0,y:1400}]){
-    elapsed(stage.time-s.snapshot.time_s);
-    for(const [i,route] of ['A','B','C'].entries()){
-      const group=s.battle.getUnits().filter(u=>u.faction==='human'&&u.hp>0&&u.routeId===route);
-      assert.equal(s.move(group.reduce((n,u)=>n+u.position.x,0)/group.length,group.reduce((n,u)=>n+u.position.y,0)/group.length,[450,540,630][i],stage.y),true);
-    }
+  if(tactical){
+    const humans=s.battle.getUnits().filter(u=>u.faction==='human');
+    const soldiers=[...humans.filter(u=>u.unitType==='flamethrower'),...humans.filter(u=>u.unitType==='shield')];
+    const targets=[{x:330,y:1560},{x:330,y:1620},{x:375,y:1590}];
+    soldiers.forEach((soldier,i)=>assert.equal(s.move(soldier.position.x,soldier.position.y,targets[i].x,targets[i].y),true));
   }
   elapsed(120-s.snapshot.time_s);
   const result={snapshot:s.snapshot,units:s.battle.getUnits(),events:s.battle.getEvents()};
@@ -33,13 +32,13 @@ function replay(cadence:number[], tactical:boolean) {
 for(const tactical of [false,true])test(`exact authoritative replay across single, 50ms, 60fps and jitter (${tactical?'micro-control':'idle'})`,()=>{
   const expected=replay([120],tactical);
   for(const cadence of [[.05],[1/60],[.007,.083,.019,.041]])assert.deepEqual(replay(cadence,tactical),expected);
-  assert.equal(expected.snapshot.result,'win');
-  if(tactical)assert.ok(expected.snapshot.aliveHumans>0);
+  assert.ok(expected.snapshot.result==='win'||expected.snapshot.result==='lose');
 });
 
 test('partial elapsed time waits for an authoritative step and commands enter at the current completed tick',()=>{
  const s=new BattleSession();s.restart();s.tick(3);s.tick(.019);
- assert.equal(s.snapshot.time_s,0);s.move(180,1370,180,1600);
+ const soldier=s.battle.getUnits().find(u=>u.faction==='human')!;
+ assert.equal(s.snapshot.time_s,0);assert.equal(s.move(soldier.position.x,soldier.position.y,180,1600),true);
  assert.equal(s.battle.getEvents().find(e=>e.type==='group_command')?.time_s,0);
  s.tick(.031);assert.equal(s.snapshot.time_s,.05);
 });

@@ -40,7 +40,7 @@ test('event cursors return only unseen events and detached nested payloads', () 
   assert.equal(first.cursor, 2);
   assert.equal(first.events[0].type, 'wave_spawn');
   (first.events[0].data as { spawns: { count: number }[] }).spawns[0].count = -1;
-  assert.equal((harness.readEvents(0).events[0].data as { spawns: { count: number }[] }).spawns[0].count, 13);
+  assert.equal((harness.readEvents(0).events[0].data as { spawns: { count: number }[] }).spawns[0].count, 26);
   assert.deepEqual(harness.readEvents(first.cursor), { cursor: first.cursor, events: [] });
   const ids = harness.getUnits().filter(unit => unit.faction === 'human').slice(0, 2).map(unit => unit.id);
   assert.equal(harness.issueMoveGroup(ids, 600, 1400), true);
@@ -68,12 +68,12 @@ test('non-tick-aligned deployment moves units before starting the battle clock',
   harness.start('LV01_zombie_wave', 1);
   const humans = harness.getUnits();
   const ids = humans.slice(0, 2).map(unit => unit.id);
-  assert.equal(harness.issueMoveGroup(ids, 600, 1370), true);
+  assert.equal(harness.issueMoveGroup(ids, 360, 1560), true);
   harness.advance(0.05);
   assert.equal(harness.getSnapshot().spawnedZombies, 0);
   harness.advance(0.025);
   assert.equal(harness.getSnapshot().time_s, 0);
-  assert.equal(harness.getSnapshot().spawnedZombies, 5);
+  assert.equal(harness.getSnapshot().spawnedZombies, 10);
   const moved = harness.getUnits().find(unit => unit.id === ids[0])!;
   assert.ok(moved.position.x > humans[0].position.x);
   harness.advance(0.05);
@@ -83,7 +83,7 @@ test('non-tick-aligned deployment moves units before starting the battle clock',
 
 test('wave index advances once per scheduled wave and unknown levels use the default', () => {
   const manager = WaveManager.load('missing-level');
-  assert.equal(manager.getMapId(), 'default');
+  assert.equal(manager.getMapId(), 'LV01_cabin_rooms');
   assert.equal(manager.getWaveIndex(), 0);
   assert.equal(manager.allWavesSpawned(), false);
   assert.equal(manager.update(0).length, 1);
@@ -109,7 +109,7 @@ test('registered levels and maps can select multiple configured spawn routes', (
   const harness = new BattleTestHarness();
   harness.start('two-route-level-fixture', 1);
   assert.equal(harness.getWaveCount(), 1);
-  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'A').length, 8);
+  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'A').length, 0);
   assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'B').length, 7);
   harness.advance(3.05);
   assert.deepEqual(harness.getUnits().filter(unit => unit.faction === 'zombie').map(unit => unit.routeId), ['B', 'B']);

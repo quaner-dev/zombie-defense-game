@@ -1,4 +1,7 @@
-# MVP 讨论结论与后续实施 Plan
+# 历史归档：MVP 讨论结论与后续实施计划
+
+> **历史计划归档**：以下任务、执行指令和数值描述均保留为历史上下文，不是现行实施指令。七人版、墙角寻路、走廊／房门和新版波次见 [故事场景设计](10-story-scenes-design.md)，实际验证见 [场景验证记录](testing/scenes-test-report.md)。
+> 本文中的“当前”“本期”“现状”、旧配置、验收目标和任务状态均指本计划适用的历史版本；其中描述的无墙直线追击、最多 15 名士兵及旧波次已被后续实现取代。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

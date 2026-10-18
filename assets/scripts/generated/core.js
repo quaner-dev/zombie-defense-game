@@ -15,11 +15,11 @@ function cloneData(value) {
 }
 
 // src/core/config.ts
-var MAX_HUMANS = 15;
+var MAX_HUMANS = 7;
 var DEFAULT_BATTLE_CONFIG = {
   deploymentDuration_s: 3,
-  initialHumans: 15,
-  initialHumanTypeWeights: { rifleman: 3, flamethrower: 1, shield: 1 }
+  initialHumans: 7,
+  initialHumanTypeWeights: { rifleman: 4, flamethrower: 2, shield: 1 }
 };
 
 // config/map.json
@@ -71,80 +71,564 @@ var map_default = {
   ]
 };
 
-// config/levels.json
-var levels_default = {
-  LV01_zombie_wave: {
-    mapId: "default",
+// config/scenes/cabin.json
+var cabin_default = {
+  id: "cabin",
+  title: "\u5C0F\u5C4B\u7A81\u56F4",
+  subtitle: "\u7B2C\u4E00\u5E55 \xB7 \u5C0F\u5C4B\u5185\u90E8",
+  briefing: "\u4E03\u4EBA\u5C0F\u961F\u56F0\u5B88\u623F\u95F4\u3002\u50F5\u5C38\u4ECE\u4E2D\u592E\u8D70\u5ECA\u6D8C\u6765\uFF0C\u5148\u653B\u51FB\u623F\u95E8\uFF0C\u7834\u95E8\u540E\u8FDB\u5165\u623F\u95F4\u3002\u5229\u7528\u95E8\u53E3\u96C6\u4E2D\u706B\u529B\uFF0C\u5B88\u4F4F\u4E09\u6CE2\u5C38\u6F6E\u3002",
+  objective: "\u5B88\u4F4F\u623F\u95E8\u4E0E\u623F\u95F4\uFF0C\u62B5\u5FA1 3 \u6CE2\u5C38\u6F6E",
+  mapId: "LV01_cabin_rooms",
+  levelId: "LV01_zombie_wave",
+  map: {
+    design_size: {
+      width: 1080,
+      height: 2400
+    },
+    battle_bounds: {
+      left: 60,
+      top: 180,
+      right: 1020,
+      bottom: 2160
+    },
+    defense_line_y: 1200,
+    unit_selection_radius: 112,
+    spawn_layout: {
+      columns: 4,
+      spacing_px: 42
+    },
+    routes: [
+      {
+        id: "A",
+        spawn: {
+          x: 540,
+          y: 240
+        },
+        defend: {
+          x: 220,
+          y: 1470
+        },
+        width: 240,
+        waypoints: [
+          {
+            x: 540,
+            y: 240
+          },
+          {
+            x: 220,
+            y: 1470
+          }
+        ]
+      },
+      {
+        id: "B",
+        spawn: {
+          x: 540,
+          y: 240
+        },
+        defend: {
+          x: 280,
+          y: 1470
+        },
+        width: 240,
+        waypoints: [
+          {
+            x: 540,
+            y: 240
+          },
+          {
+            x: 280,
+            y: 1470
+          }
+        ]
+      },
+      {
+        id: "C",
+        spawn: {
+          x: 540,
+          y: 240
+        },
+        defend: {
+          x: 340,
+          y: 1470
+        },
+        width: 240,
+        waypoints: [
+          {
+            x: 540,
+            y: 240
+          },
+          {
+            x: 340,
+            y: 1470
+          }
+        ]
+      }
+    ],
+    spawnPoints: [
+      {
+        id: "corridor-north",
+        x: 540,
+        y: 240,
+        side: "north",
+        width: 126,
+        spawnArea: {
+          left: 477,
+          top: 240,
+          right: 603,
+          bottom: 576
+        }
+      },
+      {
+        id: "corridor-south",
+        x: 540,
+        y: 2100,
+        side: "south",
+        width: 126,
+        spawnArea: {
+          left: 477,
+          top: 1764,
+          right: 603,
+          bottom: 2100
+        }
+      }
+    ],
+    terrain: [
+      {
+        id: "west-outer",
+        kind: "wall",
+        bounds: {
+          left: 100,
+          top: 680,
+          right: 124,
+          bottom: 2064
+        },
+        blocksMovement: true
+      },
+      {
+        id: "west-corridor-0",
+        kind: "wall",
+        bounds: {
+          left: 416,
+          top: 680,
+          right: 440,
+          bottom: 950
+        },
+        blocksMovement: true
+      },
+      {
+        id: "west-corridor-1",
+        kind: "wall",
+        bounds: {
+          left: 416,
+          top: 1110,
+          right: 440,
+          bottom: 1510
+        },
+        blocksMovement: true
+      },
+      {
+        id: "west-corridor-2",
+        kind: "wall",
+        bounds: {
+          left: 416,
+          top: 1670,
+          right: 440,
+          bottom: 2064
+        },
+        blocksMovement: true
+      },
+      {
+        id: "west-upper-door",
+        kind: "door",
+        bounds: {
+          left: 416,
+          top: 950,
+          right: 440,
+          bottom: 1110
+        },
+        blocksMovement: true,
+        maxHp: 600
+      },
+      {
+        id: "west-lower-door",
+        kind: "door",
+        bounds: {
+          left: 416,
+          top: 1510,
+          right: 440,
+          bottom: 1670
+        },
+        blocksMovement: true,
+        maxHp: 600
+      },
+      {
+        id: "west-top",
+        kind: "wall",
+        bounds: {
+          left: 100,
+          top: 680,
+          right: 440,
+          bottom: 704
+        },
+        blocksMovement: true
+      },
+      {
+        id: "west-partition",
+        kind: "wall",
+        bounds: {
+          left: 100,
+          top: 1280,
+          right: 440,
+          bottom: 1304
+        },
+        blocksMovement: true
+      },
+      {
+        id: "west-bottom",
+        kind: "wall",
+        bounds: {
+          left: 100,
+          top: 2040,
+          right: 440,
+          bottom: 2064
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-outer",
+        kind: "wall",
+        bounds: {
+          left: 956,
+          top: 680,
+          right: 980,
+          bottom: 2064
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-corridor-0",
+        kind: "wall",
+        bounds: {
+          left: 640,
+          top: 680,
+          right: 664,
+          bottom: 950
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-corridor-1",
+        kind: "wall",
+        bounds: {
+          left: 640,
+          top: 1110,
+          right: 664,
+          bottom: 1510
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-corridor-2",
+        kind: "wall",
+        bounds: {
+          left: 640,
+          top: 1670,
+          right: 664,
+          bottom: 2064
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-upper-door",
+        kind: "door",
+        bounds: {
+          left: 640,
+          top: 950,
+          right: 664,
+          bottom: 1110
+        },
+        blocksMovement: true,
+        maxHp: 600
+      },
+      {
+        id: "east-lower-door",
+        kind: "door",
+        bounds: {
+          left: 640,
+          top: 1510,
+          right: 664,
+          bottom: 1670
+        },
+        blocksMovement: true,
+        maxHp: 600
+      },
+      {
+        id: "east-top",
+        kind: "wall",
+        bounds: {
+          left: 640,
+          top: 680,
+          right: 980,
+          bottom: 704
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-partition",
+        kind: "wall",
+        bounds: {
+          left: 640,
+          top: 1280,
+          right: 980,
+          bottom: 1304
+        },
+        blocksMovement: true
+      },
+      {
+        id: "east-bottom",
+        kind: "wall",
+        bounds: {
+          left: 640,
+          top: 2040,
+          right: 980,
+          bottom: 2064
+        },
+        blocksMovement: true
+      }
+    ]
+  },
+  level: {
+    mapId: "LV01_cabin_rooms",
     waves: [
       {
         battleTime_s: 0,
-        batchSize: 5,
-        batchInterval_s: 1,
+        batchSize: 10,
+        batchInterval_s: 0.5,
         spawns: [
-          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 13 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 13 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 12 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 12 }
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 26
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 26
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 24
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 24
+          }
         ]
       },
       {
         battleTime_s: 7,
-        batchSize: 5,
-        batchInterval_s: 1,
+        batchSize: 10,
+        batchInterval_s: 0.5,
         spawns: [
-          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 21 },
-          { unitType: "fat_zombie", route: "A", spawnPoint: "north", count: 2 },
-          { unitType: "zombie_mother", route: "A", spawnPoint: "north", count: 2 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 25 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 25 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 25 }
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 42
+          },
+          {
+            unitType: "fat_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "zombie_mother",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-south",
+            count: 50
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-north",
+            count: 50
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-south",
+            count: 50
+          }
         ]
       },
       {
         battleTime_s: 20,
-        batchSize: 5,
-        batchInterval_s: 1,
+        batchSize: 10,
+        batchInterval_s: 0.5,
         spawns: [
-          { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 11 },
-          { unitType: "fat_zombie", route: "A", spawnPoint: "north", count: 2 },
-          { unitType: "zombie_mother", route: "A", spawnPoint: "north", count: 2 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "south", count: 15 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "east", count: 15 },
-          { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 20 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 20 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "east", count: 20 },
-          { unitType: "normal_zombie", route: "B", spawnPoint: "west", count: 20 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "north", count: 15 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "south", count: 15 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 },
-          { unitType: "normal_zombie", route: "C", spawnPoint: "west", count: 15 }
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 22
+          },
+          {
+            unitType: "fat_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "zombie_mother",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-south",
+            count: 30
+          }
         ]
+      }
+    ]
+  },
+  presentation: {
+    floorColor: "#17191E",
+    wallColor: "#7A7A85",
+    wallOutlineColor: "#A4A4AF",
+    decorations: [
+      {
+        kind: "floor",
+        color: "#343338",
+        bounds: {
+          left: 440,
+          top: 180,
+          right: 640,
+          bottom: 2160
+        }
+      },
+      {
+        kind: "floor",
+        color: "#252A30",
+        bounds: {
+          left: 124,
+          top: 704,
+          right: 416,
+          bottom: 1280
+        }
+      },
+      {
+        kind: "floor",
+        color: "#252A30",
+        bounds: {
+          left: 124,
+          top: 1304,
+          right: 416,
+          bottom: 2040
+        }
+      },
+      {
+        kind: "floor",
+        color: "#252A30",
+        bounds: {
+          left: 664,
+          top: 704,
+          right: 956,
+          bottom: 1280
+        }
+      },
+      {
+        kind: "floor",
+        color: "#252A30",
+        bounds: {
+          left: 664,
+          top: 1304,
+          right: 956,
+          bottom: 2040
+        }
       }
     ]
   }
 };
 
 // src/scenes/cabin.ts
-var cabin = {
-  id: "cabin",
-  title: "\u5C0F\u5C4B\u7A81\u56F4",
-  subtitle: "\u7B2C\u4E00\u5E55 \xB7 \u5C0F\u5C4B\u5185\u90E8",
-  briefing: "\u5C38\u6F6E\u6B63\u5728\u903C\u8FD1\u3002\u5229\u7528\u5C4B\u5185\u9694\u5899\u6536\u62E2\u961F\u4F0D\uFF0C\u5B88\u4F4F\u4E09\u6CE2\u8FDB\u653B\uFF0C\u5BFB\u627E\u79BB\u5F00\u5C0F\u5C4B\u7684\u673A\u4F1A\u3002",
-  objective: "\u62B5\u5FA1 3 \u6CE2\u5C38\u6F6E\uFF0C\u81F3\u5C11\u4E00\u540D\u58EB\u5175\u5B58\u6D3B",
-  mapId: "LV01_four_sides",
-  levelId: "LV01_zombie_wave",
-  map: map_default,
-  level: levels_default.LV01_zombie_wave,
-  presentation: {
-    floorColor: "#17191E",
-    wallColor: "#7A7A85",
-    wallOutlineColor: "#A4A4AF",
-    decorations: [
-      { kind: "floor", color: "#24262C", bounds: { left: 120, top: 800, right: 960, bottom: 1800 } }
-    ]
-  }
-};
+var cabin = cabin_default;
 
 // config/scenes/courtyard.json
 var courtyard_default = {
@@ -160,54 +644,330 @@ var courtyard_default = {
     wallColor: "#596B79",
     wallOutlineColor: "#91A6B6",
     decorations: [
-      { kind: "floor", color: "#25343B", bounds: { left: 420, top: 180, right: 660, bottom: 2160 } },
-      { kind: "floor", color: "#25343B", bounds: { left: 60, top: 1120, right: 1020, bottom: 1440 } },
-      { kind: "stripe", color: "#B29D64", bounds: { left: 524, top: 300, right: 540, bottom: 940 } },
-      { kind: "stripe", color: "#B29D64", bounds: { left: 524, top: 1640, right: 540, bottom: 2040 } }
+      {
+        kind: "floor",
+        color: "#25343B",
+        bounds: {
+          left: 420,
+          top: 180,
+          right: 660,
+          bottom: 2160
+        }
+      },
+      {
+        kind: "floor",
+        color: "#25343B",
+        bounds: {
+          left: 60,
+          top: 1120,
+          right: 1020,
+          bottom: 1440
+        }
+      },
+      {
+        kind: "stripe",
+        color: "#B29D64",
+        bounds: {
+          left: 524,
+          top: 300,
+          right: 540,
+          bottom: 940
+        }
+      },
+      {
+        kind: "stripe",
+        color: "#B29D64",
+        bounds: {
+          left: 524,
+          top: 1640,
+          right: 540,
+          bottom: 2040
+        }
+      }
     ]
   },
   map: {
-    design_size: { width: 1080, height: 2400 },
-    battle_bounds: { left: 60, top: 180, right: 1020, bottom: 2160 },
+    design_size: {
+      width: 1080,
+      height: 2400
+    },
+    battle_bounds: {
+      left: 60,
+      top: 180,
+      right: 1020,
+      bottom: 2160
+    },
     defense_line_y: 1200,
     unit_selection_radius: 112,
-    spawn_layout: { columns: 25, spacing_px: 44 },
+    spawn_layout: {
+      columns: 25,
+      spacing_px: 44
+    },
     routes: [
-      { id: "A", spawn: { x: 180, y: 180 }, defend: { x: 420, y: 1280 }, width: 240, waypoints: [{ x: 180, y: 180 }, { x: 420, y: 1280 }] },
-      { id: "B", spawn: { x: 540, y: 180 }, defend: { x: 540, y: 1280 }, width: 240, waypoints: [{ x: 540, y: 180 }, { x: 540, y: 1280 }] },
-      { id: "C", spawn: { x: 900, y: 180 }, defend: { x: 660, y: 1280 }, width: 240, waypoints: [{ x: 900, y: 180 }, { x: 660, y: 1280 }] }
+      {
+        id: "A",
+        spawn: {
+          x: 180,
+          y: 180
+        },
+        defend: {
+          x: 420,
+          y: 1280
+        },
+        width: 240,
+        waypoints: [
+          {
+            x: 180,
+            y: 180
+          },
+          {
+            x: 420,
+            y: 1280
+          }
+        ]
+      },
+      {
+        id: "B",
+        spawn: {
+          x: 540,
+          y: 180
+        },
+        defend: {
+          x: 540,
+          y: 1280
+        },
+        width: 240,
+        waypoints: [
+          {
+            x: 540,
+            y: 180
+          },
+          {
+            x: 540,
+            y: 1280
+          }
+        ]
+      },
+      {
+        id: "C",
+        spawn: {
+          x: 900,
+          y: 180
+        },
+        defend: {
+          x: 660,
+          y: 1280
+        },
+        width: 240,
+        waypoints: [
+          {
+            x: 900,
+            y: 180
+          },
+          {
+            x: 660,
+            y: 1280
+          }
+        ]
+      }
     ],
     spawnPoints: [
-      { id: "north", x: 540, y: 180, side: "north", width: 900 },
-      { id: "south", x: 540, y: 2160, side: "south", width: 900 },
-      { id: "east", x: 1020, y: 1280, side: "east", width: 400 },
-      { id: "west", x: 60, y: 1280, side: "west", width: 400 }
+      {
+        id: "north",
+        x: 540,
+        y: 180,
+        side: "north",
+        width: 900,
+        spawnArea: {
+          left: 90,
+          top: 210,
+          right: 990,
+          bottom: 298
+        }
+      },
+      {
+        id: "south",
+        x: 540,
+        y: 2160,
+        side: "south",
+        width: 900,
+        spawnArea: {
+          left: 90,
+          top: 2042,
+          right: 990,
+          bottom: 2130
+        }
+      },
+      {
+        id: "east",
+        x: 1020,
+        y: 1280,
+        side: "east",
+        width: 400,
+        spawnArea: {
+          left: 962,
+          top: 1100,
+          right: 990,
+          bottom: 1430
+        }
+      },
+      {
+        id: "west",
+        x: 60,
+        y: 1280,
+        side: "west",
+        width: 400,
+        spawnArea: {
+          left: 90,
+          top: 1100,
+          right: 118,
+          bottom: 1430
+        }
+      }
     ],
     terrain: [
-      { id: "northwest-building", kind: "wall", bounds: { left: 160, top: 460, right: 400, bottom: 1080 }, blocksMovement: true, stackRequired: 3 },
-      { id: "northeast-building", kind: "wall", bounds: { left: 680, top: 460, right: 920, bottom: 1080 }, blocksMovement: true, stackRequired: 3 },
-      { id: "southwest-building", kind: "wall", bounds: { left: 160, top: 1480, right: 400, bottom: 1960 }, blocksMovement: true, stackRequired: 3 },
-      { id: "southeast-building", kind: "wall", bounds: { left: 680, top: 1480, right: 920, bottom: 1960 }, blocksMovement: true, stackRequired: 3 }
+      {
+        id: "northwest-building",
+        kind: "wall",
+        bounds: {
+          left: 160,
+          top: 460,
+          right: 400,
+          bottom: 1080
+        },
+        blocksMovement: true
+      },
+      {
+        id: "northeast-building",
+        kind: "wall",
+        bounds: {
+          left: 680,
+          top: 460,
+          right: 920,
+          bottom: 1080
+        },
+        blocksMovement: true
+      },
+      {
+        id: "southwest-building",
+        kind: "wall",
+        bounds: {
+          left: 160,
+          top: 1480,
+          right: 400,
+          bottom: 1960
+        },
+        blocksMovement: true
+      },
+      {
+        id: "southeast-building",
+        kind: "wall",
+        bounds: {
+          left: 680,
+          top: 1480,
+          right: 920,
+          bottom: 1960
+        },
+        blocksMovement: true
+      }
     ]
   },
   level: {
     mapId: "LV02_building_courtyard",
     waves: [
-      { battleTime_s: 0, batchSize: 5, batchInterval_s: 1, spawns: [
-        { unitType: "normal_zombie", route: "A", spawnPoint: "north", count: 15 },
-        { unitType: "normal_zombie", route: "C", spawnPoint: "south", count: 15 }
-      ] },
-      { battleTime_s: 14, batchSize: 5, batchInterval_s: 1, spawns: [
-        { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
-        { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 },
-        { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 15 }
-      ] },
-      { battleTime_s: 30, batchSize: 5, batchInterval_s: 1, spawns: [
-        { unitType: "normal_zombie", route: "B", spawnPoint: "north", count: 15 },
-        { unitType: "normal_zombie", route: "B", spawnPoint: "south", count: 15 },
-        { unitType: "normal_zombie", route: "A", spawnPoint: "west", count: 15 },
-        { unitType: "normal_zombie", route: "C", spawnPoint: "east", count: 15 }
-      ] }
+      {
+        battleTime_s: 0,
+        batchSize: 10,
+        batchInterval_s: 0.5,
+        spawns: [
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "north",
+            count: 15
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "south",
+            count: 15
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "east",
+            count: 15
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "west",
+            count: 15
+          }
+        ]
+      },
+      {
+        battleTime_s: 14,
+        batchSize: 10,
+        batchInterval_s: 0.5,
+        spawns: [
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "north",
+            count: 24
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "south",
+            count: 22
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "east",
+            count: 22
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "west",
+            count: 22
+          }
+        ]
+      },
+      {
+        battleTime_s: 30,
+        batchSize: 10,
+        batchInterval_s: 0.5,
+        spawns: [
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "west",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "east",
+            count: 30
+          }
+        ]
+      }
     ]
   }
 };
@@ -237,6 +997,7 @@ var MapModel = class _MapModel {
     __publicField(this, "routes", /* @__PURE__ */ new Map());
     __publicField(this, "spawnPoints", /* @__PURE__ */ new Map());
     __publicField(this, "navigation", /* @__PURE__ */ new Map());
+    __publicField(this, "doors", /* @__PURE__ */ new Map());
     __publicField(this, "battle_bounds");
     __publicField(this, "defense_line_y");
     __publicField(this, "spawn_top");
@@ -277,6 +1038,12 @@ var MapModel = class _MapModel {
       if (point.width !== void 0 && (!Number.isFinite(point.width) || point.width < 0)) {
         throw new Error(`Map spawn point ${point.id} has invalid width`);
       }
+      if (point.spawnArea) {
+        const area = point.spawnArea;
+        validatePoint({ x: area.left, y: area.top });
+        validatePoint({ x: area.right, y: area.bottom });
+        if (area.left > area.right || area.top > area.bottom) throw new Error("Invalid spawn area");
+      }
       this.spawnPoints.set(point.id, point);
     }
     for (const terrain of this.terrain) {
@@ -284,7 +1051,26 @@ var MapModel = class _MapModel {
       if (![b.left, b.top, b.right, b.bottom].every(Number.isFinite) || b.left > b.right || b.top > b.bottom || b.left < left || b.right > right || b.top < top || b.bottom > bottom || terrain.stackRequired !== void 0 && (!Number.isInteger(terrain.stackRequired) || terrain.stackRequired < 1)) {
         throw new Error(`Map terrain ${terrain.id} has invalid bounds or stack requirement`);
       }
+      if (terrain.kind === "door") {
+        if (!Number.isFinite(terrain.maxHp) || terrain.maxHp <= 0) throw new Error(`Door ${terrain.id} needs positive durability`);
+        this.doors.set(terrain.id, { id: terrain.id, hp: terrain.maxHp, maxHp: terrain.maxHp, destroyed: false });
+      }
     }
+  }
+  getDoorStates() {
+    return [...this.doors.values()].map((door) => ({ ...door }));
+  }
+  damageDoor(id, damage) {
+    const door = this.doors.get(id);
+    if (!door || door.destroyed || !Number.isFinite(damage) || damage <= 0) return null;
+    door.hp = Math.max(0, door.hp - damage);
+    door.destroyed = door.hp === 0;
+    if (door.destroyed) this.navigation.clear();
+    return { ...door };
+  }
+  isBlocking(terrain, ignoreDoors = false) {
+    var _a;
+    return !!terrain.blocksMovement && (terrain.kind !== "door" || !ignoreDoors && !((_a = this.doors.get(terrain.id)) == null ? void 0 : _a.destroyed));
   }
   static load(mapId = "default") {
     var _a;
@@ -294,36 +1080,61 @@ var MapModel = class _MapModel {
     if (!mapId.trim()) throw new Error("Map ID must not be empty");
     MAP_DEFINITIONS[mapId] = definition;
   }
-  spawnPositions(routeId, count, spawnPointId) {
+  spawnPositions(routeId, count, spawnPointId, startIndex) {
     var _a, _b;
+    const stableLayout = startIndex !== void 0;
+    startIndex != null ? startIndex : startIndex = 0;
+    if (!Number.isInteger(startIndex) || startIndex < 0) throw new Error("Spawn start index must be a non-negative integer");
     if (spawnPointId) {
       const point = this.spawnPoints.get(spawnPointId);
       if (!point) throw new Error(`Unknown spawn point: ${spawnPointId}`);
-      return this.edgeSpawnPositions(point, count);
+      return this.edgeSpawnPositions(point, count, startIndex, stableLayout);
     }
     const route = this.routes.get(routeId);
     const layout = (_b = (_a = route.spawn_layout) != null ? _a : this.definition.spawn_layout) != null ? _b : { columns: 1, spacing_px: 0 };
-    const columns = Math.min(count, Math.max(1, Math.floor(layout.columns)));
+    const columns = stableLayout ? Math.max(1, Math.floor(layout.columns)) : Math.min(count, Math.max(1, Math.floor(layout.columns)));
     const spacing = Math.min(Math.max(0, layout.spacing_px), columns > 1 ? route.width / (columns - 1) : Infinity);
     const { left, top, right, bottom } = this.battle_bounds;
-    return Array.from({ length: count }, (_, i) => ({
-      x: Math.max(left, Math.min(right, route.spawn.x + (i % columns - (columns - 1) / 2) * spacing)),
-      // Offscreen entries fan upward; legacy in-bounds entries retain downward rows.
-      y: route.spawn.y < top ? Math.max(this.spawn_top, Math.min(bottom, route.spawn.y - Math.floor(i / columns) * spacing)) : Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(i / columns) * spacing))
-    }));
+    return Array.from({ length: count }, (_, i) => {
+      const index = i + startIndex;
+      return {
+        x: Math.max(left, Math.min(right, route.spawn.x + (index % columns - (columns - 1) / 2) * spacing)),
+        // Offscreen entries fan upward; legacy in-bounds entries retain downward rows.
+        y: route.spawn.y < top ? Math.max(this.spawn_top, Math.min(bottom, route.spawn.y - Math.floor(index / columns) * spacing)) : Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(index / columns) * spacing))
+      };
+    });
   }
-  edgeSpawnPositions(point, count) {
+  edgeSpawnPositions(point, count, startIndex, stableLayout) {
     var _a, _b, _c;
     const layout = (_a = this.definition.spawn_layout) != null ? _a : { columns: 1, spacing_px: 0 };
     const side = (_b = point.side) != null ? _b : this.inferSpawnSide(point);
+    if (point.spawnArea) {
+      const b = point.spawnArea, spacing2 = Math.max(1, layout.spacing_px);
+      const horizontal = side === "north" || side === "south";
+      const across = horizontal ? b.right - b.left : b.bottom - b.top;
+      const depth = horizontal ? b.bottom - b.top : b.right - b.left;
+      const columns2 = Math.max(1, Math.min(layout.columns, Math.floor(across / spacing2) + 1));
+      const rows = Math.max(1, Math.floor(depth / spacing2) + 1);
+      return Array.from({ length: count }, (_, i) => {
+        const index = (i + startIndex) % (columns2 * rows);
+        const column = index % columns2, row = Math.floor(index / columns2);
+        const offset = (column - (columns2 - 1) / 2) * spacing2;
+        const inset = row * spacing2;
+        if (side === "north") return { x: (b.left + b.right) / 2 + offset, y: b.top + inset };
+        if (side === "south") return { x: (b.left + b.right) / 2 + offset, y: b.bottom - inset };
+        if (side === "west") return { x: b.left + inset, y: (b.top + b.bottom) / 2 + offset };
+        return { x: b.right - inset, y: (b.top + b.bottom) / 2 + offset };
+      });
+    }
     const { left, top, right, bottom } = this.battle_bounds;
     const available = side === "north" || side === "south" ? right - left : bottom - top;
     const width = Math.min((_c = point.width) != null ? _c : available, available);
-    const columns = Math.min(count, Math.max(1, Math.floor(layout.columns)));
+    const columns = stableLayout ? Math.max(1, Math.floor(layout.columns)) : Math.min(count, Math.max(1, Math.floor(layout.columns)));
     const spacing = Math.min(Math.max(0, layout.spacing_px), columns > 1 ? width / (columns - 1) : Infinity);
     return Array.from({ length: count }, (_, index) => {
-      const offset = (index % columns - (columns - 1) / 2) * spacing;
-      const depth = Math.floor(index / columns) * spacing;
+      const slot = index + startIndex;
+      const offset = (slot % columns - (columns - 1) / 2) * spacing;
+      const depth = Math.floor(slot / columns) * spacing;
       if (side === "north") return {
         x: Math.max(left, Math.min(right, point.x + offset)),
         y: Math.max(top, Math.min(bottom, point.y + depth))
@@ -353,10 +1164,10 @@ var MapModel = class _MapModel {
     return distances.sort((a, b) => a[1] - b[1])[0][0];
   }
   /** First terrain rectangle crossed by a swept circular unit. */
-  firstBlockingTerrain(start, end, radius = 0) {
+  firstBlockingTerrain(start, end, radius = 0, ignoreDoors = false) {
     let first = null;
     for (const terrain of this.terrain) {
-      if (!terrain.blocksMovement) continue;
+      if (!this.isBlocking(terrain, ignoreDoors)) continue;
       const b = terrain.bounds;
       const bounds = {
         left: b.left - radius,
@@ -403,7 +1214,7 @@ var MapModel = class _MapModel {
       y: Math.max(top, Math.min(bottom, p.y))
     });
     const target = clamp(point);
-    const blockers = this.terrain.filter((terrain) => terrain.blocksMovement);
+    const blockers = this.terrain.filter((terrain) => this.isBlocking(terrain));
     if (!blockers.some((wall) => this.terrainContains(target, wall, radius))) return target;
     const candidates = blockers.flatMap((wall) => {
       const b = wall.bounds, padding = radius + 1;
@@ -419,13 +1230,13 @@ var MapModel = class _MapModel {
     return (_a = candidates[0]) != null ? _a : target;
   }
   /** Shortest visible corner to follow around rectangular walls; null means unreachable. */
-  nextWaypoint(start, target, radius = 0) {
-    if (!this.firstBlockingTerrain(start, target, radius)) return { ...target };
-    const graph = this.navigationGraph(radius);
+  nextWaypoint(start, target, radius = 0, ignoreDoors = false) {
+    if (!this.firstBlockingTerrain(start, target, radius, ignoreDoors)) return { ...target };
+    const graph = this.navigationGraph(radius, ignoreDoors);
     const key = `${target.x},${target.y}`;
     let distances = graph.destinations.get(key);
     if (!distances) {
-      distances = graph.corners.map((corner) => this.firstBlockingTerrain(corner, target, radius) ? Infinity : Math.hypot(corner.x - target.x, corner.y - target.y));
+      distances = graph.corners.map((corner) => this.firstBlockingTerrain(corner, target, radius, ignoreDoors) ? Infinity : Math.hypot(corner.x - target.x, corner.y - target.y));
       const visited = /* @__PURE__ */ new Set();
       for (let pass = 0; pass < graph.corners.length; pass++) {
         let closest = -1;
@@ -444,7 +1255,7 @@ var MapModel = class _MapModel {
     let best = null, length = Infinity;
     for (const [i, corner] of graph.corners.entries()) {
       const approach = Math.hypot(corner.x - start.x, corner.y - start.y);
-      if (approach < 1e-6 || approach + distances[i] >= length || this.firstBlockingTerrain(start, corner, radius)) continue;
+      if (approach < 1e-6 || approach + distances[i] >= length || this.firstBlockingTerrain(start, corner, radius, ignoreDoors)) continue;
       best = corner;
       length = approach + distances[i];
     }
@@ -459,22 +1270,23 @@ var MapModel = class _MapModel {
       { x: b.right + padding, y: b.bottom + padding }
     ];
   }
-  navigationGraph(radius) {
-    const cached = this.navigation.get(radius);
+  navigationGraph(radius, ignoreDoors) {
+    const key = `${radius}:${ignoreDoors}`;
+    const cached = this.navigation.get(key);
     if (cached) return cached;
     const { left, top, right, bottom } = this.battle_bounds;
-    const blockers = this.terrain.filter((wall) => wall.blocksMovement);
+    const blockers = this.terrain.filter((wall) => this.isBlocking(wall, ignoreDoors));
     const corners = blockers.flatMap((wall) => this.wallCorners(wall, radius + 1)).filter((p) => p.x >= left && p.x <= right && p.y >= top && p.y <= bottom && !blockers.some((wall) => this.terrainContains(p, wall, radius)));
     const graph = { corners, edges: corners.map(() => []), destinations: /* @__PURE__ */ new Map() };
     for (let i = 0; i < corners.length; i++) {
       for (let j = i + 1; j < corners.length; j++) {
-        if (this.firstBlockingTerrain(corners[i], corners[j], radius)) continue;
+        if (this.firstBlockingTerrain(corners[i], corners[j], radius, ignoreDoors)) continue;
         const distance = Math.hypot(corners[i].x - corners[j].x, corners[i].y - corners[j].y);
         graph.edges[i].push({ index: j, distance });
         graph.edges[j].push({ index: i, distance });
       }
     }
-    this.navigation.set(radius, graph);
+    this.navigation.set(key, graph);
     return graph;
   }
   hasCrossedDefense(point, side) {
@@ -513,6 +1325,180 @@ var MapModel = class _MapModel {
   }
   getSpawnPoint(id) {
     return this.spawnPoints.get(id);
+  }
+};
+
+// config/levels.json
+var levels_default = {
+  LV01_zombie_wave: {
+    mapId: "LV01_cabin_rooms",
+    waves: [
+      {
+        battleTime_s: 0,
+        batchSize: 10,
+        batchInterval_s: 0.5,
+        spawns: [
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 26
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 26
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 24
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 24
+          }
+        ]
+      },
+      {
+        battleTime_s: 7,
+        batchSize: 10,
+        batchInterval_s: 0.5,
+        spawns: [
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 42
+          },
+          {
+            unitType: "fat_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "zombie_mother",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-south",
+            count: 50
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-north",
+            count: 50
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-south",
+            count: 50
+          }
+        ]
+      },
+      {
+        battleTime_s: 20,
+        batchSize: 10,
+        batchInterval_s: 0.5,
+        spawns: [
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 22
+          },
+          {
+            unitType: "fat_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "zombie_mother",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 4
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "A",
+            spawnPoint: "corridor-south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-north",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "B",
+            spawnPoint: "corridor-south",
+            count: 40
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-south",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-north",
+            count: 30
+          },
+          {
+            unitType: "normal_zombie",
+            route: "C",
+            spawnPoint: "corridor-south",
+            count: 30
+          }
+        ]
+      }
+    ]
   }
 };
 
@@ -940,6 +1926,8 @@ var MovementSystem = class {
     var _a, _b;
     const events = [];
     if (!Number.isFinite(seconds) || seconds < 0) return events;
+    const humans = this.store.living().filter((unit) => unit.faction === "human");
+    const starts = new Map(humans.map((unit) => [unit.id, { ...unit.position }]));
     const tolerance = units_default.movement.arrival_tolerance_px;
     for (const unit of this.store.living()) {
       if (unit.state !== "Moving" || !unit.moveTarget) continue;
@@ -998,7 +1986,60 @@ var MovementSystem = class {
         });
       }
     }
+    if (seconds > 0) this.separateSoldiers(humans, starts);
     return events;
+  }
+  /** Moving soldiers push resting neighbours; constrained neighbours push back. */
+  separateSoldiers(humans, starts) {
+    const advancing = new Set(humans.filter((unit) => {
+      const start = starts.get(unit.id);
+      return Math.hypot(unit.position.x - start.x, unit.position.y - start.y) > 1e-6;
+    }).map((unit) => unit.id));
+    for (let pass = 0; pass < 512; pass++) {
+      let largestOverlap = 0;
+      for (let i = 0; i < humans.length; i++) for (let j = i + 1; j < humans.length; j++) {
+        const a = humans[i], b = humans[j];
+        const dx = b.position.x - a.position.x, dy = b.position.y - a.position.y;
+        const distance = Math.hypot(dx, dy);
+        const overlap = a.radius_px + b.radius_px + 2 - distance;
+        if (overlap <= 1e-5) continue;
+        largestOverlap = Math.max(largestOverlap, overlap);
+        const oldA = starts.get(a.id), oldB = starts.get(b.id);
+        const axis = distance > 1e-6 ? { x: dx / distance, y: dy / distance } : this.contactAxis(oldB.x - oldA.x, oldB.y - oldA.y);
+        const shareA = advancing.has(a.id) === advancing.has(b.id) ? 0.5 : advancing.has(a.id) ? 0 : 1;
+        const movedA = this.pushSoldier(a, -axis.x, -axis.y, overlap * shareA);
+        const movedB = this.pushSoldier(b, axis.x, axis.y, overlap - movedA);
+        this.pushSoldier(a, -axis.x, -axis.y, Math.max(0, overlap - movedA - movedB));
+      }
+      if (largestOverlap <= 1e-5) break;
+    }
+  }
+  contactAxis(dx, dy) {
+    const distance = Math.hypot(dx, dy);
+    return distance > 1e-6 ? { x: dx / distance, y: dy / distance } : { x: 1, y: 0 };
+  }
+  /** Sweep each correction to avoid pushing a soldier through terrain. */
+  pushSoldier(unit, dx, dy, distance) {
+    if (distance <= 0) return 0;
+    const start = unit.position;
+    let target = { x: start.x + dx * distance, y: start.y + dy * distance };
+    if (this.map) {
+      const bounds = this.map.battle_bounds, radius = unit.radius_px;
+      target = {
+        x: Math.max(bounds.left + radius, Math.min(bounds.right - radius, target.x)),
+        y: Math.max(bounds.top + radius, Math.min(bounds.bottom - radius, target.y))
+      };
+      const hit = this.map.firstBlockingTerrain(start, target, radius);
+      if (hit) {
+        const fraction = Math.max(0, hit.fraction - 1e-5);
+        target = {
+          x: start.x + (target.x - start.x) * fraction,
+          y: start.y + (target.y - start.y) * fraction
+        };
+      }
+    }
+    unit.position = target;
+    return Math.max(0, (target.x - start.x) * dx + (target.y - start.y) * dy);
   }
 };
 
@@ -1009,6 +2050,9 @@ var CombatSystem = class {
     __publicField(this, "map", map);
     __publicField(this, "nextProjectileId", 1);
     __publicField(this, "shots", []);
+    __publicField(this, "frameUnits", []);
+    __publicField(this, "humans", []);
+    __publicField(this, "zombies", []);
   }
   createProjectile(source, target, time_s) {
     var _a, _b;
@@ -1056,7 +2100,11 @@ var CombatSystem = class {
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     const dt = Math.min(seconds, 0.05);
     const events = [];
-    for (const unit of this.store.living()) {
+    this.frameUnits = this.store.living();
+    this.humans = this.frameUnits.filter((unit) => unit.faction === "human");
+    this.zombies = this.frameUnits.filter((unit) => unit.faction === "zombie");
+    const frameStarts = new Map(this.zombies.filter((unit) => !unit.climbingWallId).map((unit) => [unit.id, { ...unit.position }]));
+    for (const unit of this.frameUnits) {
       if (!unit.active || unit.hp <= 0 || unit.state === "Dead") continue;
       if (unit.faction === "human") this.rangedHuman(unit, dt, time_s, events);
       else {
@@ -1068,11 +2116,21 @@ var CombatSystem = class {
         }
       }
     }
-    this.separateZombies();
+    this.separateZombies(frameStarts);
     return events;
   }
   nearest(unit, faction, range = Infinity, clearShot = false) {
-    return this.store.living().filter((target) => target.faction === faction && this.distance(unit, target) <= range && (!clearShot || !this.map.firstBlockingTerrain(unit.position, target.position))).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0];
+    let nearest;
+    let bestDistance = range * range;
+    for (const target of faction === "human" ? this.humans : this.zombies) {
+      if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === "Dead") continue;
+      const distance = (target.position.x - unit.position.x) ** 2 + (target.position.y - unit.position.y) ** 2;
+      if (distance > bestDistance || distance === bestDistance && nearest && target.id >= nearest.id) continue;
+      if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position)) continue;
+      nearest = target;
+      bestDistance = distance;
+    }
+    return nearest;
   }
   distance(a, b) {
     return Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
@@ -1129,17 +2187,20 @@ var CombatSystem = class {
       return;
     }
     const radius = (_a = unit.radius_px) != null ? _a : 8;
+    if (this.map.terrain.some((terrain) => this.map.isBlocking(terrain) && this.map.terrainContains(unit.position, terrain, radius))) {
+      unit.position = this.map.walkablePoint(unit.position, radius);
+    }
     const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, radius);
     const required = (_b = obstruction == null ? void 0 : obstruction.terrain.stackRequired) != null ? _b : Infinity;
     const stack = obstruction && Number.isFinite(required) && Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= 40 ? this.wallStack(unit, target, obstruction.terrain, obstruction.point) : [];
     let approach = this.map.walkablePoint(target.position, radius);
-    let waypoint = stack.length >= required ? target.position : this.map.nextWaypoint(unit.position, approach, radius);
+    let waypoint = stack.length >= required ? target.position : this.map.nextWaypoint(unit.position, approach, radius, true);
     if (!waypoint) {
       const blockedTargetId = target.id;
-      const alternatives = this.store.living().filter((candidate) => candidate.faction === "human" && candidate.id !== blockedTargetId).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const alternatives = this.humans.filter((candidate) => candidate.faction === "human" && candidate.active && candidate.hp > 0 && candidate.state !== "Dead" && candidate.id !== blockedTargetId).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       for (const candidate of alternatives) {
         const candidateApproach = this.map.walkablePoint(candidate.position, radius);
-        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, radius);
+        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, radius, true);
         if (waypoint) {
           target = candidate;
           approach = candidateApproach;
@@ -1151,6 +2212,21 @@ var CombatSystem = class {
     const distance = this.distance(unit, target);
     const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position);
     const attack = getZombieModule(unit.unitType).getMeleeAttackProfile();
+    const door = waypoint && this.map.firstBlockingTerrain(unit.position, waypoint, radius);
+    if ((door == null ? void 0 : door.terrain.kind) === "door" && Math.hypot(door.point.x - unit.position.x, door.point.y - unit.position.y) <= attack.range_px) {
+      unit.targetId = door.terrain.id;
+      this.state(unit, "Attacking", time_s, events);
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+        const damaged = this.map.damageDoor(door.terrain.id, attack.damage);
+        if (damaged) {
+          events.push({ type: "door_damaged", time_s, data: { ...damaged, sourceId: unit.id, amount: attack.damage } });
+          if (damaged.destroyed) events.push({ type: "door_destroyed", time_s, data: { doorId: damaged.id, sourceId: unit.id } });
+        }
+      }
+      return;
+    }
     if (distance > attack.range_px + 1e-9 || meleeBlocked) {
       unit.attackElapsed_s = 0;
       this.state(unit, "Advancing", time_s, events);
@@ -1175,12 +2251,13 @@ var CombatSystem = class {
             member.climbingWallId = hit.terrain.id;
             member.stackLevel = index % required + 1;
             member.climbTarget = vertical ? {
-              x: member.position.x < (b.left + b.right) / 2 ? b.right + member.radius_px : b.left - member.radius_px,
+              x: member.position.x < (b.left + b.right) / 2 ? b.right + member.radius_px + 1 : b.left - member.radius_px - 1,
               y: Math.max(b.top, Math.min(b.bottom, member.position.y))
             } : {
               x: Math.max(b.left, Math.min(b.right, member.position.x)),
-              y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + member.radius_px : b.top - member.radius_px
+              y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + member.radius_px + 1 : b.top - member.radius_px - 1
             };
+            member.climbTarget = this.map.walkablePoint(member.climbTarget, member.radius_px);
             this.state(member, "Climbing", time_s, events);
           });
           events.push({ type: "wall_climb_started", time_s, data: {
@@ -1218,6 +2295,7 @@ var CombatSystem = class {
     const oldId = target.id;
     const infected = this.store.transform(oldId, "normal_zombie");
     if (!infected) return false;
+    this.zombies.push(infected);
     events.push({ type: "unit_infected", time_s, data: {
       sourceId: source.id,
       humanId: oldId,
@@ -1257,7 +2335,8 @@ var CombatSystem = class {
     const side = vertical ? Math.sign(unit.position.x - centerX) : Math.sign(unit.position.y - centerY);
     const targetSide = vertical ? Math.sign(target.position.x - centerX) : Math.sign(target.position.y - centerY);
     if (!side || side === targetSide) return [];
-    return this.store.living().filter((candidate) => {
+    return this.zombies.filter((candidate) => {
+      if (!candidate.active || candidate.hp <= 0 || candidate.state === "Dead") return false;
       if (candidate.faction !== "zombie" || candidate.climbingWallId || candidate.id === unit.id) return false;
       const candidateSide = vertical ? Math.sign(candidate.position.x - centerX) : Math.sign(candidate.position.y - centerY);
       if (candidateSide !== side) return false;
@@ -1268,14 +2347,46 @@ var CombatSystem = class {
       return along <= 36 && edgeDistance <= 40;
     }).concat(unit).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   }
-  separateZombies() {
+  separateZombies(frameStarts) {
     var _a, _b;
-    const zombies = this.store.living().filter((unit) => unit.faction === "zombie" && !unit.climbingWallId);
+    const zombies = this.zombies.filter((unit) => unit.active && unit.hp > 0 && unit.state !== "Dead" && !unit.climbingWallId);
     const { left, top, right, bottom } = this.map.battle_bounds;
+    const maxRadius = Math.max(8, ...zombies.map((unit) => {
+      var _a2;
+      return (_a2 = unit.radius_px) != null ? _a2 : 8;
+    }));
+    const cellSize = maxRadius * 2 + 1;
     for (let pass = 0; pass < 2; pass++) {
+      const cells = /* @__PURE__ */ new Map();
+      const key = (unit) => `${Math.floor(unit.position.x / cellSize)},${Math.floor(unit.position.y / cellSize)}`;
+      const insert = (index) => {
+        const cell = key(zombies[index]);
+        if (!cells.has(cell)) cells.set(cell, /* @__PURE__ */ new Set());
+        cells.get(cell).add(index);
+      };
+      const relocate = (index, previousCell) => {
+        var _a2;
+        if (key(zombies[index]) === previousCell) return;
+        (_a2 = cells.get(previousCell)) == null ? void 0 : _a2.delete(index);
+        insert(index);
+      };
+      const neighbors = (a, after) => {
+        var _a2;
+        const x = Math.floor(a.position.x / cellSize), y = Math.floor(a.position.y / cellSize);
+        const result = [];
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+          for (const index of (_a2 = cells.get(`${x + dx},${y + dy}`)) != null ? _a2 : []) {
+            if (index > after) result.push(index);
+          }
+        }
+        return result.sort((a2, b) => a2 - b);
+      };
+      zombies.forEach((_, index) => insert(index));
       for (let i = 0; i < zombies.length; i++) {
         const a = zombies[i];
-        for (let j = i + 1; j < zombies.length; j++) {
+        let nearby = neighbors(a, i);
+        for (let cursor = 0; cursor < nearby.length; cursor++) {
+          const j = nearby[cursor];
           const b = zombies[j];
           let dx = b.position.x - a.position.x, dy = b.position.y - a.position.y;
           let distance = Math.hypot(dx, dy);
@@ -1291,27 +2402,28 @@ var CombatSystem = class {
             dy /= distance;
           }
           const push = (minDistance - distance) * 0.5;
-          a.position = this.separatedPosition(a, { x: -dx * push, y: -dy * push }, left, top, right, bottom);
-          b.position = this.separatedPosition(b, { x: dx * push, y: dy * push }, left, top, right, bottom);
+          const aCell = key(a), bCell = key(b);
+          a.position = this.separatedPosition(a, { x: -dx * push, y: -dy * push }, left, top, right, bottom, frameStarts.get(a.id));
+          b.position = this.separatedPosition(b, { x: dx * push, y: dy * push }, left, top, right, bottom, frameStarts.get(b.id));
+          relocate(i, aCell);
+          relocate(j, bCell);
+          nearby = neighbors(a, j);
+          cursor = -1;
         }
       }
     }
   }
-  separatedPosition(unit, offset, left, top, right, bottom) {
+  separatedPosition(unit, offset, left, top, right, bottom, frameStart) {
     var _a;
-    let point = {
+    const point = {
       x: Math.max(left, Math.min(right, unit.position.x + offset.x)),
       y: Math.max(top, Math.min(bottom, unit.position.y + offset.y))
     };
-    const collision = this.map.terrain.find((terrain) => {
-      var _a2;
-      return terrain.blocksMovement && this.map.terrainContains(point, terrain, (_a2 = unit.radius_px) != null ? _a2 : 8);
-    });
-    if (!collision) return point;
-    if (!this.map.terrainContains(unit.position, collision, (_a = unit.radius_px) != null ? _a : 8)) return { ...unit.position };
-    const vertical = collision.bounds.bottom - collision.bounds.top >= collision.bounds.right - collision.bounds.left;
-    point = vertical ? { x: unit.position.x, y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) } : { x: Math.max(left, Math.min(right, unit.position.x + offset.x)), y: unit.position.y };
-    return point;
+    const radius = (_a = unit.radius_px) != null ? _a : 8;
+    for (const candidate of [point, { x: point.x, y: unit.position.y }, { x: unit.position.x, y: point.y }]) {
+      if (!this.map.firstBlockingTerrain(unit.position, candidate, radius) && (!frameStart || !this.map.firstBlockingTerrain(frameStart, candidate, radius))) return candidate;
+    }
+    return { ...unit.position };
   }
 };
 
@@ -1379,15 +2491,21 @@ var ProjectileSystem = class {
         data: { projectileId: shot.id, targetId: shot.targetId, position: { ...shot.position } }
       });
       const target = this.store.get(shot.targetId);
-      if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) && !this.map.firstBlockingTerrain(shot.position, target.position)) {
-        if (shot.splashRadius_px > 0) {
-          const impacted = this.store.living().filter((candidate) => candidate.faction === "zombie" && Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px && !this.map.firstBlockingTerrain(shot.origin, candidate.position) && !this.map.firstBlockingTerrain(shot.position, candidate.position));
-          for (const candidate of impacted) {
-            events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, terminalTime_s));
-          }
-        } else {
-          events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+      if (shot.splashRadius_px > 0) {
+        const dx = shot.position.x - shot.origin.x, dy = shot.position.y - shot.origin.y;
+        const length = Math.hypot(dx, dy);
+        const impacted = this.store.living().filter((candidate) => candidate.faction === "zombie" && (shot.projectileKind === "flame" ? (() => {
+          const x = candidate.position.x - shot.origin.x, y = candidate.position.y - shot.origin.y;
+          if (length < 1e-9) return Math.hypot(x, y) <= shot.splashRadius_px;
+          const along = (x * dx + y * dy) / length;
+          const fraction2 = Math.max(0, Math.min(1, along / length));
+          return along >= 0 && Math.hypot(x - dx * fraction2, y - dy * fraction2) <= shot.splashRadius_px * fraction2;
+        })() : Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px) && !this.map.firstBlockingTerrain(shot.origin, candidate.position) && !this.map.firstBlockingTerrain(shot.position, candidate.position));
+        for (const candidate of impacted) {
+          events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, terminalTime_s));
         }
+      } else if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) && !this.map.firstBlockingTerrain(shot.position, target.position)) {
+        events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
       }
       events.push({ type: "projectile_expired", time_s: terminalTime_s, data: { projectileId: shot.id } });
       this.projectiles.delete(shot.id);
@@ -1422,10 +2540,12 @@ var SpawnSystem = class {
     __publicField(this, "map", map);
     __publicField(this, "pending", []);
     __publicField(this, "spawned", 0);
+    __publicField(this, "offsets", /* @__PURE__ */ new Map());
   }
   reset() {
     this.pending = [];
     this.spawned = 0;
+    this.offsets.clear();
   }
   get spawnedCount() {
     return this.spawned;
@@ -1442,22 +2562,16 @@ var SpawnSystem = class {
       batchInterval_s: (_b = event.batchInterval_s) != null ? _b : 0,
       batchIndex: 0,
       cursor: 0,
-      offsets: /* @__PURE__ */ new Map(),
       spawns: event.spawns.map((spawn) => ({ spawn: { ...spawn }, remaining: spawn.count }))
     });
   }
   update(time_s) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c;
     const events = [];
     const due = this.pending.sort((a, b) => a.nextBatchTime_s - b.nextBatchTime_s || a.waveIndex - b.waveIndex);
     for (const wave of due) {
       while (wave.nextBatchTime_s <= time_s + 1e-9 && wave.spawns.some((item) => item.remaining > 0)) {
         const batchSpawns = [];
-        const totalByKey = /* @__PURE__ */ new Map();
-        for (const item of wave.spawns) {
-          const key = (_a = item.spawn.spawnPoint) != null ? _a : `route:${item.spawn.route}`;
-          totalByKey.set(key, ((_b = totalByKey.get(key)) != null ? _b : 0) + item.spawn.count);
-        }
         let admitted = 0;
         while (admitted < wave.batchSize && wave.spawns.some((item) => item.remaining > 0)) {
           let selected;
@@ -1472,12 +2586,13 @@ var SpawnSystem = class {
           }
           if (!selected) break;
           const spawn = selected.spawn;
-          const key = (_c = spawn.spawnPoint) != null ? _c : `route:${spawn.route}`;
-          const offset = (_d = wave.offsets.get(key)) != null ? _d : 0;
-          const positions = this.map.spawnPositions(spawn.route, totalByKey.get(key), spawn.spawnPoint).slice(offset, offset + 1);
-          wave.offsets.set(key, offset + positions.length);
+          const key = (_a = spawn.spawnPoint) != null ? _a : `route:${spawn.route}`;
+          const offset = (_b = this.offsets.get(key)) != null ? _b : 0;
+          const positions = this.map.spawnPositions(spawn.route, 1, spawn.spawnPoint, offset);
+          this.offsets.set(key, offset + positions.length);
           for (const position of positions) {
-            this.store.spawn(spawn.unitType, position, spawn.route, (_e = spawn.spawnPoint) != null ? _e : null);
+            const radius = getZombieModule(spawn.unitType).getStats().diameter_px / 2;
+            this.store.spawn(spawn.unitType, this.map.walkablePoint(position, radius), spawn.route, (_c = spawn.spawnPoint) != null ? _c : null);
             this.spawned++;
           }
           selected.remaining--;
@@ -1553,13 +2668,11 @@ var _BattleTestHarness = class _BattleTestHarness {
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error("Map must define at least one route");
     const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
-    let humanIndex = 0;
-    for (const [index, routeId] of routes.entries()) {
-      const count = Math.floor(this.initialHumanCount / routes.length) + (index < this.initialHumanCount % routes.length ? 1 : 0);
-      const route = this.mapModel.getRoute(routeId);
-      for (const position of formationPositions(count, route.defend, this.mapModel)) {
-        this.units.spawn(humanTypes[humanIndex++ % humanTypes.length], position, routeId);
-      }
+    const routeId = routes[Math.floor(routes.length / 2)];
+    const route = this.mapModel.getRoute(routeId);
+    for (const [index, position] of formationPositions(this.initialHumanCount, route.defend, this.mapModel).entries()) {
+      const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
+      unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
     this.started = true;
   }

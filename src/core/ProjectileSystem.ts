@@ -65,19 +65,27 @@ export class ProjectileSystem {
       const target = this.store.get(shot.targetId);
       // A target that moved behind cover during flight cannot receive a remote
       // hit through the wall when the projectile reaches its captured destination.
-      if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) &&
-          !this.map.firstBlockingTerrain(shot.position, target.position)) {
-        if (shot.splashRadius_px > 0) {
+      if (shot.splashRadius_px > 0) {
+          // A spray burns the widening path it traveled, independently of the
+          // original target surviving or moving away before the flame arrives.
+          const dx = shot.position.x - shot.origin.x, dy = shot.position.y - shot.origin.y;
+          const length = Math.hypot(dx, dy);
           const impacted = this.store.living().filter(candidate => candidate.faction === 'zombie' &&
-            Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px &&
+            (shot.projectileKind === 'flame' ? (() => {
+              const x = candidate.position.x - shot.origin.x, y = candidate.position.y - shot.origin.y;
+              if (length < 1e-9) return Math.hypot(x, y) <= shot.splashRadius_px;
+              const along = (x * dx + y * dy) / length;
+              const fraction = Math.max(0, Math.min(1, along / length));
+              return along >= 0 && Math.hypot(x - dx * fraction, y - dy * fraction) <= shot.splashRadius_px * fraction;
+            })() : Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px) &&
             !this.map.firstBlockingTerrain(shot.origin, candidate.position) &&
             !this.map.firstBlockingTerrain(shot.position, candidate.position));
           for (const candidate of impacted) {
             events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, terminalTime_s));
           }
-        } else {
+      } else if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) &&
+          !this.map.firstBlockingTerrain(shot.position, target.position)) {
           events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
-        }
       }
       events.push({ type: 'projectile_expired', time_s: terminalTime_s, data: { projectileId: shot.id } });
       this.projectiles.delete(shot.id);

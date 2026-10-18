@@ -9,12 +9,30 @@ export class ProjectileViewPool {
   public constructor(parent:Node){this.g=graphics('Projectiles',parent);}
   public get counts(){return this.tracks.counts;}
   public clear():void {this.tracks.clear();this.g.clear();}
+  /** Layered expanding lobes read as a broad spray even at phone scale. */
+  private flame(origin:{x:number;y:number},tip:{x:number;y:number},time:number,alpha=1):void {
+    const g=this.g,dx=tip.x-origin.x,dy=tip.y-origin.y,d=Math.hypot(dx,dy);
+    if(d<1e-6)return;
+    const nx=-dy/d,ny=dx/d;
+    for(let i=1;i<=7;i++){
+      const t=i/7,w=unitConfig.flamethrower.area_radius_px*t;
+      const flicker=Math.sin(time*32+i*2.1)*w*.12;
+      const x=origin.x+dx*t+nx*flicker,y=origin.y+dy*t+ny*flicker;
+      g.fillColor=color(palette.flame,Math.round((55+35*t)*alpha));
+      g.circle(x,-y,Math.max(3,w));g.fill();
+      g.fillColor=color(palette.flameGlow,Math.round(135*alpha));
+      g.circle(x,-y,Math.max(2,w*.58));g.fill();
+      g.fillColor=color('#FFF0AD',Math.round(180*alpha));
+      g.circle(x,-y,Math.max(1.5,w*.24));g.fill();
+    }
+  }
   public render(events:BattleEvent[],time:number):void {
     this.tracks.consume(events);const g=this.g;g.clear();
     const flying=this.tracks.positions(time,unitConfig.projectile.speed_px_per_s);
     for(const t of this.tracks.trails){
       const fade=1-Math.max(0,time-t.time)/.10;
       if(this.tracks.kindForTrail(t)==='flame'){
+        this.flame(t.origin,t.position,time,fade);
         g.lineWidth=6;g.strokeColor=color(palette.flame,Math.round(190*fade));line(g,t.origin,t.position);
         g.lineWidth=2;g.strokeColor=color(palette.flameGlow,Math.round(220*fade));line(g,t.origin,t.position);
       }else{
@@ -26,6 +44,7 @@ export class ProjectileViewPool {
       const dx=p.position.x-p.origin.x,dy=p.position.y-p.origin.y,d=Math.hypot(dx,dy);
       // Show only the distance already traveled; never draw ahead to the target.
       if(p.kind==='flame'){
+        this.flame(p.origin,p.position,time);
         g.lineWidth=3.5;g.strokeColor=color(palette.flame,150);line(g,p.origin,p.position);
         const tailLength=Math.min(d,56);
         g.lineWidth=7;g.strokeColor=color(palette.flameGlow,180);

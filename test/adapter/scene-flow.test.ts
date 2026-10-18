@@ -29,7 +29,7 @@ test('scene selection draws matching geometry and resets transient effects on re
   for(const b of [[160,-1080,240,620],[680,-1080,240,620],[160,-1960,240,480],[680,-1960,240,480]]) {
     assert.ok(rectangles.some((call:any)=>call.args.join(',')===b.join(',')),`building ${b} is rendered`);
   }
-  assert.ok(!rectangles.some((call:any)=>call.args.join(',')==='350,-1260,40,360'),'old cabin wall removed');
+  assert.ok(!rectangles.some((call:any)=>call.args.join(',')==='416,-950,24,270'),'cabin wall removed');
   const unit=s.battle.getUnits().find((unit:any)=>unit.faction==='human');
   const p=mapToScreen(unit.position,c.frame);f.touch('start',1,p.x,p.y);
   assert.ok(f.controls.drag.preview,'touch on second scene selects its soldiers');
@@ -42,7 +42,7 @@ test('scene selection draws matching geometry and resets transient effects on re
   assert.equal(c.hud.waveBanner.node.active,false);assert.equal(s.events.length,0);
   click(f,2);assert.equal(s.screen,'menu');assert.equal(c.field.active,false);
   click(f,1);click(f,0);assert.equal(s.activeScene.id,'cabin');
-  assert.ok(c.map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='350,-1260,40,360'));
+  assert.ok(c.map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='416,-950,24,270'));
   assert.ok(!c.map.base.calls.some((call:any)=>call.kind==='rect'&&call.args[2]===240&&call.args[3]===620));
   c.onDestroy();
 });

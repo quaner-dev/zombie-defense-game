@@ -12,7 +12,7 @@ test('HUD presents Chinese copy and shows a pressed button state until release',
   const f=fixture();
   f.button(0,'start');f.hud.render();
   assert.equal((f.hud.pause as any).string,'暂停');
-  assert.match((f.hud.status as any).string,/人类 15/);
+  assert.match((f.hud.status as any).string,/人类 7/);
   assert.equal(f.hud.boxes[0].pressed,true);
   assert.ok(f.hud.g.calls.some((call:any)=>call.kind==='roundRect'&&call.color.hex==='#355B61'));
 
@@ -87,5 +87,5 @@ test('the open battlefield boundary uses one four-sided perimeter indicator',()=
   assert.ok(map.warning.calls.filter((call:any)=>call.kind==='stroke')
     .every((call:any)=>call.color.hex==='#7A7A85'),'perimeter stays neutral instead of using warning red');
   assert.ok(map.warning.calls.some((call:any)=>call.kind==='moveTo'&&call.args[0]===60&&call.args[1]===-180));
-  assert.ok(map.base.calls.some((call:any)=>call.kind==='rect'&&call.args[0]===350&&call.args[2]===40));
+  assert.ok(map.base.calls.some((call:any)=>call.kind==='rect'&&call.args.join(',')==='416,-950,24,270'));
 });

@@ -1,50 +1,170 @@
 {
   "LV01_zombie_wave": {
-    "mapId": "default",
+    "mapId": "LV01_cabin_rooms",
     "waves": [
       {
         "battleTime_s": 0,
-        "batchSize": 5,
-        "batchInterval_s": 1,
+        "batchSize": 10,
+        "batchInterval_s": 0.5,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "north", "count": 13 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "south", "count": 13 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "east", "count": 12 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "west", "count": 12 }
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 26
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 26
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 24
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 24
+          }
         ]
       },
       {
         "battleTime_s": 7,
-        "batchSize": 5,
-        "batchInterval_s": 1,
+        "batchSize": 10,
+        "batchInterval_s": 0.5,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "north", "count": 21 },
-          { "unitType": "fat_zombie", "route": "A", "spawnPoint": "north", "count": 2 },
-          { "unitType": "zombie_mother", "route": "A", "spawnPoint": "north", "count": 2 },
-          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "south", "count": 25 },
-          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "east", "count": 25 },
-          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "west", "count": 25 }
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 42
+          },
+          {
+            "unitType": "fat_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "zombie_mother",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-south",
+            "count": 50
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-north",
+            "count": 50
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-south",
+            "count": 50
+          }
         ]
       },
       {
         "battleTime_s": 20,
-        "batchSize": 5,
-        "batchInterval_s": 1,
+        "batchSize": 10,
+        "batchInterval_s": 0.5,
         "spawns": [
-          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "north", "count": 11 },
-          { "unitType": "fat_zombie", "route": "A", "spawnPoint": "north", "count": 2 },
-          { "unitType": "zombie_mother", "route": "A", "spawnPoint": "north", "count": 2 },
-          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "south", "count": 15 },
-          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "east", "count": 15 },
-          { "unitType": "normal_zombie", "route": "A", "spawnPoint": "west", "count": 15 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "north", "count": 20 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "south", "count": 20 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "east", "count": 20 },
-          { "unitType": "normal_zombie", "route": "B", "spawnPoint": "west", "count": 20 },
-          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "north", "count": 15 },
-          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "south", "count": 15 },
-          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "east", "count": 15 },
-          { "unitType": "normal_zombie", "route": "C", "spawnPoint": "west", "count": 15 }
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 22
+          },
+          {
+            "unitType": "fat_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "zombie_mother",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-north",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-north",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          }
         ]
       }
     ]

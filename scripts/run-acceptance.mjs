@@ -3,40 +3,37 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { BattleTestHarness } from '../src/core/BattleTestHarness.ts';
 import units from '../config/units.json' with { type: 'json' };
-import map from '../config/map.json' with { type: 'json' };
+import cabin from '../config/scenes/cabin.json' with { type: 'json' };
 
 const level = 'LV01_zombie_wave';
-const routeIds = ['A', 'B', 'C'];
+const configuredZombieCount = cabin.level.waves.reduce((sum, wave) =>
+  sum + wave.spawns.reduce((waveSum, spawn) => waveSum + spawn.count, 0), 0);
 
 function run(seed, scripted) {
   const started = performance.now();
   const h = new BattleTestHarness();
   h.start(level, seed);
   h.advance(3);
+  const initialHumans = h.getUnits().filter(u => u.faction === 'human');
   const commands = [];
   if (scripted) {
-    for (const stage of [{ time_s: 0, y: 1400 }]) {
-      h.advance(stage.time_s - h.getSnapshot().time_s);
-      for (const source of routeIds) {
-        const group = h.getUnits().filter(u => u.faction === 'human' && u.active && u.hp > 0 && u.state !== 'Dead' && u.routeId === source);
-        const centroid = group.length ? { x: group.reduce((s,u) => s + u.position.x,0) / group.length,
-          y: group.reduce((s,u) => s + u.position.y,0) / group.length } : null;
-        const destination = { x: { A: 450, B: 540, C: 630 }[source], y: stage.y };
-        const previous = h.getEvents().filter(e => e.type === 'group_command').length;
-        if (centroid) h.issueMoveAt(centroid.x,centroid.y,destination.x,destination.y);
-        const events = h.getEvents().filter(e => e.type === 'group_command');
-        const event = events.length > previous ? events.at(-1) : null;
-        const intended = group.length ? [group.slice().sort((a,b) =>
-          Math.hypot(a.position.x - centroid.x, a.position.y - centroid.y) -
-          Math.hypot(b.position.x - centroid.x, b.position.y - centroid.y) ||
-          (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0].id] : [];
-        const selected = [...(event?.data.unitIds ?? [])].sort();
-        commands.push({ time_s: stage.time_s, event_time_s: event?.time_s ?? null,
-          issued_at_s: event?.data.issuedAt_s ?? null, source_route: source, target_route: source,
-          centroid, target: destination, intended_ids: intended, unit_ids: selected,
-          selection_verified: !!event && event.time_s === stage.time_s && event.data.issuedAt_s === stage.time_s &&
-            JSON.stringify(intended) === JSON.stringify(selected) });
-      }
+    const soldiers = [...initialHumans.filter(u => u.unitType === 'flamethrower'),
+      ...initialHumans.filter(u => u.unitType === 'shield')];
+    const destinations = [{ x: 330, y: 1560 }, { x: 330, y: 1620 }, { x: 375, y: 1590 }];
+    for (const [index, soldier] of soldiers.entries()) {
+      const destination = destinations[index];
+      const pressedAt = { ...soldier.position };
+      const previous = h.getEvents().filter(e => e.type === 'group_command').length;
+      h.issueMoveAt(pressedAt.x, pressedAt.y, destination.x, destination.y);
+      const events = h.getEvents().filter(e => e.type === 'group_command');
+      const event = events.length > previous ? events.at(-1) : null;
+      const intended = [soldier.id];
+      const selected = [...(event?.data.unitIds ?? [])].sort();
+      commands.push({ time_s: 0, event_time_s: event?.time_s ?? null,
+        issued_at_s: event?.data.issuedAt_s ?? null, source_route: soldier.routeId, target_route: soldier.routeId,
+        pressed_at: pressedAt, target: destination, intended_ids: intended, unit_ids: selected,
+        selection_verified: !!event && event.time_s === 0 && event.data.issuedAt_s === 0 &&
+          JSON.stringify(intended) === JSON.stringify(selected) });
     }
   }
   h.advance(120 - h.getSnapshot().time_s);
@@ -46,32 +43,42 @@ function run(seed, scripted) {
   const failed = [];
   if (s.result === 'running') failed.push('result: battle exceeded 120s');
   const firstTwoLosses = events.filter(e => e.type === 'unit_died' && e.data.faction === 'human' && e.time_s < 20).length;
-  if (s.spawnedZombies !== 350) failed.push('wave: expected 350 spawned zombies');
+  if (s.spawnedZombies > configuredZombieCount) failed.push('wave: spawned more zombies than configured');
   if (!scripted) {
     if (s.result !== 'win' && s.result !== 'lose') failed.push('result: idle battle did not resolve');
     if (s.time_s < 30 || s.time_s > 120) failed.push('result: idle end outside 30..120s');
-    if (s.result === 'win' && (s.aliveZombies !== 0 || s.aliveHumans === 0)) failed.push('result: idle victory counters disagree');
+    if (s.result === 'win' && (s.aliveZombies !== 0 || s.aliveHumans === 0 || s.spawnedZombies !== configuredZombieCount)) failed.push('result: idle victory counters disagree');
     if (s.result === 'lose' && s.aliveHumans !== 0) failed.push('result: idle defeat counters disagree');
   }
   if (scripted && (s.result !== 'win' || s.aliveHumans < 1)) failed.push('result: micro-control run must win with survivors');
   if (scripted && (commands.length !== 3 || commands.some(c => c.unit_ids.length < 1 || !c.selection_verified))) failed.push('movement: three opening commands must select living units');
-  const factions = new Map(h.getUnits().map(u => [u.id, u.faction]));
+  const rifleIds = new Set(initialHumans.filter(u => u.unitType === 'rifleman').map(u => u.id));
+  const flameIds = new Set(initialHumans.filter(u => u.unitType === 'flamethrower').map(u => u.id));
+  const zombieIds = new Set(h.getUnits().filter(u => u.faction === 'zombie').map(u => u.id));
+  const rifleShots = events.filter(e => e.type === 'projectile_spawned' &&
+    e.data.projectileKind === 'bullet' && rifleIds.has(e.data.sourceId));
+  const rifleShotIds = new Set(rifleShots.map(e => e.data.id));
   const effectiveRifleHits = events.filter(e => e.type === 'damage' &&
-    factions.get(e.data.sourceId) === 'human' && factions.get(e.data.targetId) === 'zombie').length;
-  const rifleShots = events.filter(e => e.type === 'projectile_spawned').length;
-  const rifleHitsWithoutDamage = events.filter(e => e.type === 'projectile_hit').length - effectiveRifleHits;
+    rifleIds.has(e.data.sourceId) && zombieIds.has(e.data.targetId)).length;
+  const rifleHitsWithoutDamage = events.filter(e => e.type === 'projectile_hit' &&
+    rifleShotIds.has(e.data.projectileId)).length - effectiveRifleHits;
   const report = {
     level_id: level, seed, result: s.result,
     policy: scripted ? 'micro-control' : 'idle',
-    config: { ...structuredClone(units), spawn_layout: structuredClone(map.spawn_layout) },
+    scene_id: cabin.id, map_id: cabin.mapId,
+    initial_humans: initialHumans.length, configured_zombies: configuredZombieCount,
+    spawned_zombies: s.spawnedZombies, doors_at_end: h.getMapModel().getDoorStates(),
+    config: { ...structuredClone(units), spawn_layout: structuredClone(cabin.map.spawn_layout) },
     first_casualty_time_s: first?.time_s ?? null,
     human_alive_at_end: s.aliveHumans, zombie_alive_at_end: s.aliveZombies,
     wave_spawn_times_s: events.filter(e => e.type === 'wave_spawn').map(e => e.time_s),
     breached_routes: s.breachedRoutes, assertions_failed: failed,
     game_time_s: s.time_s, real_runtime_ms: performance.now() - started,
     human_losses_before_wave_3: firstTwoLosses,
-    combat_diagnostics: { rifle_shots: rifleShots, effective_rifle_hits: effectiveRifleHits,
-      rifle_hits_without_damage: rifleHitsWithoutDamage },
+    combat_diagnostics: { rifle_shots: rifleShots.length, effective_rifle_hits: effectiveRifleHits,
+      rifle_hits_without_damage: rifleHitsWithoutDamage,
+      flame_shots: events.filter(e => e.type === 'projectile_spawned' && e.data.projectileKind === 'flame').length,
+      flame_damage_events: events.filter(e => e.type === 'damage' && flameIds.has(e.data.sourceId) && zombieIds.has(e.data.targetId)).length },
   };
   if (scripted) report.commands = commands;
   return report;

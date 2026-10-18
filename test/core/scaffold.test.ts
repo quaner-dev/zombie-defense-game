@@ -10,10 +10,10 @@ test('reads an initial battle snapshot', () => {
 
   assert.deepEqual(harness.getSnapshot(), {
     time_s: 0,
-    aliveHumans: 15,
-    // The first 5-zombie edge batch appears when deployment ends.
-    aliveZombies: 5,
-    spawnedZombies: 5,
+    aliveHumans: 7,
+    // The first 10-zombie corridor batch appears when deployment ends.
+    aliveZombies: 10,
+    spawnedZombies: 10,
     waveIndex: 1,
     breachedRoutes: [],
     result: 'running',

@@ -21,6 +21,8 @@ export interface SpawnPointDefinition {
   y: number;
   side?: 'north' | 'south' | 'east' | 'west';
   width?: number;
+  /** A bounded admission area; later batches reuse its slots instead of extending into rooms. */
+  spawnArea?: MapDefinition['battle_bounds'];
 }
 
 export interface MapDefinition {
@@ -43,7 +45,10 @@ export interface TerrainDefinition {
   blocksMovement?: boolean;
   speedMultiplier?: number;
   stackRequired?: number;
+  maxHp?: number;
 }
+
+export interface DoorState { id: string; hp: number; maxHp: number; destroyed: boolean }
 
 export interface TerrainHit {
   terrain: TerrainDefinition;
@@ -66,7 +71,8 @@ const MAP_DEFINITIONS: Record<string, MapDefinition> = {
 export class MapModel {
   private readonly routes = new Map<string, RouteDefinition>();
   private readonly spawnPoints = new Map<string, SpawnPointDefinition>();
-  private readonly navigation = new Map<number, NavigationGraph>();
+  private readonly navigation = new Map<string, NavigationGraph>();
+  private readonly doors = new Map<string, DoorState>();
 
   public readonly battle_bounds: MapDefinition['battle_bounds'];
   public readonly defense_line_y: number;
@@ -112,6 +118,12 @@ export class MapModel {
       if (point.width !== undefined && (!Number.isFinite(point.width) || point.width < 0)) {
         throw new Error(`Map spawn point ${point.id} has invalid width`);
       }
+      if (point.spawnArea) {
+        const area = point.spawnArea;
+        validatePoint({ x: area.left, y: area.top });
+        validatePoint({ x: area.right, y: area.bottom });
+        if (area.left > area.right || area.top > area.bottom) throw new Error('Invalid spawn area');
+      }
       this.spawnPoints.set(point.id, point);
     }
     for (const terrain of this.terrain) {
@@ -122,7 +134,27 @@ export class MapModel {
           (terrain.stackRequired !== undefined && (!Number.isInteger(terrain.stackRequired) || terrain.stackRequired < 1))) {
         throw new Error(`Map terrain ${terrain.id} has invalid bounds or stack requirement`);
       }
+      if (terrain.kind === 'door') {
+        if (!Number.isFinite(terrain.maxHp) || terrain.maxHp! <= 0) throw new Error(`Door ${terrain.id} needs positive durability`);
+        this.doors.set(terrain.id, { id: terrain.id, hp: terrain.maxHp!, maxHp: terrain.maxHp!, destroyed: false });
+      }
     }
+  }
+
+  public getDoorStates(): DoorState[] { return [...this.doors.values()].map(door => ({ ...door })); }
+
+  public damageDoor(id: string, damage: number): DoorState | null {
+    const door = this.doors.get(id);
+    if (!door || door.destroyed || !Number.isFinite(damage) || damage <= 0) return null;
+    door.hp = Math.max(0, door.hp - damage);
+    door.destroyed = door.hp === 0;
+    if (door.destroyed) this.navigation.clear();
+    return { ...door };
+  }
+
+  public isBlocking(terrain: TerrainDefinition, ignoreDoors = false): boolean {
+    return !!terrain.blocksMovement && (terrain.kind !== 'door' ||
+      (!ignoreDoors && !this.doors.get(terrain.id)?.destroyed));
   }
 
   public static load(mapId: string = 'default'): MapModel {
@@ -134,37 +166,64 @@ export class MapModel {
     MAP_DEFINITIONS[mapId] = definition;
   }
 
-  public spawnPositions(routeId: string, count: number, spawnPointId?: string): Waypoint[] {
+  public spawnPositions(routeId: string, count: number, spawnPointId?: string, startIndex?: number): Waypoint[] {
+    const stableLayout = startIndex !== undefined;
+    startIndex ??= 0;
+    if (!Number.isInteger(startIndex) || startIndex < 0) throw new Error('Spawn start index must be a non-negative integer');
     if (spawnPointId) {
       const point = this.spawnPoints.get(spawnPointId);
       if (!point) throw new Error(`Unknown spawn point: ${spawnPointId}`);
-      return this.edgeSpawnPositions(point, count);
+      return this.edgeSpawnPositions(point, count, startIndex, stableLayout);
     }
     const route = this.routes.get(routeId)!;
     const layout = route.spawn_layout ?? this.definition.spawn_layout ?? { columns: 1, spacing_px: 0 };
-    const columns = Math.min(count, Math.max(1, Math.floor(layout.columns)));
+    const columns = stableLayout ? Math.max(1, Math.floor(layout.columns))
+      : Math.min(count, Math.max(1, Math.floor(layout.columns)));
     const spacing = Math.min(Math.max(0, layout.spacing_px), columns > 1 ? route.width / (columns - 1) : Infinity);
     const { left, top, right, bottom } = this.battle_bounds;
-    return Array.from({ length: count }, (_, i) => ({
-      x: Math.max(left, Math.min(right, route.spawn.x + (i % columns - (columns - 1) / 2) * spacing)),
-      // Offscreen entries fan upward; legacy in-bounds entries retain downward rows.
-      y: route.spawn.y < top
-        ? Math.max(this.spawn_top, Math.min(bottom, route.spawn.y - Math.floor(i / columns) * spacing))
-        : Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(i / columns) * spacing)),
-    }));
+    return Array.from({ length: count }, (_, i) => {
+      const index = i + startIndex;
+      return {
+        x: Math.max(left, Math.min(right, route.spawn.x + (index % columns - (columns - 1) / 2) * spacing)),
+        // Offscreen entries fan upward; legacy in-bounds entries retain downward rows.
+        y: route.spawn.y < top
+          ? Math.max(this.spawn_top, Math.min(bottom, route.spawn.y - Math.floor(index / columns) * spacing))
+          : Math.max(top, Math.min(bottom, route.spawn.y + Math.floor(index / columns) * spacing)),
+      };
+    });
   }
 
-  private edgeSpawnPositions(point: SpawnPointDefinition, count: number): Waypoint[] {
+  private edgeSpawnPositions(point: SpawnPointDefinition, count: number, startIndex: number, stableLayout: boolean): Waypoint[] {
     const layout = this.definition.spawn_layout ?? { columns: 1, spacing_px: 0 };
     const side = point.side ?? this.inferSpawnSide(point);
+    if (point.spawnArea) {
+      const b = point.spawnArea, spacing = Math.max(1, layout.spacing_px);
+      const horizontal = side === 'north' || side === 'south';
+      const across = horizontal ? b.right - b.left : b.bottom - b.top;
+      const depth = horizontal ? b.bottom - b.top : b.right - b.left;
+      const columns = Math.max(1, Math.min(layout.columns, Math.floor(across / spacing) + 1));
+      const rows = Math.max(1, Math.floor(depth / spacing) + 1);
+      return Array.from({ length: count }, (_, i) => {
+        const index = (i + startIndex) % (columns * rows);
+        const column = index % columns, row = Math.floor(index / columns);
+        const offset = (column - (columns - 1) / 2) * spacing;
+        const inset = row * spacing;
+        if (side === 'north') return { x: (b.left + b.right) / 2 + offset, y: b.top + inset };
+        if (side === 'south') return { x: (b.left + b.right) / 2 + offset, y: b.bottom - inset };
+        if (side === 'west') return { x: b.left + inset, y: (b.top + b.bottom) / 2 + offset };
+        return { x: b.right - inset, y: (b.top + b.bottom) / 2 + offset };
+      });
+    }
     const { left, top, right, bottom } = this.battle_bounds;
     const available = side === 'north' || side === 'south' ? right - left : bottom - top;
     const width = Math.min(point.width ?? available, available);
-    const columns = Math.min(count, Math.max(1, Math.floor(layout.columns)));
+    const columns = stableLayout ? Math.max(1, Math.floor(layout.columns))
+      : Math.min(count, Math.max(1, Math.floor(layout.columns)));
     const spacing = Math.min(Math.max(0, layout.spacing_px), columns > 1 ? width / (columns - 1) : Infinity);
     return Array.from({ length: count }, (_, index) => {
-      const offset = (index % columns - (columns - 1) / 2) * spacing;
-      const depth = Math.floor(index / columns) * spacing;
+      const slot = index + startIndex;
+      const offset = (slot % columns - (columns - 1) / 2) * spacing;
+      const depth = Math.floor(slot / columns) * spacing;
       if (side === 'north') return {
         x: Math.max(left, Math.min(right, point.x + offset)),
         y: Math.max(top, Math.min(bottom, point.y + depth)),
@@ -194,10 +253,10 @@ export class MapModel {
   }
 
   /** First terrain rectangle crossed by a swept circular unit. */
-  public firstBlockingTerrain(start: Waypoint, end: Waypoint, radius = 0): TerrainHit | null {
+  public firstBlockingTerrain(start: Waypoint, end: Waypoint, radius = 0, ignoreDoors = false): TerrainHit | null {
     let first: TerrainHit | null = null;
     for (const terrain of this.terrain) {
-      if (!terrain.blocksMovement) continue;
+      if (!this.isBlocking(terrain, ignoreDoors)) continue;
       const b = terrain.bounds;
       const bounds = { left: b.left - radius, top: b.top - radius,
         right: b.right + radius, bottom: b.bottom + radius };
@@ -245,7 +304,7 @@ export class MapModel {
       x: Math.max(left, Math.min(right, p.x)), y: Math.max(top, Math.min(bottom, p.y)),
     });
     const target = clamp(point);
-    const blockers = this.terrain.filter(terrain => terrain.blocksMovement);
+    const blockers = this.terrain.filter(terrain => this.isBlocking(terrain));
     if (!blockers.some(wall => this.terrainContains(target, wall, radius))) return target;
     const candidates = blockers.flatMap(wall => {
       const b = wall.bounds, padding = radius + 1;
@@ -261,14 +320,14 @@ export class MapModel {
   }
 
   /** Shortest visible corner to follow around rectangular walls; null means unreachable. */
-  public nextWaypoint(start: Waypoint, target: Waypoint, radius = 0): Waypoint | null {
-    if (!this.firstBlockingTerrain(start, target, radius)) return { ...target };
-    const graph = this.navigationGraph(radius);
+  public nextWaypoint(start: Waypoint, target: Waypoint, radius = 0, ignoreDoors = false): Waypoint | null {
+    if (!this.firstBlockingTerrain(start, target, radius, ignoreDoors)) return { ...target };
+    const graph = this.navigationGraph(radius, ignoreDoors);
     const key = `${target.x},${target.y}`;
     let distances = graph.destinations.get(key);
     if (!distances) {
       // Distances to this moving target are shared by all pursuing units.
-      distances = graph.corners.map(corner => this.firstBlockingTerrain(corner, target, radius)
+      distances = graph.corners.map(corner => this.firstBlockingTerrain(corner, target, radius, ignoreDoors)
         ? Infinity : Math.hypot(corner.x - target.x, corner.y - target.y));
       const visited = new Set<number>();
       for (let pass = 0; pass < graph.corners.length; pass++) {
@@ -289,7 +348,7 @@ export class MapModel {
     for (const [i, corner] of graph.corners.entries()) {
       const approach = Math.hypot(corner.x - start.x, corner.y - start.y);
       if (approach < 1e-6 || approach + distances[i] >= length ||
-          this.firstBlockingTerrain(start, corner, radius)) continue;
+          this.firstBlockingTerrain(start, corner, radius, ignoreDoors)) continue;
       best = corner;
       length = approach + distances[i];
     }
@@ -304,23 +363,24 @@ export class MapModel {
     ];
   }
 
-  private navigationGraph(radius: number): NavigationGraph {
-    const cached = this.navigation.get(radius);
+  private navigationGraph(radius: number, ignoreDoors: boolean): NavigationGraph {
+    const key = `${radius}:${ignoreDoors}`;
+    const cached = this.navigation.get(key);
     if (cached) return cached;
     const { left, top, right, bottom } = this.battle_bounds;
-    const blockers = this.terrain.filter(wall => wall.blocksMovement);
+    const blockers = this.terrain.filter(wall => this.isBlocking(wall, ignoreDoors));
     const corners = blockers.flatMap(wall => this.wallCorners(wall, radius + 1)).filter(p =>
       p.x >= left && p.x <= right && p.y >= top && p.y <= bottom &&
       !blockers.some(wall => this.terrainContains(p, wall, radius)));
     const graph: NavigationGraph = { corners, edges: corners.map(() => []), destinations: new Map() };
     for (let i = 0; i < corners.length; i++) {
       for (let j = i + 1; j < corners.length; j++) {
-        if (this.firstBlockingTerrain(corners[i], corners[j], radius)) continue;
+        if (this.firstBlockingTerrain(corners[i], corners[j], radius, ignoreDoors)) continue;
         const distance = Math.hypot(corners[i].x - corners[j].x, corners[i].y - corners[j].y);
         graph.edges[i].push({ index: j, distance });graph.edges[j].push({ index: i, distance });
       }
     }
-    this.navigation.set(radius, graph);
+    this.navigation.set(key, graph);
     return graph;
   }
 

@@ -67,14 +67,12 @@ export class BattleTestHarness {
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error('Map must define at least one route');
     const humanTypes = this.humanSpawnTypes(this.initialHumanCount);
-    let humanIndex = 0;
-    for (const [index, routeId] of routes.entries()) {
-      const count = Math.floor(this.initialHumanCount / routes.length) +
-        (index < this.initialHumanCount % routes.length ? 1 : 0);
-      const route = this.mapModel.getRoute(routeId)!;
-      for (const position of formationPositions(count, route.defend, this.mapModel)) {
-        this.units.spawn(humanTypes[humanIndex++ % humanTypes.length], position, routeId);
-      }
+    // Deploy one squad around the middle route instead of splitting it across lanes.
+    const routeId = routes[Math.floor(routes.length / 2)];
+    const route = this.mapModel.getRoute(routeId)!;
+    for (const [index, position] of formationPositions(this.initialHumanCount, route.defend, this.mapModel).entries()) {
+      const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
+      unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
     this.started = true;
   }

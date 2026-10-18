@@ -12,7 +12,7 @@
 <main>
 <section id="menu">
 <div class="eyebrow">从一间小屋，到整座城市</div><h1>选择你的<br>下一处阵地。</h1>
-<p>带领队伍穿过尸潮。每个地点三波进攻，利用隔墙、街角和建筑之间的通道，找到生存的路线。</p>
+<p>带领七人小队穿过尸潮。每个地点三波进攻，利用房门、走廊、街角和建筑之间的通道，找到生存的路线。</p>
 <div class="cards">
 <button class="card" onclick="openScene('cabin','story')"><div class="num">01 / 故事模式</div><h2>从小屋出发</h2><p>先守住屋内阵地，再前往大楼楼下。<br>按章节推进，每一关都是新的作战空间。</p><span class="pill">2 个场景</span><span class="pill">每场 3 波</span><div class="arrow">开始故事 →</div></button>
 <button class="card" onclick="show('selection')"><div class="num">02 / 场景演练</div><h2>选择作战地点</h2><p>自由选择已接入的地图，独立练习布阵、<br>集结与转角移动，熟悉每一条后撤路线。</p><span class="pill">自由选关</span><span class="pill">每场 3 波</span><div class="arrow">查看场景 →</div></button>
@@ -25,7 +25,7 @@
 </section>
 <section id="scene" class="hidden">
 <button class="back" id="scene-back">← 返回</button><div class="eyebrow" id="chapter"></div><h1 id="scene-title"></h1>
-<div class="stage"><div class="map"><div id="map"></div><small>绿色：初始队伍　紫色：来敌方向　灰色：墙体</small></div><div class="description">
+<div class="stage"><div class="map"><div id="map"></div><small>绿：步枪兵　橙：喷火兵　蓝：盾兵<br>紫：来敌方向　灰：墙体　金：600 HP 房门</small></div><div class="description">
 <div id="tags"></div><p id="briefing"></p><h2 id="theme"></h2><p id="tactics"></p>
 <div class="waves" id="waves"></div><div class="wave-detail" id="wave-detail"></div>
 <button class="primary" id="complete"></button><button class="secondary" onclick="setWave(0)">重看布阵</button>
@@ -36,17 +36,39 @@
 <article><h3>03 / 地下停车场</h3><p>长条停车岛与立柱分割视线。从坡道防守到侧路包夹，保留一条撤退通道。</p><span class="pill">路口火力分配</span></article>
 <article><h3>04 / 商业街</h3><p>连续店铺外墙与窄巷。沿街逐段转移，避免队形在多次转角后被拉长。</p><span class="pill">街角与队形</span></article>
 <article><h3>05 / 撤离广场</h3><p>开阔广场、公交站与撤离平台。守住火力点，也为队伍留出离开的路线。</p><span class="pill">防守与撤离</span></article>
-</div><p class="muted">以上为设计储备，当前游戏接入小屋、大楼楼下两个场景。</p></section>
+</div><p class="muted">以上为设计储备，当前游戏接入小屋、大楼楼下两个场景。七人编制为后续一辆 7 座 MPV 预留；车辆留待下一个场景设计。</p></section>
 </main>
 <script>
 const scenes={
- cabin:{title:'小屋突围',chapter:'第一幕 · 小屋内部',theme:'隔墙之间，收拢火力。',briefing:'尸潮正在逼近。利用屋内隔墙收拢队伍，守住三波进攻，寻找离开小屋的机会。',tactics:'沿用当前地图。细隔墙切开战场，集中队伍并及时后撤，避免士兵被不同方向的敌人分散。',floor:'#17191e',wall:'#7a7a85',walls:[[350,900,40,360],[690,900,40,360],[420,1060,240,40],[260,1600,100,40]],humans:[[180,1370],[540,1370],[900,1370]],waves:[['0 秒 · 50 只','北、南各 13 只，东、西各 12 只。观察四侧压力，认识选兵与集结。'],['7 秒 · 100 只','四侧各 25 只。前一波尚未清场时，新的尸群已经加入。'],['20 秒 · 200 只','四侧各 50 只。守住队形，完成所有出怪批次后清场。']]},
- courtyard:{title:'楼下集结',chapter:'第二幕 · 大楼楼下',theme:'绕过宽墙，守住街角。',briefing:'冲出小屋后，队伍来到大楼之间。宽厚的建筑墙体遮住射线，沿街道转移，守住三波尸潮。',tactics:'四块长方形建筑夹出十字通道。中央通道宽 280 像素，横向通道宽 400 像素；由街角提供遮挡，再沿街道转移。',floor:'#19252c',wall:'#596b79',walls:[[160,460,240,620],[680,460,240,620],[160,1480,240,480],[680,1480,240,480]],humans:[[420,1280],[540,1280],[660,1280]],waves:[['0 秒 · 30 只','北、南各 15 只。先熟悉纵向街道和建筑遮挡。'],['14 秒 · 45 只','西、东、北各 15 只。第一次侧面包夹，调整街角站位。'],['30 秒 · 60 只','四侧各 15 只。沿街转移，在四向压力中完成清场。']]}
+ cabin:{
+  title:'小屋突围',chapter:'第一幕 · 小屋内部',theme:'守住房门，迎击走廊尸潮。',
+  briefing:'七人小队困守西南房间。僵尸只在中央走廊两端生成，先攻击房门，耐久归零后进入房间。守住三波，共 700 只。',
+  tactics:'中央走廊净宽 200 像素，两侧各有上下房间。四扇门各 600 HP，完整墙体不能翻越。门口聚集的尸群适合喷火范围攻击；闭门同样阻挡士兵和射击。',
+  floor:'#17191e',wall:'#7a7a85',
+  walls:[[100,680,24,1384],[416,680,24,270],[416,1110,24,400],[416,1670,24,394],[100,680,340,24],[100,1280,340,24],[100,2040,340,24],[956,680,24,1384],[640,680,24,270],[640,1110,24,400],[640,1670,24,394],[640,680,340,24],[640,1280,340,24],[640,2040,340,24]],
+  doors:[[416,950,24,160],[416,1510,24,160],[640,950,24,160],[640,1510,24,160]],
+  humans:[[281,1463],[255,1483],[290,1418],[312,1511],[216,1454],[338,1418],[269,1543]],
+  waves:[['0 秒 · 100 只','走廊北、南各 50 只。每批 10 只，间隔 0.5 秒；观察走廊推进和房门耐久。'],['7 秒 · 200 只','走廊北、南各 100 只，含特殊僵尸。每批 10 只，间隔 0.5 秒；前一波未清场也会继续入场。'],['20 秒 · 400 只','走廊北、南各 200 只，含特殊僵尸。每批 10 只，间隔 0.5 秒；完成全部出怪并清场后通关。']]
+ },
+ courtyard:{
+  title:'楼下集结',chapter:'第二幕 · 大楼楼下',theme:'绕过宽墙，守住街角。',
+  briefing:'冲出小屋后，七人小队来到大楼之间。僵尸每波从四面八方生成，三波共 270 只。沿街道转移，利用建筑遮挡生存。',
+  tactics:'四块长方形建筑夹出十字通道。中央通道宽 280 像素，横向通道宽 400 像素；僵尸绕过建筑，队伍利用街角集中火力。',
+  floor:'#19252c',wall:'#596b79',walls:[[160,460,240,620],[680,460,240,620],[160,1480,240,480],[680,1480,240,480]],doors:[],
+  humans:[[541,1273],[515,1293],[550,1228],[572,1321],[476,1264],[598,1228],[529,1353]],
+  waves:[['0 秒 · 60 只','北、南、东、西各 15 只。每批 10 只，间隔 0.5 秒；熟悉街道和建筑遮挡。'],['14 秒 · 90 只','北 24 只，南、东、西各 22 只。每批 10 只，间隔 0.5 秒；四侧包夹，调整街角站位。'],['30 秒 · 120 只','四侧各 30 只。每批 10 只，间隔 0.5 秒；在四向压力中转移并完成清场。']]
+ }
 };
 let current='cabin',mode='story';
-function mapSvg(id){const s=scenes[id];return `<svg viewBox="0 0 1080 2400" role="img" aria-label="${s.title}俯视布局"><rect width="1080" height="2400" fill="${s.floor}"/>${id==='courtyard'?'<path d="M540 180V2160M60 1280H1020" stroke="#25343b" stroke-width="240"/>':''}<rect x="60" y="180" width="960" height="1980" fill="none" stroke="#43575e" stroke-width="5"/>${s.walls.map(([x,y,w,h])=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${s.wall}" stroke="#b0bec7" stroke-width="4"/>`).join('')}${s.humans.map(([x,y])=>[-1,0,1].map(i=>`<circle cx="${x+i*25}" cy="${y+Math.abs(i)*20}" r="13" fill="#b7ee8d"/>`).join('')).join('')}<g fill="#ae90dc"><path d="M540 225l-30 60h60z"/><path d="M540 2115l-30-60h60z"/><path d="M95 1280l60-30v60z"/><path d="M985 1280l-60-30v60z"/></g></svg>`;}
+function mapSvg(id){
+ const s=scenes[id],cabin=id==='cabin';
+ const floor=cabin?'<rect x="440" y="180" width="200" height="1980" fill="#333b40"/>'+[124,664].flatMap(x=>[704,1304].map(y=>`<rect x="${x}" y="${y}" width="292" height="${y===704?576:736}" fill="#232930"/>`)).join(''):'<path d="M540 180V2160M60 1280H1020" stroke="#25343b" stroke-width="240"/>';
+ const doors=s.doors.map(([x,y,w,h])=>`<g><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#95653e" stroke="#e4b575" stroke-width="5"/><rect x="${x-24}" y="${y-16}" width="72" height="7" fill="#b7ee8d"/><text x="${x+(x<540?-18:42)}" y="${y+90}" text-anchor="${x<540?'end':'start'}" fill="#ffe2a1" font-size="30">600 HP</text></g>`).join('');
+ const labels=cabin?'<g fill="#91a5aa" font-size="32" text-anchor="middle"><text x="270" y="790">西北房间</text><text x="810" y="790">东北房间</text><text x="270" y="1950">西南房间 · 七人</text><text x="810" y="1950">东南房间</text><text x="540" y="660" writing-mode="vertical-rl">中央走廊 · 200 px</text></g>':'';
+ return `<svg viewBox="0 0 1080 2400" role="img" aria-label="${s.title}俯视布局：七人小队，${cabin?'中央走廊、四房间、四扇600耐久门，走廊南北来敌':'四块建筑，四边来敌'}"><rect width="1080" height="2400" fill="${s.floor}"/>${floor}<rect x="60" y="180" width="960" height="1980" fill="none" stroke="#43575e" stroke-width="5"/>${s.walls.map(([x,y,w,h])=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${s.wall}" stroke="#b0bec7" stroke-width="4"/>`).join('')}${doors}${labels}${s.humans.map(([x,y],i)=>`<circle data-soldier="${i+1}" cx="${x}" cy="${y}" r="${i===6?17:14}" fill="${i<4?'#b7ee8d':i<6?'#ff9657':'#89cddc'}" stroke="#101a20" stroke-width="3"/>`).join('')}<g fill="#ae90dc"><path d="M540 285l-30-60h60z"/><path d="M540 2055l-30 60h60z"/>${cabin?'':'<path d="M155 1280l-60-30v60z"/><path d="M925 1280l60-30v60z"/>'}</g></svg>`;
+}
 function show(id){for(const screen of ['menu','selection','scene'])document.getElementById(screen).classList.toggle('hidden',screen!==id);window.scrollTo(0,0);}
-function openScene(id,selectedMode){current=id;mode=selectedMode;const s=scenes[id];document.getElementById('chapter').textContent=(mode==='story'?'故事模式 / ':'场景演练 / ')+s.chapter;document.getElementById('scene-title').textContent=s.title;document.getElementById('map').innerHTML=mapSvg(id);document.getElementById('briefing').textContent=s.briefing;document.getElementById('theme').textContent=s.theme;document.getElementById('tactics').textContent=s.tactics;document.getElementById('tags').innerHTML=`<span class="pill">3 秒布阵</span><span class="pill">3 波尸潮</span><span class="pill">${id==='cabin'?'屋内细隔墙':'240×620 / 240×480 建筑墙'}</span>`;document.getElementById('waves').innerHTML=s.waves.map((_,i)=>`<button class="wave" onclick="setWave(${i})">第 ${i+1} 波</button>`).join('');document.getElementById('scene-back').onclick=()=>show(mode==='practice'?'selection':'menu');const complete=document.getElementById('complete');complete.textContent=mode==='story'?(id==='cabin'?'模拟通关 → 进入大楼楼下':'模拟通关 → 故事结束'):'模拟通关 → 返回选关';complete.onclick=()=>{if(mode==='story'&&id==='cabin')openScene('courtyard','story');else if(mode==='story'){show('menu');document.querySelector('#menu .eyebrow').textContent='两处阵地已守住 · 队伍暂时安全';}else show('selection');};setWave(0);show('scene');}
+function openScene(id,selectedMode){current=id;mode=selectedMode;const s=scenes[id];document.getElementById('chapter').textContent=(mode==='story'?'故事模式 / ':'场景演练 / ')+s.chapter;document.getElementById('scene-title').textContent=s.title;document.getElementById('map').innerHTML=mapSvg(id);document.getElementById('briefing').textContent=s.briefing;document.getElementById('theme').textContent=s.theme;document.getElementById('tactics').textContent=s.tactics;document.getElementById('tags').innerHTML=`<span class="pill">7 人小队</span><span class="pill">3 秒布阵</span><span class="pill">3 波 · ${id==='cabin'?700:270} 只</span><span class="pill">${id==='cabin'?'走廊 / 四房间 / 耐久门':'四向生成 / 建筑绕行'}</span>`;document.getElementById('waves').innerHTML=s.waves.map((_,i)=>`<button class="wave" onclick="setWave(${i})">第 ${i+1} 波</button>`).join('');document.getElementById('scene-back').onclick=()=>show(mode==='practice'?'selection':'menu');const complete=document.getElementById('complete');complete.textContent=mode==='story'?(id==='cabin'?'模拟通关 → 进入大楼楼下':'模拟通关 → 故事结束'):'模拟通关 → 返回选关';complete.onclick=()=>{if(mode==='story'&&id==='cabin')openScene('courtyard','story');else if(mode==='story'){show('menu');document.querySelector('#menu .eyebrow').textContent='两处阵地已守住 · 队伍暂时安全';}else show('selection');};setWave(0);show('scene');}
 function setWave(index){const s=scenes[current];document.querySelectorAll('.wave').forEach((e,i)=>e.classList.toggle('active',i===index));const detail=document.getElementById('wave-detail');detail.replaceChildren();const title=document.createElement('strong');title.textContent=s.waves[index][0];const p=document.createElement('p');p.textContent=s.waves[index][1];detail.append(title,p);}
 document.getElementById('scene-cards').innerHTML=Object.entries(scenes).map(([id,s])=>`<button class="card" onclick="openScene('${id}','practice')"><div class="thumb">${mapSvg(id)}</div><div class="num">${s.chapter}</div><h2>${s.title}</h2><p>${s.theme}</p><span class="pill">3 波尸潮</span><div class="arrow">进入演练 →</div></button>`).join('');
 </script>

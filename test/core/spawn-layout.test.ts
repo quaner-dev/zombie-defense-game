@@ -1,28 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BattleTestHarness } from '../../src/core/BattleTestHarness.js';
-import map from '../../config/map.json' with { type: 'json' };
+import { MapModel } from '../../src/core/MapModel.js';
+import { WaveManager } from '../../src/core/WaveManager.js';
+import { courtyard } from '../../src/scenes/courtyard.js';
 
-test('cardinal waves enter in five-zombie batches across all battlefield edges', () => {
-  const previous = (map as any).spawn_layout;
-  (map as any).spawn_layout = { columns: 9, spacing_px: 20 };
-  try {
+test('courtyard waves enter in deterministic ten-zombie batches from all four edges', () => {
+  MapModel.register(courtyard.mapId, courtyard.map);
+  WaveManager.register(courtyard.levelId, courtyard.level);
     const spawn = () => {
-      const h = new BattleTestHarness(); h.start('LV01_zombie_wave', 1); h.advance(3);
-      return { units: h.getUnits().filter(u => u.faction === 'zombie'), events: h.getEvents() };
+      const h = new BattleTestHarness(); h.start(courtyard.levelId, 1); h.advance(3);
+      return { h, units: h.getUnits().filter(u => u.faction === 'zombie'), events: h.getEvents() };
     };
     const first = spawn();
     const units = first.units;
     const positions = units.map(u => u.position);
-    assert.equal(units.length, 5);
-    assert.equal(new Set(positions.map(p => `${p.x},${p.y}`)).size, 5);
+    assert.equal(units.length, 10);
+    assert.equal(new Set(positions.map(p => `${p.x},${p.y}`)).size, 10);
     assert.deepEqual(spawn().units.map(u => u.position), positions);
     assert.deepEqual(Object.fromEntries(['north','south','east','west'].map(side =>
       [side, units.filter(u => u.spawnPointId === side).length])),
-      { north: 2, south: 1, east: 1, west: 1 });
+      { north: 3, south: 3, east: 2, west: 2 });
     assert.equal(first.events.filter(event => event.type === 'zombie_batch_spawn').length, 1);
-    assert.equal((first.events.find(event => event.type === 'zombie_batch_spawn')!.data as any).batchSize, 5);
-    assert.deepEqual(units.find(u => u.spawnPointId === 'north')!.position, { x: 460, y: 180 });
-    assert.deepEqual(units.find(u => u.spawnPointId === 'south')!.position, { x: 460, y: 2160 });
-  } finally { (map as any).spawn_layout = previous; }
+    assert.equal((first.events.find(event => event.type === 'zombie_batch_spawn')!.data as any).batchSize, 10);
+    for (const unit of units) {
+      const area = courtyard.map.spawnPoints.find(point => point.id === unit.spawnPointId)!.spawnArea;
+      assert.ok(area, 'courtyard spawns have bounded admission areas');
+      assert.ok(unit.position.x >= area.left && unit.position.x <= area.right);
+      assert.ok(unit.position.y >= area.top && unit.position.y <= area.bottom);
+    }
+    first.h.advance(0.49);
+    assert.equal(first.h.getSnapshot().spawnedZombies, 10);
+    first.h.advance(0.01);
+    assert.equal(first.h.getSnapshot().spawnedZombies, 20);
 });

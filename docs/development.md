@@ -41,10 +41,11 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 | 权威文件 | 内容与注意事项 |
 |---|---|
 | [map.json](../config/map.json) | 1080×2400、战场边界、防线、112px 选择半径、四边出生点、墙体 terrain；地图默认注册键为 default，map_id 是描述字段 |
-| [levels.json](../config/levels.json) | LV01_zombie_wave 的 mapId、按时排序的 waves、各路类型与数量；默认 0/7/20s、50/100/200 只 |
+| [levels.json](../config/levels.json) | 小屋兼容关卡 LV01_zombie_wave 的 mapId、按时排序的 waves、走廊出生点与单位数量；0/7/20s 共 100/300/300 只，总计 700 |
+| [scenes/cabin.json](../config/scenes/cabin.json) | 小屋走廊、房间墙体、四扇 600 HP 房门、走廊出生点、三波与场景文案 |
 | [scenes/courtyard.json](../config/scenes/courtyard.json) | 第二关的矩形建筑、出生点、三波、文案与配色；由 src/scenes/index.ts 的列表接入 |
 | [units.json](../config/units.json) | 生命、速度、攻击、弹道与阵形；当前步枪0.35s一发、僵尸60HP/41.9px/s/0.13s |
-| [core/config.ts](../src/core/config.ts) | 3s 布阵、当前默认 15 初始人类；不是所有参数都在 JSON |
+| [core/config.ts](../src/core/config.ts) | 3s 布阵、当前默认 7 初始人类（4 步枪兵、2 喷火兵、1 盾兵）；不是所有参数都在 JSON |
 
 有效出生阵列示例（map.json 中的一个字段，不是完整配置）：
 
@@ -74,7 +75,7 @@ npm test -- test/adapter/moving-selection.test.ts
 node --test test/workflows/source-workflows.test.mjs
 ```
 
-本轮执行完整套件、验收、报告、两项类型检查、bundle与源码工作流，实际计数见Task3/4报告；历史99项完成口径已失效。数量随测试变化，不是固定质量阈值。
+本轮的波次/帧边界专项 8 项通过，`npm run typecheck` 与 `npm run check:cocos-bundle` 通过。完整 `npm test` 有 34/35 个测试文件通过，验收文件在约 442.7 秒后以文件级失败结束；`typecheck:cocos` 与 Creator/设备验证未确认。详见[场景验证记录](testing/scenes-test-report.md)。数量随测试变化，不是固定质量阈值。
 
 ## 编辑器与构建
 

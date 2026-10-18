@@ -5,8 +5,8 @@ import { mapToScreen } from '../../assets/scripts/adapter/contracts.js';
 
 test('actual InputManager preserves one selected soldier throughout a one-second drag',()=>{
  const f=fixture(true),c=f.controller,s=c.session;
- const humans=s.battle.getUnits().filter((u:any)=>u.faction==='human'&&u.routeId==='A');
- const first=humans[0].position;assert.equal(s.move(first.x,first.y,180,2100),true);
+ const humans=s.battle.getUnits().filter((u:any)=>u.faction==='human');
+ const first=humans[0].position;assert.equal(s.move(first.x,first.y,280,1900),true);
  for(let i=0;i<8;i++){c.update(.05);f.advanceTime(50);}
  const selectedId=s.battle.getEvents().filter((e:any)=>e.type==='group_command').at(-1).data.unitIds[0];
  const group=s.battle.getUnits().find((u:any)=>u.id===selectedId);
@@ -20,10 +20,10 @@ test('actual InputManager preserves one selected soldier throughout a one-second
  const ringRadius=(moved.radius_px??7)+4;
  const rings=c.units.g.calls.filter((call:any)=>call.kind==='circle'&&call.args[2]===ringRadius);
  assert.equal(rings.length,1,'selection rings follow the captured soldier');
- const release=mapToScreen({x:800,y:1800},c.frame);f.touch('end',1,release.x,release.y);
+ const release=mapToScreen({x:360,y:1800},c.frame);f.touch('end',1,release.x,release.y);
  const commands=s.battle.getEvents().filter((e:any)=>e.type==='group_command');
  assert.equal(commands.length,2);assert.deepEqual([...commands[1].data.unitIds],[selectedId]);
- assert.deepEqual({...commands[1].data.target},{x:800,y:1800});
+ assert.deepEqual({...commands[1].data.target},{x:360,y:1800});
 });
 
 test('every press selects only the fixed circle, even when touching a previously selected soldier',()=>{

@@ -1,0 +1,554 @@
+{
+  "id": "cabin",
+  "title": "小屋突围",
+  "subtitle": "第一幕 · 小屋内部",
+  "briefing": "七人小队困守房间。僵尸从中央走廊涌来，先攻击房门，破门后进入房间。利用门口集中火力，守住三波尸潮。",
+  "objective": "守住房门与房间，抵御 3 波尸潮",
+  "mapId": "LV01_cabin_rooms",
+  "levelId": "LV01_zombie_wave",
+  "map": {
+    "design_size": {
+      "width": 1080,
+      "height": 2400
+    },
+    "battle_bounds": {
+      "left": 60,
+      "top": 180,
+      "right": 1020,
+      "bottom": 2160
+    },
+    "defense_line_y": 1200,
+    "unit_selection_radius": 112,
+    "spawn_layout": {
+      "columns": 4,
+      "spacing_px": 42
+    },
+    "routes": [
+      {
+        "id": "A",
+        "spawn": {
+          "x": 540,
+          "y": 240
+        },
+        "defend": {
+          "x": 220,
+          "y": 1470
+        },
+        "width": 240,
+        "waypoints": [
+          {
+            "x": 540,
+            "y": 240
+          },
+          {
+            "x": 220,
+            "y": 1470
+          }
+        ]
+      },
+      {
+        "id": "B",
+        "spawn": {
+          "x": 540,
+          "y": 240
+        },
+        "defend": {
+          "x": 280,
+          "y": 1470
+        },
+        "width": 240,
+        "waypoints": [
+          {
+            "x": 540,
+            "y": 240
+          },
+          {
+            "x": 280,
+            "y": 1470
+          }
+        ]
+      },
+      {
+        "id": "C",
+        "spawn": {
+          "x": 540,
+          "y": 240
+        },
+        "defend": {
+          "x": 340,
+          "y": 1470
+        },
+        "width": 240,
+        "waypoints": [
+          {
+            "x": 540,
+            "y": 240
+          },
+          {
+            "x": 340,
+            "y": 1470
+          }
+        ]
+      }
+    ],
+    "spawnPoints": [
+      {
+        "id": "corridor-north",
+        "x": 540,
+        "y": 240,
+        "side": "north",
+        "width": 126,
+        "spawnArea": {
+          "left": 477,
+          "top": 240,
+          "right": 603,
+          "bottom": 576
+        }
+      },
+      {
+        "id": "corridor-south",
+        "x": 540,
+        "y": 2100,
+        "side": "south",
+        "width": 126,
+        "spawnArea": {
+          "left": 477,
+          "top": 1764,
+          "right": 603,
+          "bottom": 2100
+        }
+      }
+    ],
+    "terrain": [
+      {
+        "id": "west-outer",
+        "kind": "wall",
+        "bounds": {
+          "left": 100,
+          "top": 680,
+          "right": 124,
+          "bottom": 2064
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "west-corridor-0",
+        "kind": "wall",
+        "bounds": {
+          "left": 416,
+          "top": 680,
+          "right": 440,
+          "bottom": 950
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "west-corridor-1",
+        "kind": "wall",
+        "bounds": {
+          "left": 416,
+          "top": 1110,
+          "right": 440,
+          "bottom": 1510
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "west-corridor-2",
+        "kind": "wall",
+        "bounds": {
+          "left": 416,
+          "top": 1670,
+          "right": 440,
+          "bottom": 2064
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "west-upper-door",
+        "kind": "door",
+        "bounds": {
+          "left": 416,
+          "top": 950,
+          "right": 440,
+          "bottom": 1110
+        },
+        "blocksMovement": true,
+        "maxHp": 600
+      },
+      {
+        "id": "west-lower-door",
+        "kind": "door",
+        "bounds": {
+          "left": 416,
+          "top": 1510,
+          "right": 440,
+          "bottom": 1670
+        },
+        "blocksMovement": true,
+        "maxHp": 600
+      },
+      {
+        "id": "west-top",
+        "kind": "wall",
+        "bounds": {
+          "left": 100,
+          "top": 680,
+          "right": 440,
+          "bottom": 704
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "west-partition",
+        "kind": "wall",
+        "bounds": {
+          "left": 100,
+          "top": 1280,
+          "right": 440,
+          "bottom": 1304
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "west-bottom",
+        "kind": "wall",
+        "bounds": {
+          "left": 100,
+          "top": 2040,
+          "right": 440,
+          "bottom": 2064
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-outer",
+        "kind": "wall",
+        "bounds": {
+          "left": 956,
+          "top": 680,
+          "right": 980,
+          "bottom": 2064
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-corridor-0",
+        "kind": "wall",
+        "bounds": {
+          "left": 640,
+          "top": 680,
+          "right": 664,
+          "bottom": 950
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-corridor-1",
+        "kind": "wall",
+        "bounds": {
+          "left": 640,
+          "top": 1110,
+          "right": 664,
+          "bottom": 1510
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-corridor-2",
+        "kind": "wall",
+        "bounds": {
+          "left": 640,
+          "top": 1670,
+          "right": 664,
+          "bottom": 2064
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-upper-door",
+        "kind": "door",
+        "bounds": {
+          "left": 640,
+          "top": 950,
+          "right": 664,
+          "bottom": 1110
+        },
+        "blocksMovement": true,
+        "maxHp": 600
+      },
+      {
+        "id": "east-lower-door",
+        "kind": "door",
+        "bounds": {
+          "left": 640,
+          "top": 1510,
+          "right": 664,
+          "bottom": 1670
+        },
+        "blocksMovement": true,
+        "maxHp": 600
+      },
+      {
+        "id": "east-top",
+        "kind": "wall",
+        "bounds": {
+          "left": 640,
+          "top": 680,
+          "right": 980,
+          "bottom": 704
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-partition",
+        "kind": "wall",
+        "bounds": {
+          "left": 640,
+          "top": 1280,
+          "right": 980,
+          "bottom": 1304
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "east-bottom",
+        "kind": "wall",
+        "bounds": {
+          "left": 640,
+          "top": 2040,
+          "right": 980,
+          "bottom": 2064
+        },
+        "blocksMovement": true
+      }
+    ]
+  },
+  "level": {
+    "mapId": "LV01_cabin_rooms",
+    "waves": [
+      {
+        "battleTime_s": 0,
+        "batchSize": 10,
+        "batchInterval_s": 0.5,
+        "spawns": [
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 26
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 26
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 24
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 24
+          }
+        ]
+      },
+      {
+        "battleTime_s": 7,
+        "batchSize": 10,
+        "batchInterval_s": 0.5,
+        "spawns": [
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 42
+          },
+          {
+            "unitType": "fat_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "zombie_mother",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-south",
+            "count": 50
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-north",
+            "count": 50
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-south",
+            "count": 50
+          }
+        ]
+      },
+      {
+        "battleTime_s": 20,
+        "batchSize": 10,
+        "batchInterval_s": 0.5,
+        "spawns": [
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 22
+          },
+          {
+            "unitType": "fat_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "zombie_mother",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 4
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-north",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "A",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-north",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "B",
+            "spawnPoint": "corridor-south",
+            "count": 40
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-north",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-north",
+            "count": 30
+          },
+          {
+            "unitType": "normal_zombie",
+            "route": "C",
+            "spawnPoint": "corridor-south",
+            "count": 30
+          }
+        ]
+      }
+    ]
+  },
+  "presentation": {
+    "floorColor": "#17191E",
+    "wallColor": "#7A7A85",
+    "wallOutlineColor": "#A4A4AF",
+    "decorations": [
+      {
+        "kind": "floor",
+        "color": "#343338",
+        "bounds": {
+          "left": 440,
+          "top": 180,
+          "right": 640,
+          "bottom": 2160
+        }
+      },
+      {
+        "kind": "floor",
+        "color": "#252A30",
+        "bounds": {
+          "left": 124,
+          "top": 704,
+          "right": 416,
+          "bottom": 1280
+        }
+      },
+      {
+        "kind": "floor",
+        "color": "#252A30",
+        "bounds": {
+          "left": 124,
+          "top": 1304,
+          "right": 416,
+          "bottom": 2040
+        }
+      },
+      {
+        "kind": "floor",
+        "color": "#252A30",
+        "bounds": {
+          "left": 664,
+          "top": 704,
+          "right": 956,
+          "bottom": 1280
+        }
+      },
+      {
+        "kind": "floor",
+        "color": "#252A30",
+        "bounds": {
+          "left": 664,
+          "top": 1304,
+          "right": 956,
+          "bottom": 2040
+        }
+      }
+    ]
+  }
+}

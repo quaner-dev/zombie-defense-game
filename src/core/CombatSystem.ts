@@ -25,6 +25,9 @@ export interface Projectile {
 export class CombatSystem {
   private nextProjectileId = 1;
   private shots: Projectile[] = [];
+  private frameUnits: Unit[] = [];
+  private humans: Unit[] = [];
+  private zombies: Unit[] = [];
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
@@ -67,8 +70,13 @@ export class CombatSystem {
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     const dt = Math.min(seconds, 0.05);
     const events: BattleEvent[] = [];
+    this.frameUnits = this.store.living();
+    this.humans = this.frameUnits.filter(unit => unit.faction === 'human');
+    this.zombies = this.frameUnits.filter(unit => unit.faction === 'zombie');
+    const frameStarts = new Map(this.zombies.filter(unit =>
+      !unit.climbingWallId).map(unit => [unit.id, { ...unit.position }]));
     // Generate attacks before projectile damage and final result evaluation.
-    for (const unit of this.store.living()) {
+    for (const unit of this.frameUnits) {
       // Earlier melee attacks may have killed a unit in this living snapshot.
       if (!unit.active || unit.hp <= 0 || unit.state === 'Dead') continue;
       if (unit.faction === 'human') this.rangedHuman(unit, dt, time_s, events);
@@ -82,16 +90,23 @@ export class CombatSystem {
         }
       }
     }
-    this.separateZombies();
+    this.separateZombies(frameStarts);
     return events;
   }
 
   private nearest(unit: Unit, faction: Unit['faction'], range = Infinity, clearShot = false): Unit | undefined {
-    return this.store.living().filter(target => target.faction === faction &&
-      this.distance(unit, target) <= range &&
-      (!clearShot || !this.map.firstBlockingTerrain(unit.position, target.position))).sort((a, b) =>
-      this.distance(unit, a) - this.distance(unit, b) ||
-      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0];
+    let nearest: Unit | undefined;
+    let bestDistance = range * range;
+    for (const target of faction === 'human' ? this.humans : this.zombies) {
+      // Death and infection can change these references earlier in this frame.
+      if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === 'Dead') continue;
+      const distance = (target.position.x - unit.position.x) ** 2 + (target.position.y - unit.position.y) ** 2;
+      if (distance > bestDistance || (distance === bestDistance && nearest && target.id >= nearest.id)) continue;
+      if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position)) continue;
+      nearest = target;
+      bestDistance = distance;
+    }
+    return nearest;
   }
 
   private distance(a: Unit, b: Unit): number {
@@ -155,6 +170,11 @@ export class CombatSystem {
       return;
     }
     const radius = unit.radius_px ?? 8;
+    // Recover safely if an older spawn, crowd push or climb left a body embedded.
+    if (this.map.terrain.some(terrain => this.map.isBlocking(terrain) &&
+      this.map.terrainContains(unit.position, terrain, radius))) {
+      unit.position = this.map.walkablePoint(unit.position, radius);
+    }
     const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, radius);
     const required = obstruction?.terrain.stackRequired ?? Infinity;
     const stack = obstruction && Number.isFinite(required) &&
@@ -166,14 +186,15 @@ export class CombatSystem {
     // still allowing them to route around or climb a barricade.
     let approach = this.map.walkablePoint(target.position, radius);
     let waypoint = stack.length >= required ? target.position
-      : this.map.nextWaypoint(unit.position, approach, radius);
+      : this.map.nextWaypoint(unit.position, approach, radius, true);
     if (!waypoint) {
       const blockedTargetId = target.id;
-      const alternatives = this.store.living().filter(candidate => candidate.faction === 'human' && candidate.id !== blockedTargetId)
+      const alternatives = this.humans.filter(candidate => candidate.faction === 'human' &&
+        candidate.active && candidate.hp > 0 && candidate.state !== 'Dead' && candidate.id !== blockedTargetId)
         .sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       for (const candidate of alternatives) {
         const candidateApproach = this.map.walkablePoint(candidate.position, radius);
-        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, radius);
+        waypoint = this.map.nextWaypoint(unit.position, candidateApproach, radius, true);
         if (waypoint) { target = candidate;approach = candidateApproach;break; }
       }
     }
@@ -182,6 +203,24 @@ export class CombatSystem {
     const meleeBlocked = this.map.firstBlockingTerrain(unit.position, target.position);
     // Normalize roundoff from diagonal stop-at-range movement, not gameplay range.
     const attack = getZombieModule(unit.unitType as ZombieUnitType).getMeleeAttackProfile();
+    // Navigation plans through doorways, while physical collision keeps a closed
+    // door solid. Attack the first door on that route before pursuing its occupant.
+    const door = waypoint && this.map.firstBlockingTerrain(unit.position, waypoint, radius);
+    if (door?.terrain.kind === 'door' &&
+        Math.hypot(door.point.x - unit.position.x, door.point.y - unit.position.y) <= attack.range_px) {
+      unit.targetId = door.terrain.id;
+      this.state(unit, 'Attacking', time_s, events);
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+        const damaged = this.map.damageDoor(door.terrain.id, attack.damage);
+        if (damaged) {
+          events.push({ type: 'door_damaged', time_s, data: { ...damaged, sourceId: unit.id, amount: attack.damage } });
+          if (damaged.destroyed) events.push({ type: 'door_destroyed', time_s, data: { doorId: damaged.id, sourceId: unit.id } });
+        }
+      }
+      return;
+    }
     if (distance > attack.range_px + 1e-9 || meleeBlocked) {
       unit.attackElapsed_s = 0;
       this.state(unit, 'Advancing', time_s, events);
@@ -203,10 +242,11 @@ export class CombatSystem {
             member.climbingWallId = hit.terrain.id;
             member.stackLevel = index % required + 1;
             member.climbTarget = vertical
-              ? { x: member.position.x < (b.left + b.right) / 2 ? b.right + member.radius_px : b.left - member.radius_px,
+              ? { x: member.position.x < (b.left + b.right) / 2 ? b.right + member.radius_px + 1 : b.left - member.radius_px - 1,
                 y: Math.max(b.top, Math.min(b.bottom, member.position.y)) }
               : { x: Math.max(b.left, Math.min(b.right, member.position.x)),
-                y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + member.radius_px : b.top - member.radius_px };
+                y: member.position.y < (b.top + b.bottom) / 2 ? b.bottom + member.radius_px + 1 : b.top - member.radius_px - 1 };
+            member.climbTarget = this.map.walkablePoint(member.climbTarget, member.radius_px);
             this.state(member, 'Climbing', time_s, events);
           });
           events.push({ type: 'wall_climb_started', time_s, data: {
@@ -243,6 +283,7 @@ export class CombatSystem {
     const oldId = target.id;
     const infected = this.store.transform(oldId, 'normal_zombie');
     if (!infected) return false;
+    this.zombies.push(infected);
     events.push({ type: 'unit_infected', time_s, data: {
       sourceId: source.id, humanId: oldId, zombieId: infected.id,
     }});
@@ -285,7 +326,8 @@ export class CombatSystem {
     const side = vertical ? Math.sign(unit.position.x - centerX) : Math.sign(unit.position.y - centerY);
     const targetSide = vertical ? Math.sign(target.position.x - centerX) : Math.sign(target.position.y - centerY);
     if (!side || side === targetSide) return [];
-    return this.store.living().filter(candidate => {
+    return this.zombies.filter(candidate => {
+      if (!candidate.active || candidate.hp <= 0 || candidate.state === 'Dead') return false;
       if (candidate.faction !== 'zombie' || candidate.climbingWallId || candidate.id === unit.id) return false;
       const candidateSide = vertical
         ? Math.sign(candidate.position.x - centerX) : Math.sign(candidate.position.y - centerY);
@@ -304,15 +346,43 @@ export class CombatSystem {
     }).concat(unit).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   }
 
-  private separateZombies(): void {
+  private separateZombies(frameStarts: ReadonlyMap<string, Waypoint>): void {
     // Climbers intentionally overlap in a stack. Crowd pushes during the
     // crossing can otherwise keep them orbiting a shared exit indefinitely.
-    const zombies = this.store.living().filter(unit => unit.faction === 'zombie' && !unit.climbingWallId);
+    const zombies = this.zombies.filter(unit => unit.active && unit.hp > 0 &&
+      unit.state !== 'Dead' && !unit.climbingWallId);
     const { left, top, right, bottom } = this.map.battle_bounds;
+    const maxRadius = Math.max(8, ...zombies.map(unit => unit.radius_px ?? 8));
+    const cellSize = maxRadius * 2 + 1;
     for (let pass = 0; pass < 2; pass++) {
+      const cells = new Map<string, Set<number>>();
+      const key = (unit: Unit): string => `${Math.floor(unit.position.x / cellSize)},${Math.floor(unit.position.y / cellSize)}`;
+      const insert = (index: number): void => {
+        const cell = key(zombies[index]);
+        if (!cells.has(cell)) cells.set(cell, new Set());
+        cells.get(cell)!.add(index);
+      };
+      const relocate = (index: number, previousCell: string): void => {
+        if (key(zombies[index]) === previousCell) return;
+        cells.get(previousCell)?.delete(index);
+        insert(index);
+      };
+      const neighbors = (a: Unit, after: number): number[] => {
+        const x = Math.floor(a.position.x / cellSize), y = Math.floor(a.position.y / cellSize);
+        const result: number[] = [];
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+          for (const index of cells.get(`${x + dx},${y + dy}`) ?? []) {
+            if (index > after) result.push(index);
+          }
+        }
+        return result.sort((a, b) => a - b);
+      };
+      zombies.forEach((_, index) => insert(index));
       for (let i = 0; i < zombies.length; i++) {
         const a = zombies[i];
-        for (let j = i + 1; j < zombies.length; j++) {
+        let nearby = neighbors(a, i);
+        for (let cursor = 0; cursor < nearby.length; cursor++) {
+          const j = nearby[cursor];
           const b = zombies[j];
           let dx = b.position.x - a.position.x, dy = b.position.y - a.position.y;
           let distance = Math.hypot(dx, dy);
@@ -323,25 +393,30 @@ export class CombatSystem {
             dx = Math.cos(angle); dy = Math.sin(angle); distance = 1;
           } else { dx /= distance; dy /= distance; }
           const push = (minDistance - distance) * 0.5;
-          a.position = this.separatedPosition(a, { x: -dx * push, y: -dy * push }, left, top, right, bottom);
-          b.position = this.separatedPosition(b, { x: dx * push, y: dy * push }, left, top, right, bottom);
+          const aCell = key(a), bCell = key(b);
+          a.position = this.separatedPosition(a, { x: -dx * push, y: -dy * push }, left, top, right, bottom, frameStarts.get(a.id));
+          b.position = this.separatedPosition(b, { x: dx * push, y: dy * push }, left, top, right, bottom, frameStarts.get(b.id));
+          relocate(i, aCell);relocate(j, bCell);
+          // A push may bring new bodies into range. Preserve store order and
+          // revisit the neighborhood after each displacement for deterministic replay.
+          nearby = neighbors(a, j);
+          cursor = -1;
         }
       }
     }
   }
 
   private separatedPosition(unit: Unit, offset: Waypoint,
-    left: number, top: number, right: number, bottom: number): Waypoint {
-    let point = { x: Math.max(left, Math.min(right, unit.position.x + offset.x)),
+    left: number, top: number, right: number, bottom: number, frameStart?: Waypoint): Waypoint {
+    const point = { x: Math.max(left, Math.min(right, unit.position.x + offset.x)),
       y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) };
-    const collision = this.map.terrain.find(terrain => terrain.blocksMovement &&
-      this.map.terrainContains(point, terrain, unit.radius_px ?? 8));
-    if (!collision) return point;
-    if (!this.map.terrainContains(unit.position, collision, unit.radius_px ?? 8)) return { ...unit.position };
-    const vertical = collision.bounds.bottom - collision.bounds.top >= collision.bounds.right - collision.bounds.left;
-    point = vertical
-      ? { x: unit.position.x, y: Math.max(top, Math.min(bottom, unit.position.y + offset.y)) }
-      : { x: Math.max(left, Math.min(right, unit.position.x + offset.x)), y: unit.position.y };
-    return point;
+    const radius = unit.radius_px ?? 8;
+    // Sweep crowd displacement too: checking only its endpoint lets dense crowds
+    // push one another through thin walls and into inaccessible corners.
+    for (const candidate of [point, { x: point.x, y: unit.position.y }, { x: unit.position.x, y: point.y }]) {
+      if (!this.map.firstBlockingTerrain(unit.position, candidate, radius) &&
+          (!frameStart || !this.map.firstBlockingTerrain(frameStart, candidate, radius))) return candidate;
+    }
+    return { ...unit.position };
   }
 }

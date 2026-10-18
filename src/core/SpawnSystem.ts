@@ -2,6 +2,7 @@ import type { MapModel } from './MapModel.js';
 import type { WaveSpawnEventData } from './WaveManager.js';
 import type { BattleEvent } from './types.js';
 import type { UnitStore } from './UnitStore.js';
+import { getZombieModule } from './units/index.js';
 
 interface PendingSpawn { spawn: WaveSpawnEventData['spawns'][number]; remaining: number }
 interface PendingWave {
@@ -11,7 +12,6 @@ interface PendingWave {
   batchInterval_s: number;
   batchIndex: number;
   cursor: number;
-  offsets: Map<string, number>;
   spawns: PendingSpawn[];
 }
 
@@ -19,10 +19,11 @@ interface PendingWave {
 export class SpawnSystem {
   private pending: PendingWave[] = [];
   private spawned = 0;
+  private offsets = new Map<string, number>();
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
-  public reset(): void { this.pending = []; this.spawned = 0; }
+  public reset(): void { this.pending = []; this.spawned = 0; this.offsets.clear(); }
   public get spawnedCount(): number { return this.spawned; }
   public hasPending(): boolean { return this.pending.length > 0; }
 
@@ -34,7 +35,6 @@ export class SpawnSystem {
       batchInterval_s: event.batchInterval_s ?? 0,
       batchIndex: 0,
       cursor: 0,
-      offsets: new Map(),
       spawns: event.spawns.map(spawn => ({ spawn: { ...spawn }, remaining: spawn.count })),
     });
   }
@@ -45,11 +45,6 @@ export class SpawnSystem {
     for (const wave of due) {
       while (wave.nextBatchTime_s <= time_s + 1e-9 && wave.spawns.some(item => item.remaining > 0)) {
         const batchSpawns: WaveSpawnEventData['spawns'] = [];
-        const totalByKey = new Map<string, number>();
-        for (const item of wave.spawns) {
-          const key = item.spawn.spawnPoint ?? `route:${item.spawn.route}`;
-          totalByKey.set(key, (totalByKey.get(key) ?? 0) + item.spawn.count);
-        }
         let admitted = 0;
         while (admitted < wave.batchSize && wave.spawns.some(item => item.remaining > 0)) {
           let selected: PendingSpawn | undefined;
@@ -61,11 +56,12 @@ export class SpawnSystem {
           if (!selected) break;
           const spawn = selected.spawn;
           const key = spawn.spawnPoint ?? `route:${spawn.route}`;
-          const offset = wave.offsets.get(key) ?? 0;
-          const positions = this.map.spawnPositions(spawn.route, totalByKey.get(key)!, spawn.spawnPoint).slice(offset, offset + 1);
-          wave.offsets.set(key, offset + positions.length);
+          const offset = this.offsets.get(key) ?? 0;
+          const positions = this.map.spawnPositions(spawn.route, 1, spawn.spawnPoint, offset);
+          this.offsets.set(key, offset + positions.length);
           for (const position of positions) {
-            this.store.spawn(spawn.unitType, position, spawn.route, spawn.spawnPoint ?? null);
+            const radius = getZombieModule(spawn.unitType).getStats().diameter_px / 2;
+            this.store.spawn(spawn.unitType, this.map.walkablePoint(position, radius), spawn.route, spawn.spawnPoint ?? null);
             this.spawned++;
           }
           selected.remaining--; admitted++; wave.cursor = (selectedIndex + 1) % wave.spawns.length;

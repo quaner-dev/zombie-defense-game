@@ -124,10 +124,12 @@ the exported project in WeChat DevTools, select real-device Preview/QR, and repe
 on named mid/high and low-end devices. Capture model, OS, WeChat/DevTools version,
 build mode, start/end heap/native/GPU measurements where available, rolling
 snapshots throughout the peak-wave/continuous-command segment, and the engine
-profiler's render/draw-call/GPU data separately. Exercise the specified peak
-50 humans / 350 zombies spawned / 64 concurrent projectile visuals rather than
-assuming default idle achieves that concurrency. Run both idle loss and approved
-24s fallback victory; compare before/after 20 restarts and GC-stabilized memory.
+profiler's render/draw-call/GPU data separately. Measure the current default
+peak of 7 humans and up to 700 zombies spawned, including 64 concurrent
+projectile visuals. Keep the legacy 50-human / 350-zombie case only as a separate
+synthetic stress test; it is not the current game setup. Run both idle loss and
+the current opening micro-control victory; compare before/after 20 restarts and
+GC-stabilized memory.
 Acceptance remains 60 average FPS mid/high, >=50 low-end, no >200ms spike,
 <=100ms first feedback, and no sustained memory growth. **None of these device,
 editor import/render, platform build or physical latency gates has been verified

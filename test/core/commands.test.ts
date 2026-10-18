@@ -162,15 +162,14 @@ test('harness publishes a Moving transition for the nearest selected unit and re
   harness.start('LV01_zombie_wave', 1);
   harness.endDeployment();
   const beforeCommand = harness.getUnits().filter(u => u.faction === 'human');
-  const selected = beforeCommand.sort((a, b) => Math.hypot(a.position.x - 540, a.position.y - 1370) -
-    Math.hypot(b.position.x - 540, b.position.y - 1370) || a.id.localeCompare(b.id))[0];
-  harness.issueMoveAt(540, 1370, 180, 1370);
+  const selected = beforeCommand[0];
+  harness.issueMoveAt(selected.position.x, selected.position.y, 180, 1470);
   const transitions = harness.getEvents().filter(e => e.type === 'unit_state_changed');
   assert.equal(transitions.length, 1);
   assert.ok(transitions.every(e => (e.data as { to: string }).to === 'Moving'));
   harness.advance(0.1);
   const before = harness.getUnits().find(u => u.id === selected.id)!;
-  harness.issueMoveGroup([selected.id], 900, 1370);
+  harness.issueMoveGroup([selected.id], 370, 1470);
   harness.advance(0.1);
   const after = harness.getUnits().find(u => u.id === before.id)!;
   assert.ok(after.position.x > before.position.x);
@@ -184,14 +183,15 @@ test('harness deploys its configured soldiers, moves one, preserves the snapshot
   harness.start('LV01_zombie_wave', 1);
   const initialHumans = harness.getUnits().filter(u => u.faction === 'human');
   assert.equal(initialHumans.length, harness.getInitialHumans());
-  harness.issueMoveAt(540, 1370, 180, 1370);
+  const first = initialHumans[0];
+  harness.issueMoveAt(first.position.x, first.position.y, 180, 1470);
   const command = harness.getEvents().filter(e => e.type === 'group_command');
   assert.equal(command.length, 1);
   const moving = harness.getUnits().filter(u => u.state === 'Moving');
   assert.equal(moving.length, 1);
   harness.advance(1);
   const movingAfterAdvance = harness.getUnits().find(u => u.id === moving[0].id);
-  assert.ok(movingAfterAdvance && movingAfterAdvance.state === 'Moving' && movingAfterAdvance.position.x < 520);
+  assert.ok(movingAfterAdvance && movingAfterAdvance.state === 'Moving' && movingAfterAdvance.position.x < first.position.x);
   assert.equal(harness.getSnapshot().time_s, 0);
   harness.advance(20);
   assert.ok(harness.getUnits().filter(u => u.faction === 'human').every(u => u.state !== 'Moving' && u.moveTarget === null));

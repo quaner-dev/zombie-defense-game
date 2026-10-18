@@ -353,6 +353,53 @@ test('a thin wall inside melee range causes a detour instead of a permanent stop
   assert.ok(human.hp < 100);
 });
 
+test('zombies damage a closed cabin door before entering the room', () => {
+  const map = MapModel.load('LV01_cabin_rooms'), { store, combat } = setup(map);
+  const human = store.spawn('rifleman', { x: 250, y: 1030 }, 'B');
+  const zombie = store.spawn('normal_zombie', { x: 450, y: 1030 }, 'B');
+  const door = map.getDoorStates().find(state => state.id === 'west-upper-door')!;
+  const events = ticks(combat, 220);
+
+  assert.ok(map.getDoorStates().find(state => state.id === door.id)!.hp < door.maxHp);
+  assert.ok(events.some(event => event.type === 'door_damaged' &&
+    (event.data as { id: string }).id === door.id));
+  assert.equal(human.hp, 100, 'a closed door blocks attacks through the wall');
+
+  const untilDestroyed = [];
+  // This fixture attacks once per second: a 600 HP door needs sixty 10 HP hits.
+  for (let i = 0; i < 1100 && !map.getDoorStates().find(state => state.id === door.id)!.destroyed; i++) {
+    untilDestroyed.push(...combat.update(.05, (221 + i) * .05));
+  }
+  assert.ok(map.getDoorStates().find(state => state.id === door.id)!.destroyed);
+  assert.ok([...events, ...untilDestroyed].some(event => event.type === 'door_destroyed'));
+  for (let i = 0; i < 160 && zombie.position.x >= 400; i++) combat.update(.05, (1321 + i) * .05);
+  assert.ok(zombie.position.x < 400, `the zombie enters through the destroyed doorway: ${JSON.stringify(zombie.position)}`);
+});
+
+test('a dense zombie crowd follows a wall corner without crossing or freezing against it', () => {
+  const definition = structuredClone(mapConfig) as unknown as MapDefinition;
+  definition.terrain = [{ id: 'long-wall', kind: 'wall', blocksMovement: true,
+    bounds: { left: 500, top: 400, right: 540, bottom: 1000 } }];
+  const map = new MapModel(definition), { store, combat } = setup(map);
+  store.spawn('rifleman', { x: 700, y: 700 }, 'B').state = 'Moving';
+  const zombies = Array.from({ length: 8 }, (_, i) =>
+    store.spawn('normal_zombie', { x: 470, y: 650 + i * 16 }, 'A'));
+  const initial = zombies.map(unit => ({ ...unit.position }));
+
+  for (let i = 0; i < 500; i++) {
+    const before = zombies.map(unit => ({ ...unit.position }));
+    combat.update(.05, (i + 1) * .05);
+    for (let j = 0; j < zombies.length; j++) {
+      assert.equal(map.firstBlockingTerrain(before[j], zombies[j].position, zombies[j].radius_px), null);
+      assert.equal(map.terrain.some(terrain => map.isBlocking(terrain) &&
+        map.terrainContains(zombies[j].position, terrain, zombies[j].radius_px)), false);
+    }
+  }
+
+  assert.ok(zombies.some((unit, i) => Math.hypot(unit.position.x - initial[i].x,
+    unit.position.y - initial[i].y) > 150), 'at least one zombie advances around the endpoint');
+});
+
 test('zombies retarget a reachable soldier when the nearest is behind an impassable wall', () => {
   const definition = structuredClone(mapConfig) as unknown as MapDefinition;
   definition.terrain = [{ id: 'sealed-wall', kind: 'wall', blocksMovement: true,

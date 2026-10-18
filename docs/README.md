@@ -1,6 +1,6 @@
 # 文档索引与阅读约定
 
-> 当前MVP：出生区域不是固定路径，僵尸从出生全场最近索敌、直线追击；警戒线不限制伤害。3秒布阵不可跳过。可选限频短振动已实现、物理效果待验证；阴影/复杂场景及发布延期。[用户Cocos手测表与模板](testing/cocos-manual-checklist.md)。
+> 当前实现：七人小队、小屋中央走廊与四扇耐久门、喷火范围攻击、沿墙角寻路，以及小屋 700/楼下 270 只僵尸的分批尸潮。Creator 导入、构建和设备表现仍待人工验证；详见 [当前场景验证记录](testing/scenes-test-report.md) 与 [Cocos 手测表](testing/cocos-manual-checklist.md)。
 
 [返回首页](../README.md)
 

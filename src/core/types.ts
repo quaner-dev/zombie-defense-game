@@ -68,6 +68,8 @@ export type BattleEvent =
   | TimedEvent<'projectile_blocked', ProjectileBlockedData>
   | TimedEvent<'projectile_expired', { projectileId: string }>
   | TimedEvent<'damage', DamageEventData>
+  | TimedEvent<'door_damaged', { id: string; hp: number; maxHp: number; destroyed: boolean; sourceId: string; amount: number }>
+  | TimedEvent<'door_destroyed', { doorId: string; sourceId: string }>
   | TimedEvent<'unit_died', { unitId: string; faction: Unit['faction'] }>
   | TimedEvent<'unit_state_changed', { unitId: string; from: UnitState; to: UnitState }>
   | TimedEvent<'route_breached', { routeId: string; unitId: string }>

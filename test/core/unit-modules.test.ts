@@ -37,7 +37,7 @@ test('default squad composition includes riflemen, flamethrowers and shield sold
   const counts = Object.fromEntries(['rifleman', 'flamethrower', 'shield'].map(type =>
     [type, humans.filter(unit => unit.unitType === type).length]));
 
-  assert.deepEqual(counts, { rifleman: 9, flamethrower: 3, shield: 3 });
+  assert.deepEqual(counts, { rifleman: 4, flamethrower: 2, shield: 1 });
 });
 
 test('spray projectiles deal area damage to nearby zombies and keep their projectile kind', () => {
