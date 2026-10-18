@@ -8,6 +8,7 @@
 
 - [故事与场景设计稿](10-story-scenes-design.md)：模式入口、大屋→大楼楼下、每关三波、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入两个场景，旧文档中的“只有一关、没有菜单”描述已被本次实现替代。
 - [别墅解救平民场景设计](12-villa-civilian-rescue-scene-design.md)：四面首尾相连的封闭外墙、中央 6 名绿色平民、开局环绕保护的士兵，以及从墙外持续生成的僵尸；当前仅为设计稿，尚未接入战斗代码。
+- [别墅解救平民实现规格](13-villa-civilian-rescue-implementation-spec.md)：基于别墅设计稿的实现边界、平民/墙体数据模型、连续生成调度、变身与胜负契约、Cocos 适配和验收矩阵；当前仅为实现文档，尚未开发。
 - [上手与操作](getting-started.md)：Node 无渲染运行、Creator 首次导入、手势与后撤。
 - [实际架构](architecture.md)：以当前源码为依据的模块和数据流。
 - [开发指南](development.md)：配置、命令、测试、构建和排错。
@@ -15,6 +16,7 @@
 - [页面与流程未完成项](页面与流程未完成项.md)：按当前实现梳理页面、玩家流程、验证缺口与待讨论决定。
 - [验证与自动审核](验证与自动审核.md)：Node 自动审核、完整测试、Cocos 运行入口和关卡扩展回归步骤。
 - [当前问题与讨论决策](open-issues-and-decisions.md)：逐项影响、建议、关闭条件及待确认决策。
+- [后续版本实现规格](12-followup-implementation-spec.md)：9人编制、新兵种、尸群、持续刷怪、巨胃和结算统计的代码实现契约与测试清单。
 - [Cocos 详细集成参考](../README-cocos.md)：编辑器 bootstrap、性能字段与采集流程。
 
 运行事实以源码、配置和实际执行结果为准；设计要求以相应规格为准。两者有偏差时须披露，不得用“设计终版”推导“已实现/已验收”。已保存 [测量报告](testing/mvp-test-report.json) 是某次配置下的结果；[报告模板](testing/mvp-test-report-template.json) 不是运行证据。

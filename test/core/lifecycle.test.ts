@@ -111,13 +111,13 @@ test('spawn system admits all 700 configured zombies on the scheduled route and 
     unit.unitType === 'fat_zombie' || unit.unitType === 'zombie_mother'));
 });
 
-test('the seven-soldier cap is enforced and surviving soldiers persist when a new wave starts', () => {
+test('the nine-soldier cap is enforced and surviving soldiers persist when a new wave starts', () => {
   const harness = new BattleTestHarness({ deploymentDuration_s: 3, initialHumans: 50 }, () => new WaveManager({
     mapId: 'LV01_cabin_rooms', waves: [{ battleTime_s: 0, spawns: [] }, { battleTime_s: 7, spawns: [] }],
   }));
   harness.start('LV01_zombie_wave', 1);
   const soldiers = harness.getUnits().filter(unit => unit.faction === 'human');
-  assert.equal(soldiers.length, 7);
+  assert.equal(soldiers.length, 9);
   const survivor = soldiers[0];
   const originalType = survivor.unitType;
   const originalPosition = { ...survivor.position };
@@ -129,7 +129,7 @@ test('the seven-soldier cap is enforced and surviving soldiers persist when a ne
   harness.advance(7);
 
   const afterWave = harness.getUnits().filter(unit => unit.faction === 'human');
-  assert.equal(afterWave.length, 7);
+  assert.equal(afterWave.length, 9);
   const sameSoldier = afterWave.find(unit => unit.id === survivor.id);
   assert.ok(sameSoldier, 'the original soldier identity remains in the battle');
   assert.equal(sameSoldier.unitType, originalType);

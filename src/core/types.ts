@@ -1,4 +1,9 @@
 export type BattleResult = 'running' | 'win' | 'lose';
+export type ScenarioKind = 'legacy' | 'villa_rescue';
+export type CivilianState = 'idle' | 'transforming' | 'transformed';
+export type WallSide = 'north' | 'east' | 'south' | 'west';
+export interface CivilianEntity { id: string; position: Point; state: CivilianState; transformElapsed_s: number; active: boolean; }
+export interface WallSnapshot { id: string; side: WallSide; hp: number; maxHp: number; status: 'intact'|'damaged'|'breaching'|'breached'; breachCenter: Point | null; breachWidth_px: number; }
 
 export interface Point { x: number; y: number }
 export type HumanUnitType = 'rifleman' | 'flamethrower' | 'shield' | 'sniper' | 'engineer';
@@ -67,6 +72,12 @@ export interface BattleSnapshot {
   result: BattleResult;
   stats: CombatStatsSnapshot;
   generationComplete: boolean;
+  scenarioKind?: ScenarioKind;
+  civilianCount?: number;
+  civiliansRemaining?: number;
+  civiliansTransforming?: number;
+  civilianTransformed?: boolean;
+  walls?: WallSnapshot[];
 }
 
 export interface CombatStat {
@@ -102,6 +113,12 @@ export type BattleEvent =
   | TimedEvent<'unit_infected', { sourceId: string; humanId: string; zombieId: string }>
   | TimedEvent<'weapon_state_changed', { unitId: string; from: UnitState; to: UnitState; heat: number }>
   | TimedEvent<'generation_complete', { generated: number; target: number }>
+  | TimedEvent<'continuous_zombie_spawn', { generated: number; target: number; side: WallSide; count: number }>
+  | TimedEvent<'civilian_hit', { civilianId: string; sourceId: string; amount: number }>
+  | TimedEvent<'civilian_transform_started', { civilianId: string; duration_s: number }>
+  | TimedEvent<'civilian_transformed', { civilianId: string; zombieId: string }>
+  | TimedEvent<'wall_damaged', { wallId: string; side: WallSide; hp: number; maxHp: number; amount: number }>
+  | TimedEvent<'wall_breached', { wallId: string; side: WallSide; breachCenter: Point; breachWidth_px: number }>
   | TimedEvent<'gut_swallowed', { gutId: string; zombieId: string }>
   | TimedEvent<'gut_thrown', { gutId: string; zombieId: string; targetPosition: Point }>
   | TimedEvent<'gut_released', { gutId: string; zombieIds: string[] }>
@@ -124,7 +141,7 @@ export interface ProjectileEventData {
   position: Point;
   damage: number;
   /** Visual and simulation identity of the projectile. */
-  projectileKind: 'bullet' | 'flame';
+  projectileKind: 'bullet' | 'flame' | 'sniper' | 'machine_gun';
   /** Zero means a single-target hit; positive values are splash radii. */
   splashRadius_px: number;
   speed_px_per_s: number;

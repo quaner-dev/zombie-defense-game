@@ -54,7 +54,7 @@ test('spray projectiles deal area damage to nearby zombies and keep their projec
   assert.equal(spawned.type, 'projectile_spawned');
   const payload = spawned.data as { projectileKind: string; splashRadius_px: number };
   assert.equal(payload.projectileKind, 'flame');
-  assert.equal(payload.splashRadius_px, 72);
+  assert.equal(payload.splashRadius_px, 42);
 
   const impacts = projectiles.update(0.2, 0.2);
   assert.equal(target.hp, 36);

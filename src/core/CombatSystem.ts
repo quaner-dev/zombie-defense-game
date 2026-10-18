@@ -91,8 +91,20 @@ export class CombatSystem {
       data: { sourceId, targetId, amount, appliedAmount, hp: target.hp, damageKind } }];
     const source = this.store.get(sourceId);
     this.stats?.recordDamage(sourceId, source?.unitType ?? 'rifleman', appliedAmount);
+    if (target.unitType === 'gut_zombie' && target.storedGutUnitIds.length && target.weaponCooldown_s <= 0) {
+      const thrownId = target.storedGutUnitIds.shift()!;
+      const thrown = this.store.get(thrownId);
+      if (thrown) {
+        thrown.state = 'Suicidal'; thrown.storedInGutById = null; thrown.stateElapsed_s = 0;
+        thrown.suicideTriggerId = target.id;
+        thrown.position = sourcePosition ? { ...sourcePosition } : { ...target.position };
+        target.weaponCooldown_s = 1.2;
+        events.push({ type: 'gut_thrown', time_s, data: { gutId: target.id, zombieId: thrown.id,
+          targetPosition: { ...thrown.position } } });
+      }
+    }
     if (target.hp === 0 && this.store.kill(targetId)) {
-      if (target.unitType === 'gut_zombie') this.releaseGut(target, time_s);
+      if (target.unitType === 'gut_zombie') events.push(...this.releaseGut(target, time_s));
       this.stats?.recordKill(sourceId, source?.unitType ?? 'rifleman');
       events.push({ type: 'unit_died', time_s, data: {
         unitId: targetId, faction: target.faction, killerId: sourceId,
@@ -137,6 +149,8 @@ export class CombatSystem {
       }
       else {
         if (unit.unitType === 'gut_zombie') this.gutBehavior(unit, dt, time_s, events);
+        if (unit.state === 'Suicidal') this.updateSuicidal(unit, dt, time_s, events);
+        if (unit.state === 'Suicidal') continue;
         this.zombie(unit, dt, time_s, events);
         // Crossing is a one-time spatial warning, never a combat phase/gate.
         const side = unit.spawnPointId ? this.map.getSpawnPoint(unit.spawnPointId)?.side ?? null : null;
@@ -150,6 +164,22 @@ export class CombatSystem {
     // map-boundary collision in their navigation, but do not apply an entity
     // separation impulse that turns the horde into a mutually exclusive queue.
     return events;
+  }
+
+  private updateSuicidal(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
+    unit.stateElapsed_s += dt;
+    if (unit.stateElapsed_s < 0.8) return;
+    const radius = 72;
+    const sourceId = unit.suicideTriggerId ?? unit.id;
+    for (const target of this.store.living()) {
+      if (target.id === unit.id) continue;
+      const distance = Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y);
+      if (distance > radius) continue;
+      const amount = target.faction === 'human' ? 60 : 30;
+      events.push(...this.applyDamage(target.id, amount, sourceId, time_s, 'explosion', unit.position));
+    }
+    this.store.kill(unit.id);
+    events.push({ type: 'zombie_exploded', time_s, data: { zombieId: unit.id, sourceGutId: sourceId, position: { ...unit.position } } });
   }
 
   private updateFlamethrower(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
@@ -192,10 +222,14 @@ export class CombatSystem {
 
   private updateEngineer(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
     const stats = getUnitModule('engineer').getStats();
-    if (unit.state === 'Deploying' || unit.state === 'Dismantling') {
+      if (unit.state === 'Deploying' || unit.state === 'Dismantling') {
       unit.stateElapsed_s += dt;
       const duration = unit.state === 'Deploying' ? (stats.deploy_duration_s ?? 2) : (stats.dismantle_duration_s ?? 1.5);
-      if (unit.stateElapsed_s >= duration) { unit.state = unit.state === 'Deploying' ? 'Deployed' : 'Idle'; unit.stateElapsed_s = 0; unit.targetId = null; }
+      if (unit.stateElapsed_s >= duration) {
+        if (unit.state === 'Deploying') unit.state = 'Deployed';
+        else unit.state = unit.moveTarget ? 'Moving' : 'Idle';
+        unit.stateElapsed_s = 0; unit.targetId = null;
+      }
       return;
     }
     if (unit.state === 'Overheated' || unit.state === 'Cooling') {
@@ -208,13 +242,13 @@ export class CombatSystem {
       return;
     }
     if (unit.state !== 'Deployed') return;
-    unit.stateElapsed_s += dt;
-    if (unit.stateElapsed_s < (stats.target_refresh_s ?? 0.15)) return;
-    unit.stateElapsed_s = 0;
     const target = this.humanTarget(unit, { damage: stats.gun_damage ?? 4, interval_s: 1 / (stats.gun_rate_per_s ?? 10), range_px: stats.gun_range_px ?? 300, projectileKind: 'machine_gun', splashRadius_px: 0 });
     unit.targetId = target?.id ?? null;
     if (!target) return;
-    unit.attackElapsed_s += (stats.target_refresh_s ?? 0.15);
+    unit.stateElapsed_s += dt;
+    unit.attackElapsed_s += dt;
+    if (unit.stateElapsed_s < (stats.target_refresh_s ?? 0.15) && unit.attackElapsed_s < 1 / (stats.gun_rate_per_s ?? 10)) return;
+    unit.stateElapsed_s = 0;
     if (unit.attackElapsed_s >= 1 / (stats.gun_rate_per_s ?? 10)) {
       unit.attackElapsed_s = 0; unit.weaponHeat += stats.gun_heat_per_shot ?? 3.3;
       if (unit.weaponHeat >= (stats.gun_heat_max ?? 100)) { unit.state = 'Overheated'; unit.stateElapsed_s = 0; return; }
@@ -234,16 +268,6 @@ export class CombatSystem {
       target.state = 'StoredInGut'; target.storedInGutById = unit.id; target.active = true;
       unit.storedGutUnitIds.push(target.id);
       events.push({ type: 'gut_swallowed', time_s, data: { gutId: unit.id, zombieId: target.id } });
-    }
-    if (unit.weaponCooldown_s <= 0 && unit.storedGutUnitIds.length && unit.hp < unit.maxHp) {
-      const thrownId = unit.storedGutUnitIds.shift()!;
-      const thrown = this.store.get(thrownId);
-      if (thrown) {
-        thrown.state = 'Suicidal'; thrown.storedInGutById = null; thrown.stateElapsed_s = 0;
-        thrown.suicideTriggerId = unit.id;
-        unit.weaponCooldown_s = 1.2;
-        events.push({ type: 'gut_thrown', time_s, data: { gutId: unit.id, zombieId: thrown.id, targetPosition: { ...unit.position } } });
-      }
     }
   }
 

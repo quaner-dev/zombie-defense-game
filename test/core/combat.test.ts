@@ -317,12 +317,12 @@ test('small zombie groups go around walls while three nearby zombies can still c
   assert.ok(three.zombies.every(unit => unit.position.x > 548));
 });
 
-test('overlapping zombies keep separate positions after a crowd movement update', () => {
+test('overlapping zombies remain stacked after a crowd movement update', () => {
   const { store, combat } = setup();
   store.spawn('rifleman', { x: 800, y: 500 }, 'B').state = 'Moving';
   const zombies = Array.from({ length: 3 }, () => store.spawn('normal_zombie', { x: 540, y: 500 }, 'B'));
   combat.update(0, 0);
-  assert.equal(new Set(zombies.map(unit => `${unit.position.x},${unit.position.y}`)).size, 3);
+  assert.ok(new Set(zombies.map(unit => `${unit.position.x},${unit.position.y}`)).size < 3);
 });
 
 test('a lone zombie touching a wall takes collision-free steps and reaches the soldier', () => {

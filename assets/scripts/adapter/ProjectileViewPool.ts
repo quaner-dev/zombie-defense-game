@@ -61,7 +61,7 @@ export class ProjectileViewPool {
     for(const m of this.tracks.muzzles){
       const progress=Math.max(0,time-m.time)/.08;
       const kind=this.tracks.kindForMuzzle(m);
-      g.fillColor=color(kind==='flame'?palette.flameGlow:'#FFD477',Math.round(220*(1-progress)));
+      g.fillColor=color(kind==='flame'?palette.flameGlow:kind==='sniper'?'#7BE7FF':'#FFD477',Math.round(220*(1-progress)));
       g.circle(m.position.x,-m.position.y,(kind==='flame'?7:5)+progress*(kind==='flame'?5:3));g.fill();
       if(kind==='flame'){
         g.fillColor=color(palette.flame,Math.round(210*(1-progress)));

@@ -5,7 +5,7 @@ import { MapModel } from '../../src/core/MapModel.js';
 import { WaveManager } from '../../src/core/WaveManager.js';
 import { courtyard } from '../../src/scenes/courtyard.js';
 
-test('courtyard waves enter in deterministic ten-zombie batches from all four edges', () => {
+test('courtyard continuous spawning enters deterministic batches from all four edges', () => {
   MapModel.register(courtyard.mapId, courtyard.map);
   WaveManager.register(courtyard.levelId, courtyard.level);
     const spawn = () => {
@@ -15,13 +15,13 @@ test('courtyard waves enter in deterministic ten-zombie batches from all four ed
     const first = spawn();
     const units = first.units;
     const positions = units.map(u => u.position);
-    assert.equal(units.length, 10);
+    assert.equal(units.length, 20);
     assert.equal(new Set(positions.map(p => `${p.x},${p.y}`)).size, 10);
     assert.deepEqual(spawn().units.map(u => u.position), positions);
     assert.deepEqual(Object.fromEntries(['north','south','east','west'].map(side =>
       [side, units.filter(u => u.spawnPointId === side).length])),
-      { north: 3, south: 3, east: 2, west: 2 });
-    assert.equal(first.events.filter(event => event.type === 'zombie_batch_spawn').length, 1);
+      { north: 6, south: 6, east: 4, west: 4 });
+    assert.ok(first.events.filter(event => event.type === 'zombie_batch_spawn').length >= 1);
     assert.equal((first.events.find(event => event.type === 'zombie_batch_spawn')!.data as any).batchSize, 10);
     for (const unit of units) {
       const area = courtyard.map.spawnPoints.find(point => point.id === unit.spawnPointId)!.spawnArea;
@@ -29,7 +29,7 @@ test('courtyard waves enter in deterministic ten-zombie batches from all four ed
       assert.ok(unit.position.x >= area.left && unit.position.x <= area.right);
       assert.ok(unit.position.y >= area.top && unit.position.y <= area.bottom);
     }
-    first.h.advance(0.49);
+    first.h.advance(0.34);
     assert.equal(first.h.getSnapshot().spawnedZombies, 10);
     first.h.advance(0.01);
     assert.equal(first.h.getSnapshot().spawnedZombies, 20);

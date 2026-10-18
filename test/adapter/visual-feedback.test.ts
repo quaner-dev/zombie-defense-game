@@ -12,7 +12,7 @@ test('HUD presents Chinese copy and shows a pressed button state until release',
   const f=fixture();
   f.button(0,'start');f.hud.render();
   assert.equal((f.hud.pause as any).string,'暂停');
-  assert.match((f.hud.status as any).string,/人类 7/);
+  assert.match((f.hud.status as any).string,/人类 9/);
   assert.equal(f.hud.boxes[0].pressed,true);
   assert.ok(f.hud.g.calls.some((call:any)=>call.kind==='roundRect'&&call.color.hex==='#355B61'));
 

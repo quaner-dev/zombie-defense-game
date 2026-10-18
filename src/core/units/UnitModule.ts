@@ -23,6 +23,21 @@ export interface UnitStats {
   gun_damage?: number;
   gun_rate_per_s?: number;
   gun_range_px?: number;
+  deploy_duration_s?: number;
+  dismantle_duration_s?: number;
+  gun_heat_per_shot?: number;
+  gun_heat_max?: number;
+  gun_overheat_lock_s?: number;
+  gun_cooling_rate_s?: number;
+  gun_cooling_threshold?: number;
+  target_refresh_s?: number;
+  heat_per_tick?: number;
+  heat_max?: number;
+  overheat_lock_s?: number;
+  cooling_rate_s?: number;
+  cooling_threshold?: number;
+  retract_duration_s?: number;
+  release_duration_s?: number;
 }
 
 export interface AttackProfile {

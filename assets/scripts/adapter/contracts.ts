@@ -33,7 +33,7 @@ export class DragCommand {
   public reset():void {this.cancel();this.cooldownUntil=-Infinity;}
 }
 interface Event {type:string;time_s:number;data:unknown}
-export type ProjectileTrackKind = 'bullet' | 'flame';
+export type ProjectileTrackKind = 'bullet' | 'flame' | 'sniper' | 'machine_gun';
 interface Track {
   id:string;
   origin:Point;

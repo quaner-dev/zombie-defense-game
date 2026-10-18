@@ -65,11 +65,16 @@ export class CommandSystem {
       .map((point, index) => this.map.walkablePoint(point, selected[index].radius_px ?? 7));
     selected.forEach((unit, i) => {
       if (unit.unitType === 'engineer' && (unit.state === 'Deployed' || unit.state === 'Cooling' || unit.state === 'Overheated')) {
+        unit.moveTarget = positions[i];
         if (unit.state === 'Deployed' || unit.state === 'Cooling') { unit.state = 'Dismantling'; unit.stateElapsed_s = 0; unit.targetId = null; }
         return;
       }
       if (unit.unitType === 'flamethrower' && (unit.state === 'Firing' || unit.state === 'Aiming')) {
         unit.state = 'RetractingFlame'; unit.stateElapsed_s = 0; unit.targetId = null;
+        unit.moveTarget = positions[i]; unit.attackElapsed_s = 0; unit.velocity = { x: 0, y: 0 };
+        this.emit({ type: 'unit_state_changed', time_s,
+          data: { unitId: unit.id, from: 'Firing', to: 'RetractingFlame' } });
+        return;
       }
       const from = unit.state;
       unit.moveTarget = positions[i];
@@ -84,5 +89,17 @@ export class CommandSystem {
       type: 'group_command', time_s,
       data: { unitIds: selected.map(unit => unit.id), target, issuedAt_s: time_s },
     };
+  }
+
+  public toggleEngineerDeployment(unitId: string): boolean {
+    const unit = this.store.get(unitId);
+    if (!unit || unit.faction !== 'human' || unit.unitType !== 'engineer' || !unit.active) return false;
+    if (unit.state === 'Idle' || unit.state === 'Moving') {
+      unit.state = 'Deploying'; unit.stateElapsed_s = 0; unit.moveTarget = null; unit.targetId = null; return true;
+    }
+    if (unit.state === 'Deployed' || unit.state === 'Cooling') {
+      unit.state = 'Dismantling'; unit.stateElapsed_s = 0; unit.targetId = null; return true;
+    }
+    return false;
   }
 }

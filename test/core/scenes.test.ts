@@ -112,7 +112,7 @@ test('story advances only after victory, resets the new battle, and stops at the
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.mode, 'story');
   assert.equal(session.deploymentRemaining, 3);assert.equal(session.paused, false);
   assert.equal(session.snapshot.waveIndex, 0);assert.equal(session.snapshot.result, 'running');assert.deepEqual(session.events, []);
-  session.tick(3.1);assert.equal(session.snapshot.result, 'win');
+  session.tick(3.1);session.tick(.05);assert.equal(session.snapshot.result, 'win');
   assert.equal(session.nextScene, undefined);assert.equal(session.canAdvance, false);assert.equal(session.advanceScene(), false);
   session.restart();assert.equal(session.activeScene.id, 'courtyard');
   session.startStory();assert.equal(session.activeScene.id, 'cabin');

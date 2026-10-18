@@ -172,7 +172,7 @@ test('harness publishes a Moving transition for the nearest selected unit and re
   harness.issueMoveGroup([selected.id], 370, 1470);
   harness.advance(0.1);
   const after = harness.getUnits().find(u => u.id === before.id)!;
-  assert.ok(after.position.x > before.position.x);
+  assert.ok(Math.hypot(after.position.x - 370, after.position.y - 1470) < Math.hypot(before.position.x - 370, before.position.y - 1470));
   assert.equal(after.state, 'Moving');
   assert.equal(harness.getEvents().filter(e => e.type === 'group_command').length, 2);
 });

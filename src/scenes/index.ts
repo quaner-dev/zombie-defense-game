@@ -1,9 +1,10 @@
 import { cabin } from './cabin.js';
 import { courtyard } from './courtyard.js';
+import { villaRescue } from './villaRescue.js';
 export type { SceneDefinition, SceneDecoration } from './types.js';
 
 /** Registration order is the story order and the scene selection order. */
-export const SCENES = [cabin, courtyard] as const;
+export const SCENES = [cabin, courtyard, villaRescue] as const;
 
 export function getScene(id: string) {
   const scene = SCENES.find(scene => scene.id === id);

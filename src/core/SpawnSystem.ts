@@ -22,6 +22,8 @@ export interface ContinuousSpawnDefinition {
   spawnPoints: string[];
   distribution: Record<string, number>;
   specialRatios?: { gut_zombie?: number };
+  initialInterval_s?: number; minInterval_s?: number; rampDuration_s?: number;
+  sides?: string[];
 }
 
 /** Turns scheduled wave declarations into time-based admissions at the map edge. */
@@ -37,7 +39,11 @@ export class SpawnSystem {
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
-  public reset(): void { this.pending = []; this.spawned = 0; this.offsets.clear(); }
+  public reset(): void {
+    this.pending = []; this.spawned = 0; this.offsets.clear(); this.continuous = null;
+    this.nextContinuousTime_s = 0; this.continuousGenerated = 0;
+    this.continuousGutSpawned = 0; this.continuousCompletionEmitted = false;
+  }
   public get spawnedCount(): number { return this.spawned; }
   public hasPending(): boolean { return this.pending.length > 0; }
   public configureContinuous(definition: ContinuousSpawnDefinition): void {
@@ -50,6 +56,7 @@ export class SpawnSystem {
   public isGenerationComplete(): boolean {
     return this.continuous ? this.continuousGenerated >= this.continuous.totalTarget : false;
   }
+  public isContinuous(): boolean { return this.continuous !== null; }
 
   public enqueue(event: WaveSpawnEventData): void {
     this.pending.push({
@@ -72,7 +79,7 @@ export class SpawnSystem {
         const specialTarget = Math.ceil(this.continuous.totalTarget * (this.continuous.specialRatios?.gut_zombie ?? 0));
         const batchSpawns: WaveSpawnEventData['spawns'] = [];
         for (let index = 0; index < count; index++) {
-          const pointIndex = index % this.continuous.spawnPoints.length;
+          const pointIndex = this.weightedSpawnPointIndex(this.continuousGenerated);
           const spawnPoint = this.continuous.spawnPoints[pointIndex];
           const route = this.map.routeIds()[pointIndex % Math.max(1, this.map.routeIds().length)];
           const unitType = this.continuousGutSpawned < specialTarget ? 'gut_zombie' : 'normal_zombie';
@@ -91,11 +98,17 @@ export class SpawnSystem {
           if (existing) existing.count++;
           else batchSpawns.push({ unitType, route, spawnPoint, count: 1 });
         }
+        const side = this.continuous.spawnPoints[Math.floor((this.continuousGenerated - 1) / Math.max(1, count)) % this.continuous.spawnPoints.length] as any;
+        events.push({ type: 'continuous_zombie_spawn', time_s: this.nextContinuousTime_s, data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count } });
         events.push({ type: 'zombie_batch_spawn', time_s: this.nextContinuousTime_s, data: {
           waveIndex: 0, batchIndex: Math.floor(this.continuousGenerated / this.continuous.batchSize) - 1,
           batchSize: count, spawns: batchSpawns,
         } });
-        this.nextContinuousTime_s += this.continuous.interval_s;
+        const initial = this.continuous.initialInterval_s ?? this.continuous.interval_s;
+        const minimum = this.continuous.minInterval_s ?? this.continuous.interval_s;
+        const ramp = this.continuous.rampDuration_s ?? 0;
+        const progress = ramp > 0 ? Math.min(1, this.nextContinuousTime_s / ramp) : 1;
+        this.nextContinuousTime_s += initial + (minimum - initial) * progress;
       }
       if (this.isGenerationComplete() && !this.continuousCompletionEmitted) {
         this.continuousCompletionEmitted = true;
@@ -144,5 +157,14 @@ export class SpawnSystem {
     }
     this.pending = this.pending.filter(wave => wave.spawns.some(item => item.remaining > 0));
     return events;
+  }
+
+  private weightedSpawnPointIndex(sequence: number): number {
+    const points = this.continuous!.spawnPoints;
+    const total = points.reduce((sum, point) => sum + Math.max(0, this.continuous!.distribution[point] ?? 0), 0);
+    if (total <= 0) return sequence % points.length;
+    const normalized = points.map(point => Math.max(0, this.continuous!.distribution[point] ?? 0) / total);
+    return normalized.findIndex((weight, index) => sequence / Math.max(1, this.continuous!.totalTarget) <
+      normalized.slice(0, index + 1).reduce((sum, value) => sum + value, 0));
   }
 }

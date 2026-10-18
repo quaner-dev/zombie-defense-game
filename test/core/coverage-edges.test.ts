@@ -75,7 +75,7 @@ test('non-tick-aligned deployment moves units before starting the battle clock',
   assert.equal(harness.getSnapshot().time_s, 0);
   assert.equal(harness.getSnapshot().spawnedZombies, 10);
   const moved = harness.getUnits().find(unit => unit.id === ids[0])!;
-  assert.ok(moved.position.x > humans[0].position.x);
+  assert.ok(Math.hypot(moved.position.x - 360, moved.position.y - 1560) < Math.hypot(humans[0].position.x - 360, humans[0].position.y - 1560));
   harness.advance(0.05);
   assert.equal(harness.getSnapshot().time_s, 0.05);
   assert.equal(harness.getEvents().filter(event => event.type === 'wave_spawn').length, 1);
@@ -110,7 +110,7 @@ test('registered levels and maps can select multiple configured spawn routes', (
   harness.start('two-route-level-fixture', 1);
   assert.equal(harness.getWaveCount(), 1);
   assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'A').length, 0);
-  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'B').length, 7);
+  assert.equal(harness.getUnits().filter(unit => unit.faction === 'human' && unit.routeId === 'B').length, 9);
   harness.advance(3.05);
   assert.deepEqual(harness.getUnits().filter(unit => unit.faction === 'zombie').map(unit => unit.routeId), ['B', 'B']);
 });

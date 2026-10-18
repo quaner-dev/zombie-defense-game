@@ -177,9 +177,11 @@ export class HudController {
     const endTitle=victory?(this.session.mode==='story'&&!this.session.nextScene?'故事通关':'场景胜利'):'失败';
     const nextLocation=this.session.nextScene?.subtitle.split(' · ')[1]??this.session.nextScene?.title;
     const endHint=victory&&this.session.canAdvance?`${this.session.activeScene.title}已完成，前往${nextLocation}`:victory?'点击“重新开始”再次挑战':'点击“重新开始”再次布阵';
-    this.result.string=s.result!=='running'?`${endTitle}\n${this.session.activeScene.title} · ${s.time_s.toFixed(1)} 秒\n存活 ${s.aliveHumans} 人 · 剩余僵尸 ${s.aliveZombies} 只\n${endHint}`:this.session.paused?'已暂停':this.session.deploymentRemaining>0?`${this.session.activeScene.title}\n布阵 ${Math.ceil(this.session.deploymentRemaining)}\n拖动兵群调整位置`:'';
+    const statNames:any={rifleman:'步枪兵',flamethrower:'喷火兵',shield:'盾兵',sniper:'狙击兵',engineer:'工兵机枪'};
+    const statsText=s.result!=='running'&&s.stats?.byUnitType?Object.values(s.stats.byUnitType).map((v:any)=>`${statNames[v.unitType]}  击杀 ${v.kills}  伤害 ${Math.round(v.damage)}`).join('\\n'):'';
+    this.result.string=s.result!=='running'?`${endTitle}\n${this.session.activeScene.title} · ${s.time_s.toFixed(1)} 秒\n存活 ${s.aliveHumans} 人 · 剩余僵尸 ${s.aliveZombies} 只\n${statsText}\n${endHint}`:this.session.paused?'已暂停':this.session.deploymentRemaining>0?`${this.session.activeScene.title}\n布阵 ${Math.ceil(this.session.deploymentRemaining)}\n拖动兵群调整位置`:'';
     if(this.result.string){
-      const p=this.result.node.position;g.fillColor=color('#0B0B0F',220);g.roundRect(p.x-500,p.y-220,1000,440,20);g.fill();
+      const p=this.result.node.position;g.fillColor=color('#0B0B0F',220);g.roundRect(p.x-500,p.y-280,1000,560,20);g.fill();
     }
     const total=Math.max(1,s.aliveHumans+s.aliveZombies),p=this.status.node.position;
     g.fillColor=color(palette.zombie);g.rect(p.x-400,p.y-85,800,8);g.fill();

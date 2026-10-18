@@ -83,7 +83,7 @@ export class ProjectileSystem {
           !this.map.firstBlockingTerrain(shot.origin, candidate.position, 0, true) &&
           !this.map.firstBlockingTerrain(shot.position, candidate.position, 0, true));
         for (const candidate of impacted) {
-          events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, at));
+          events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, at, 'flame', shot.origin));
         }
       };
       if (shot.continuous_duration_s !== undefined) {
