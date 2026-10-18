@@ -74,10 +74,10 @@ var map_default = {
 // config/scenes/cabin.json
 var cabin_default = {
   id: "cabin",
-  title: "\u5C0F\u5C4B\u7A81\u56F4",
-  subtitle: "\u7B2C\u4E00\u5E55 \xB7 \u5C0F\u5C4B\u5185\u90E8",
-  briefing: "\u4E03\u4EBA\u5C0F\u961F\u56F0\u5B88\u623F\u95F4\u3002\u50F5\u5C38\u4ECE\u4E2D\u592E\u8D70\u5ECA\u6D8C\u6765\uFF0C\u5148\u653B\u51FB\u623F\u95E8\uFF0C\u7834\u95E8\u540E\u8FDB\u5165\u623F\u95F4\u3002\u5229\u7528\u95E8\u53E3\u96C6\u4E2D\u706B\u529B\uFF0C\u5B88\u4F4F\u4E09\u6CE2\u5C38\u6F6E\u3002",
-  objective: "\u5B88\u4F4F\u623F\u95E8\u4E0E\u623F\u95F4\uFF0C\u62B5\u5FA1 3 \u6CE2\u5C38\u6F6E",
+  title: "\u5927\u5C4B\u5B88\u536B",
+  subtitle: "\u7B2C\u4E00\u5E55 \xB7 \u5927\u5C4B\u5185\u90E8",
+  briefing: "\u4E03\u4EBA\u5C0F\u961F\u56F0\u5B88\u4E00\u5EA7\u5927\u5C4B\u3002\u50F5\u5C38\u4ECE\u5357\u5317\u4E24\u4FA7\u903C\u8FD1\uFF0C\u5148\u653B\u51FB\u5165\u53E3\u5927\u95E8\uFF0C\u7834\u95E8\u540E\u8FDB\u5165\u5927\u5385\u3002\u96C6\u4E2D\u706B\u529B\u5B88\u4F4F\u4E09\u6CE2\u5C38\u6F6E\u3002",
+  objective: "\u5B88\u4F4F\u5927\u5C4B\u5165\u53E3\u4E0E\u5927\u5385\uFF0C\u62B5\u5FA1 3 \u6CE2\u5C38\u6F6E",
   mapId: "LV01_cabin_rooms",
   levelId: "LV01_zombie_wave",
   map: {
@@ -105,7 +105,7 @@ var cabin_default = {
           y: 240
         },
         defend: {
-          x: 220,
+          x: 400,
           y: 1470
         },
         width: 240,
@@ -115,7 +115,7 @@ var cabin_default = {
             y: 240
           },
           {
-            x: 220,
+            x: 400,
             y: 1470
           }
         ]
@@ -127,7 +127,7 @@ var cabin_default = {
           y: 240
         },
         defend: {
-          x: 280,
+          x: 540,
           y: 1470
         },
         width: 240,
@@ -137,7 +137,7 @@ var cabin_default = {
             y: 240
           },
           {
-            x: 280,
+            x: 540,
             y: 1470
           }
         ]
@@ -149,7 +149,7 @@ var cabin_default = {
           y: 240
         },
         defend: {
-          x: 340,
+          x: 680,
           y: 1470
         },
         width: 240,
@@ -159,7 +159,7 @@ var cabin_default = {
             y: 240
           },
           {
-            x: 340,
+            x: 680,
             y: 1470
           }
         ]
@@ -187,15 +187,15 @@ var cabin_default = {
         width: 126,
         spawnArea: {
           left: 477,
-          top: 1764,
+          top: 2100,
           right: 603,
-          bottom: 2100
+          bottom: 2130
         }
       }
     ],
     terrain: [
       {
-        id: "west-outer",
+        id: "house-west-wall",
         kind: "wall",
         bounds: {
           left: 100,
@@ -206,97 +206,7 @@ var cabin_default = {
         blocksMovement: true
       },
       {
-        id: "west-corridor-0",
-        kind: "wall",
-        bounds: {
-          left: 416,
-          top: 680,
-          right: 440,
-          bottom: 950
-        },
-        blocksMovement: true
-      },
-      {
-        id: "west-corridor-1",
-        kind: "wall",
-        bounds: {
-          left: 416,
-          top: 1110,
-          right: 440,
-          bottom: 1510
-        },
-        blocksMovement: true
-      },
-      {
-        id: "west-corridor-2",
-        kind: "wall",
-        bounds: {
-          left: 416,
-          top: 1670,
-          right: 440,
-          bottom: 2064
-        },
-        blocksMovement: true
-      },
-      {
-        id: "west-upper-door",
-        kind: "door",
-        bounds: {
-          left: 416,
-          top: 950,
-          right: 440,
-          bottom: 1110
-        },
-        blocksMovement: true,
-        maxHp: 600
-      },
-      {
-        id: "west-lower-door",
-        kind: "door",
-        bounds: {
-          left: 416,
-          top: 1510,
-          right: 440,
-          bottom: 1670
-        },
-        blocksMovement: true,
-        maxHp: 600
-      },
-      {
-        id: "west-top",
-        kind: "wall",
-        bounds: {
-          left: 100,
-          top: 680,
-          right: 440,
-          bottom: 704
-        },
-        blocksMovement: true
-      },
-      {
-        id: "west-partition",
-        kind: "wall",
-        bounds: {
-          left: 100,
-          top: 1280,
-          right: 440,
-          bottom: 1304
-        },
-        blocksMovement: true
-      },
-      {
-        id: "west-bottom",
-        kind: "wall",
-        bounds: {
-          left: 100,
-          top: 2040,
-          right: 440,
-          bottom: 2064
-        },
-        blocksMovement: true
-      },
-      {
-        id: "east-outer",
+        id: "house-east-wall",
         kind: "wall",
         bounds: {
           left: 956,
@@ -307,67 +217,33 @@ var cabin_default = {
         blocksMovement: true
       },
       {
-        id: "east-corridor-0",
+        id: "house-north-west-wall",
         kind: "wall",
         bounds: {
-          left: 640,
+          left: 100,
           top: 680,
-          right: 664,
-          bottom: 950
+          right: 477,
+          bottom: 704
         },
         blocksMovement: true
       },
       {
-        id: "east-corridor-1",
-        kind: "wall",
-        bounds: {
-          left: 640,
-          top: 1110,
-          right: 664,
-          bottom: 1510
-        },
-        blocksMovement: true
-      },
-      {
-        id: "east-corridor-2",
-        kind: "wall",
-        bounds: {
-          left: 640,
-          top: 1670,
-          right: 664,
-          bottom: 2064
-        },
-        blocksMovement: true
-      },
-      {
-        id: "east-upper-door",
+        id: "house-north-door",
         kind: "door",
         bounds: {
-          left: 640,
-          top: 950,
-          right: 664,
-          bottom: 1110
+          left: 477,
+          top: 680,
+          right: 603,
+          bottom: 704
         },
         blocksMovement: true,
         maxHp: 600
       },
       {
-        id: "east-lower-door",
-        kind: "door",
-        bounds: {
-          left: 640,
-          top: 1510,
-          right: 664,
-          bottom: 1670
-        },
-        blocksMovement: true,
-        maxHp: 600
-      },
-      {
-        id: "east-top",
+        id: "house-north-east-wall",
         kind: "wall",
         bounds: {
-          left: 640,
+          left: 603,
           top: 680,
           right: 980,
           bottom: 704
@@ -375,21 +251,33 @@ var cabin_default = {
         blocksMovement: true
       },
       {
-        id: "east-partition",
+        id: "house-south-west-wall",
         kind: "wall",
         bounds: {
-          left: 640,
-          top: 1280,
-          right: 980,
-          bottom: 1304
+          left: 100,
+          top: 2040,
+          right: 477,
+          bottom: 2064
         },
         blocksMovement: true
       },
       {
-        id: "east-bottom",
+        id: "house-south-door",
+        kind: "door",
+        bounds: {
+          left: 477,
+          top: 2040,
+          right: 603,
+          bottom: 2064
+        },
+        blocksMovement: true,
+        maxHp: 600
+      },
+      {
+        id: "house-south-east-wall",
         kind: "wall",
         bounds: {
-          left: 640,
+          left: 603,
           top: 2040,
           right: 980,
           bottom: 2064
@@ -575,52 +463,32 @@ var cabin_default = {
     decorations: [
       {
         kind: "floor",
+        color: "#252A30",
+        bounds: {
+          left: 124,
+          top: 704,
+          right: 956,
+          bottom: 2040
+        }
+      },
+      {
+        kind: "floor",
         color: "#343338",
         bounds: {
           left: 440,
-          top: 180,
+          top: 704,
           right: 640,
-          bottom: 2160
-        }
-      },
-      {
-        kind: "floor",
-        color: "#252A30",
-        bounds: {
-          left: 124,
-          top: 704,
-          right: 416,
-          bottom: 1280
-        }
-      },
-      {
-        kind: "floor",
-        color: "#252A30",
-        bounds: {
-          left: 124,
-          top: 1304,
-          right: 416,
           bottom: 2040
         }
       },
       {
-        kind: "floor",
-        color: "#252A30",
+        kind: "stripe",
+        color: "#454047",
         bounds: {
-          left: 664,
-          top: 704,
-          right: 956,
-          bottom: 1280
-        }
-      },
-      {
-        kind: "floor",
-        color: "#252A30",
-        bounds: {
-          left: 664,
-          top: 1304,
-          right: 956,
-          bottom: 2040
+          left: 490,
+          top: 820,
+          right: 590,
+          bottom: 1920
         }
       }
     ]
@@ -1591,7 +1459,9 @@ var units_default = {
     attack_range_px: 190,
     area_radius_px: 72,
     projectile_speed_px_per_s: 520,
-    projectile_max_flight_time_s: 0.45
+    projectile_max_flight_time_s: 0.45,
+    continuous_duration_s: 0.6,
+    damage_tick_interval_s: 0.1
   },
   shield: {
     hitPoints: 220,
@@ -1652,7 +1522,9 @@ function rangedAttack(stats, projectileKind, splashRadius_px = 0) {
     projectileKind,
     splashRadius_px,
     projectileSpeed_px_per_s: stats.projectile_speed_px_per_s,
-    projectileMaxFlightTime_s: stats.projectile_max_flight_time_s
+    projectileMaxFlightTime_s: stats.projectile_max_flight_time_s,
+    continuousDuration_s: stats.continuous_duration_s,
+    damageTickInterval_s: stats.damage_tick_interval_s
   };
 }
 function meleeAttack(stats, infectsOnHit = false) {
@@ -2054,7 +1926,7 @@ var CombatSystem = class {
     __publicField(this, "humans", []);
     __publicField(this, "zombies", []);
   }
-  createProjectile(source, target, time_s) {
+  createProjectile(source, target, time_s, continuous = true) {
     var _a, _b;
     const profile = getUnitModule(source.unitType).getAttackProfile();
     if (!profile) throw new Error(`Unit ${source.unitType} cannot create a projectile`);
@@ -2070,6 +1942,9 @@ var CombatSystem = class {
       projectileKind: profile.projectileKind,
       speed_px_per_s: (_a = profile.projectileSpeed_px_per_s) != null ? _a : units_default.projectile.speed_px_per_s,
       max_flight_time_s: (_b = profile.projectileMaxFlightTime_s) != null ? _b : units_default.projectile.max_flight_time_s,
+      continuous_duration_s: continuous && profile.projectileKind === "flame" ? profile.continuousDuration_s : void 0,
+      damage_tick_interval_s: continuous && profile.projectileKind === "flame" ? profile.damageTickInterval_s : void 0,
+      damage_elapsed_s: 0,
       spawnedAt_s: time_s,
       elapsed_s: 0
     };
@@ -2126,7 +2001,7 @@ var CombatSystem = class {
       if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === "Dead") continue;
       const distance = (target.position.x - unit.position.x) ** 2 + (target.position.y - unit.position.y) ** 2;
       if (distance > bestDistance || distance === bestDistance && nearest && target.id >= nearest.id) continue;
-      if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position)) continue;
+      if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position, 0, true)) continue;
       nearest = target;
       bestDistance = distance;
     }
@@ -2436,7 +2311,7 @@ var ProjectileSystem = class {
     __publicField(this, "projectiles", /* @__PURE__ */ new Map());
   }
   spawn(source, target, time_s) {
-    return this.combat.createProjectile(source, target, time_s);
+    return this.combat.createProjectile(source, target, time_s, false);
   }
   getProjectiles() {
     return cloneData([...this.projectiles.values()]);
@@ -2452,26 +2327,28 @@ var ProjectileSystem = class {
     return events;
   }
   update(seconds, time_s) {
+    var _a;
     if (!Number.isFinite(seconds) || seconds < 0) return [];
     for (const shot of this.combat.drainShots()) this.projectiles.set(shot.id, shot);
     const events = [];
     for (const shot of this.projectiles.values()) {
       const previous = { ...shot.position }, previousElapsed = shot.elapsed_s;
       const distance = Math.hypot(shot.destination.x - shot.origin.x, shot.destination.y - shot.origin.y);
-      const duration = Math.min(distance / shot.speed_px_per_s, shot.max_flight_time_s);
+      const flightDuration = Math.min(distance / shot.speed_px_per_s, shot.max_flight_time_s);
+      const duration = shot.continuous_duration_s === void 0 ? flightDuration : Math.max(flightDuration, shot.continuous_duration_s);
       shot.elapsed_s = Math.min(duration, shot.elapsed_s + Math.min(
         seconds,
         Math.max(0, time_s - shot.spawnedAt_s - shot.elapsed_s)
       ));
       const fraction = distance === 0 ? 1 : Math.min(
         1,
-        shot.elapsed_s * shot.speed_px_per_s / distance
+        Math.min(shot.elapsed_s, flightDuration) * shot.speed_px_per_s / distance
       );
       shot.position = {
         x: shot.origin.x + (shot.destination.x - shot.origin.x) * fraction,
         y: shot.origin.y + (shot.destination.y - shot.origin.y) * fraction
       };
-      const wall = this.map.firstBlockingTerrain(previous, shot.position);
+      const wall = shot.continuous_duration_s === void 0 || shot.elapsed_s <= flightDuration + 1e-9 ? this.map.firstBlockingTerrain(previous, shot.position, 0, true) : null;
       if (wall) {
         const impactTime_s = shot.spawnedAt_s + previousElapsed + (shot.elapsed_s - previousElapsed) * wall.fraction;
         events.push({ type: "projectile_blocked", time_s: impactTime_s, data: {
@@ -2483,15 +2360,11 @@ var ProjectileSystem = class {
         this.projectiles.delete(shot.id);
         continue;
       }
-      if (shot.elapsed_s + 1e-9 < duration) continue;
-      const terminalTime_s = shot.spawnedAt_s + duration;
-      events.push({
-        type: "projectile_hit",
-        time_s: terminalTime_s,
-        data: { projectileId: shot.id, targetId: shot.targetId, position: { ...shot.position } }
-      });
       const target = this.store.get(shot.targetId);
-      if (shot.splashRadius_px > 0) {
+      const impactUntil = shot.continuous_duration_s === void 0 ? duration : shot.elapsed_s;
+      const tick = (_a = shot.damage_tick_interval_s) != null ? _a : duration;
+      const applyFlameTick = (at) => {
+        if (shot.splashRadius_px <= 0) return;
         const dx = shot.position.x - shot.origin.x, dy = shot.position.y - shot.origin.y;
         const length = Math.hypot(dx, dy);
         const impacted = this.store.living().filter((candidate) => candidate.faction === "zombie" && (shot.projectileKind === "flame" ? (() => {
@@ -2500,15 +2373,38 @@ var ProjectileSystem = class {
           const along = (x * dx + y * dy) / length;
           const fraction2 = Math.max(0, Math.min(1, along / length));
           return along >= 0 && Math.hypot(x - dx * fraction2, y - dy * fraction2) <= shot.splashRadius_px * fraction2;
-        })() : Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px) && !this.map.firstBlockingTerrain(shot.origin, candidate.position) && !this.map.firstBlockingTerrain(shot.position, candidate.position));
+        })() : Math.hypot(candidate.position.x - shot.position.x, candidate.position.y - shot.position.y) <= shot.splashRadius_px) && !this.map.firstBlockingTerrain(shot.origin, candidate.position, 0, true) && !this.map.firstBlockingTerrain(shot.position, candidate.position, 0, true));
         for (const candidate of impacted) {
-          events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, terminalTime_s));
+          events.push(...this.combat.applyDamage(candidate.id, shot.damage, shot.sourceId, at));
         }
-      } else if (target && !this.map.firstBlockingTerrain(shot.origin, target.position) && !this.map.firstBlockingTerrain(shot.position, target.position)) {
-        events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+      };
+      if (shot.continuous_duration_s !== void 0) {
+        while (shot.damage_elapsed_s + tick <= impactUntil + 1e-9) {
+          shot.damage_elapsed_s += tick;
+          applyFlameTick(shot.spawnedAt_s + shot.damage_elapsed_s);
+        }
+      } else if (shot.elapsed_s + 1e-9 >= duration) {
+        const terminalTime_s = shot.spawnedAt_s + duration;
+        events.push({
+          type: "projectile_hit",
+          time_s: terminalTime_s,
+          data: { projectileId: shot.id, targetId: shot.targetId, position: { ...shot.position } }
+        });
+        if (shot.splashRadius_px > 0) applyFlameTick(terminalTime_s);
+        else if (target && !this.map.firstBlockingTerrain(shot.origin, target.position, 0, true) && !this.map.firstBlockingTerrain(shot.position, target.position, 0, true)) {
+          events.push(...this.combat.applyDamage(shot.targetId, shot.damage, shot.sourceId, terminalTime_s));
+        }
       }
-      events.push({ type: "projectile_expired", time_s: terminalTime_s, data: { projectileId: shot.id } });
-      this.projectiles.delete(shot.id);
+      if (shot.elapsed_s + 1e-9 >= duration) {
+        const terminalTime_s = shot.spawnedAt_s + duration;
+        if (shot.continuous_duration_s !== void 0) events.push({
+          type: "projectile_hit",
+          time_s: terminalTime_s,
+          data: { projectileId: shot.id, targetId: shot.targetId, position: { ...shot.position } }
+        });
+        events.push({ type: "projectile_expired", time_s: terminalTime_s, data: { projectileId: shot.id } });
+        this.projectiles.delete(shot.id);
+      }
     }
     return events;
   }

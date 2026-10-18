@@ -17,6 +17,10 @@ export interface Projectile {
   projectileKind: ProjectileKind;
   speed_px_per_s: number;
   max_flight_time_s: number;
+  /** When set, the flame remains active after reaching its tip and ticks damage. */
+  continuous_duration_s?: number;
+  damage_tick_interval_s?: number;
+  damage_elapsed_s: number;
   spawnedAt_s: number;
   elapsed_s: number;
 }
@@ -31,7 +35,7 @@ export class CombatSystem {
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
-  public createProjectile(source: Unit, target: Unit, time_s: number): BattleEvent {
+  public createProjectile(source: Unit, target: Unit, time_s: number, continuous = true): BattleEvent {
     const profile = getUnitModule(source.unitType).getAttackProfile();
     if (!profile) throw new Error(`Unit ${source.unitType} cannot create a projectile`);
     const shot: Projectile = {
@@ -41,6 +45,9 @@ export class CombatSystem {
       projectileKind: profile.projectileKind,
       speed_px_per_s: profile.projectileSpeed_px_per_s ?? config.projectile.speed_px_per_s,
       max_flight_time_s: profile.projectileMaxFlightTime_s ?? config.projectile.max_flight_time_s,
+      continuous_duration_s: continuous && profile.projectileKind === 'flame' ? profile.continuousDuration_s : undefined,
+      damage_tick_interval_s: continuous && profile.projectileKind === 'flame' ? profile.damageTickInterval_s : undefined,
+      damage_elapsed_s: 0,
       spawnedAt_s: time_s, elapsed_s: 0,
     };
     this.shots.push(shot);
@@ -102,7 +109,9 @@ export class CombatSystem {
       if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === 'Dead') continue;
       const distance = (target.position.x - unit.position.x) ** 2 + (target.position.y - unit.position.y) ** 2;
       if (distance > bestDistance || (distance === bestDistance && nearest && target.id >= nearest.id)) continue;
-      if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position)) continue;
+      // Doors stop bodies, but a closed door still has a firing slit/vision
+      // line for the defenders. Solid walls remain opaque to every shot.
+      if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position, 0, true)) continue;
       nearest = target;
       bestDistance = distance;
     }

@@ -13,6 +13,10 @@ export interface UnitStats {
   area_radius_px?: number;
   projectile_speed_px_per_s?: number;
   projectile_max_flight_time_s?: number;
+  /** Flamethrowers keep their cone active for this long after each stream starts. */
+  continuous_duration_s?: number;
+  /** Damage cadence while a continuous attack is active. */
+  damage_tick_interval_s?: number;
   infectsSoldiers?: boolean;
 }
 
@@ -24,6 +28,8 @@ export interface AttackProfile {
   splashRadius_px: number;
   projectileSpeed_px_per_s?: number;
   projectileMaxFlightTime_s?: number;
+  continuousDuration_s?: number;
+  damageTickInterval_s?: number;
 }
 
 export interface MeleeAttackProfile {
@@ -52,7 +58,9 @@ export function rangedAttack(stats: UnitStats, projectileKind: ProjectileKind, s
   }
   return { damage: stats.damagePerHit, interval_s: stats.attack_interval_s, range_px: stats.attack_range_px,
     projectileKind, splashRadius_px, projectileSpeed_px_per_s: stats.projectile_speed_px_per_s,
-    projectileMaxFlightTime_s: stats.projectile_max_flight_time_s };
+    projectileMaxFlightTime_s: stats.projectile_max_flight_time_s,
+    continuousDuration_s: stats.continuous_duration_s,
+    damageTickInterval_s: stats.damage_tick_interval_s };
 }
 
 export function meleeAttack(stats: UnitStats, infectsOnHit = false): MeleeAttackProfile {

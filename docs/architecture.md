@@ -1,8 +1,8 @@
 # 实际架构
 
-> 场景扩展更新：入口现有故事模式与场景演练，故事顺序为小屋→大楼楼下，每关三波。地点内容集中于 `src/scenes/`，统一提供地图、波次和视觉数据；`BattleSession` 管理入口状态与章节推进，`MapView`、`InputManager`、`CommandSystem` 统一读取当前战斗地图。旧文中未来主菜单/单关范围已由本次实现替代，详见 [场景设计稿](10-story-scenes-design.md)。
+> 场景扩展更新：入口现有故事模式与场景演练，故事顺序为大屋→大楼楼下，每关三波。地点内容集中于 `src/scenes/`，统一提供地图、波次和视觉数据；`BattleSession` 管理入口状态与章节推进，`MapView`、`InputManager`、`CommandSystem` 统一读取当前战斗地图。旧文中未来主菜单/单关范围已由本次实现替代，详见 [场景设计稿](10-story-scenes-design.md)。
 
-> 当前实现：小屋僵尸从中央走廊出生，楼下僵尸从地图四边进入；僵尸沿墙角路线追击，路线被关闭房门挡住时先破门。七人小队包含两名范围喷火兵；小屋与楼下分别配置 700/270 只僵尸。3秒布阵不可跳过，Creator 导入、构建和设备表现仍待人工验证。规则细节见 [故事场景](10-story-scenes-design.md) 与 [手测表](testing/cocos-manual-checklist.md)。
+> 当前实现：大屋僵尸从南北入口出生，楼下僵尸从地图四边进入；僵尸沿墙角路线追击，路线被关闭大门挡住时先破门。七人小队包含两名范围喷火兵；大屋与楼下分别配置 700/270 只僵尸。3秒布阵不可跳过，Creator 导入、构建和设备表现仍待人工验证。规则细节见 [故事场景](10-story-scenes-design.md) 与 [手测表](testing/cocos-manual-checklist.md)。
 
 [返回首页](../README.md) · [开发指南](development.md) · [历史设计索引](README.md)
 
@@ -35,10 +35,10 @@ flowchart TD
 | 模块 | 当前职责 |
 |---|---|
 | [BattleTestHarness](../src/core/BattleTestHarness.ts) | start、50ms 时钟、系统编排、快照、完整及游标事件、终局冻结 |
-| [MapModel](../src/core/MapModel.ts) / [WaveManager](../src/core/WaveManager.ts) / SpawnSystem | 墙体与房门碰撞、墙角路径、场景出生点、按时开启波次并分批生成 |
+| [MapModel](../src/core/MapModel.ts) / [WaveManager](../src/core/WaveManager.ts) / SpawnSystem | 墙体与大门碰撞、墙角路径、场景出生点、按时开启波次并分批生成 |
 | [UnitStore](../src/core/UnitStore.ts) | 单位 ID、存活筛选、死亡、清理与对象复用 |
 | [CommandSystem](../src/core/CommandSystem.ts) / [MovementSystem](../src/core/MovementSystem.ts) | 固定半径选择、ID 校验、替换目标、个人紧凑落点、绕墙移动与到达 |
-| [CombatSystem](../src/core/CombatSystem.ts) | 每步选择可达目标、沿墙角追击、攻击挡路房门、近战及唯一伤害/死亡权威；喷火范围伤害由弹道到达处理 |
+| [CombatSystem](../src/core/CombatSystem.ts) | 每步选择可达目标、沿墙角追击、攻击挡路大门、近战及唯一伤害/死亡权威；喷火范围伤害由弹道到达处理 |
 | [ProjectileSystem](../src/core/ProjectileSystem.ts) | 核心飞行时间、整段墙体碰撞与到达事件；命中前再次验证遮挡，目标已死或躲入掩体不扣血 |
 | [ResultSystem](../src/core/ResultSystem.ts) | 人类全灭优先失败，否则全波出完且无僵尸、有人类时胜利 |
 | [BattleSession](../src/adapter/BattleSession.ts) | 暂停、重启、引擎 elapsed 桥接、事件游标、单兵命令 |

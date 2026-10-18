@@ -1,9 +1,9 @@
 {
   "id": "cabin",
-  "title": "小屋突围",
-  "subtitle": "第一幕 · 小屋内部",
-  "briefing": "七人小队困守房间。僵尸从中央走廊涌来，先攻击房门，破门后进入房间。利用门口集中火力，守住三波尸潮。",
-  "objective": "守住房门与房间，抵御 3 波尸潮",
+  "title": "大屋守卫",
+  "subtitle": "第一幕 · 大屋内部",
+  "briefing": "七人小队困守一座大屋。僵尸从南北两侧逼近，先攻击入口大门，破门后进入大厅。集中火力守住三波尸潮。",
+  "objective": "守住大屋入口与大厅，抵御 3 波尸潮",
   "mapId": "LV01_cabin_rooms",
   "levelId": "LV01_zombie_wave",
   "map": {
@@ -31,7 +31,7 @@
           "y": 240
         },
         "defend": {
-          "x": 220,
+          "x": 400,
           "y": 1470
         },
         "width": 240,
@@ -41,7 +41,7 @@
             "y": 240
           },
           {
-            "x": 220,
+            "x": 400,
             "y": 1470
           }
         ]
@@ -53,7 +53,7 @@
           "y": 240
         },
         "defend": {
-          "x": 280,
+          "x": 540,
           "y": 1470
         },
         "width": 240,
@@ -63,7 +63,7 @@
             "y": 240
           },
           {
-            "x": 280,
+            "x": 540,
             "y": 1470
           }
         ]
@@ -75,7 +75,7 @@
           "y": 240
         },
         "defend": {
-          "x": 340,
+          "x": 680,
           "y": 1470
         },
         "width": 240,
@@ -85,7 +85,7 @@
             "y": 240
           },
           {
-            "x": 340,
+            "x": 680,
             "y": 1470
           }
         ]
@@ -113,15 +113,15 @@
         "width": 126,
         "spawnArea": {
           "left": 477,
-          "top": 1764,
+          "top": 2100,
           "right": 603,
-          "bottom": 2100
+          "bottom": 2130
         }
       }
     ],
     "terrain": [
       {
-        "id": "west-outer",
+        "id": "house-west-wall",
         "kind": "wall",
         "bounds": {
           "left": 100,
@@ -132,97 +132,7 @@
         "blocksMovement": true
       },
       {
-        "id": "west-corridor-0",
-        "kind": "wall",
-        "bounds": {
-          "left": 416,
-          "top": 680,
-          "right": 440,
-          "bottom": 950
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "west-corridor-1",
-        "kind": "wall",
-        "bounds": {
-          "left": 416,
-          "top": 1110,
-          "right": 440,
-          "bottom": 1510
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "west-corridor-2",
-        "kind": "wall",
-        "bounds": {
-          "left": 416,
-          "top": 1670,
-          "right": 440,
-          "bottom": 2064
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "west-upper-door",
-        "kind": "door",
-        "bounds": {
-          "left": 416,
-          "top": 950,
-          "right": 440,
-          "bottom": 1110
-        },
-        "blocksMovement": true,
-        "maxHp": 600
-      },
-      {
-        "id": "west-lower-door",
-        "kind": "door",
-        "bounds": {
-          "left": 416,
-          "top": 1510,
-          "right": 440,
-          "bottom": 1670
-        },
-        "blocksMovement": true,
-        "maxHp": 600
-      },
-      {
-        "id": "west-top",
-        "kind": "wall",
-        "bounds": {
-          "left": 100,
-          "top": 680,
-          "right": 440,
-          "bottom": 704
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "west-partition",
-        "kind": "wall",
-        "bounds": {
-          "left": 100,
-          "top": 1280,
-          "right": 440,
-          "bottom": 1304
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "west-bottom",
-        "kind": "wall",
-        "bounds": {
-          "left": 100,
-          "top": 2040,
-          "right": 440,
-          "bottom": 2064
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "east-outer",
+        "id": "house-east-wall",
         "kind": "wall",
         "bounds": {
           "left": 956,
@@ -233,67 +143,33 @@
         "blocksMovement": true
       },
       {
-        "id": "east-corridor-0",
+        "id": "house-north-west-wall",
         "kind": "wall",
         "bounds": {
-          "left": 640,
+          "left": 100,
           "top": 680,
-          "right": 664,
-          "bottom": 950
+          "right": 477,
+          "bottom": 704
         },
         "blocksMovement": true
       },
       {
-        "id": "east-corridor-1",
-        "kind": "wall",
-        "bounds": {
-          "left": 640,
-          "top": 1110,
-          "right": 664,
-          "bottom": 1510
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "east-corridor-2",
-        "kind": "wall",
-        "bounds": {
-          "left": 640,
-          "top": 1670,
-          "right": 664,
-          "bottom": 2064
-        },
-        "blocksMovement": true
-      },
-      {
-        "id": "east-upper-door",
+        "id": "house-north-door",
         "kind": "door",
         "bounds": {
-          "left": 640,
-          "top": 950,
-          "right": 664,
-          "bottom": 1110
+          "left": 477,
+          "top": 680,
+          "right": 603,
+          "bottom": 704
         },
         "blocksMovement": true,
         "maxHp": 600
       },
       {
-        "id": "east-lower-door",
-        "kind": "door",
-        "bounds": {
-          "left": 640,
-          "top": 1510,
-          "right": 664,
-          "bottom": 1670
-        },
-        "blocksMovement": true,
-        "maxHp": 600
-      },
-      {
-        "id": "east-top",
+        "id": "house-north-east-wall",
         "kind": "wall",
         "bounds": {
-          "left": 640,
+          "left": 603,
           "top": 680,
           "right": 980,
           "bottom": 704
@@ -301,21 +177,33 @@
         "blocksMovement": true
       },
       {
-        "id": "east-partition",
+        "id": "house-south-west-wall",
         "kind": "wall",
         "bounds": {
-          "left": 640,
-          "top": 1280,
-          "right": 980,
-          "bottom": 1304
+          "left": 100,
+          "top": 2040,
+          "right": 477,
+          "bottom": 2064
         },
         "blocksMovement": true
       },
       {
-        "id": "east-bottom",
+        "id": "house-south-door",
+        "kind": "door",
+        "bounds": {
+          "left": 477,
+          "top": 2040,
+          "right": 603,
+          "bottom": 2064
+        },
+        "blocksMovement": true,
+        "maxHp": 600
+      },
+      {
+        "id": "house-south-east-wall",
         "kind": "wall",
         "bounds": {
-          "left": 640,
+          "left": 603,
           "top": 2040,
           "right": 980,
           "bottom": 2064
@@ -501,52 +389,32 @@
     "decorations": [
       {
         "kind": "floor",
+        "color": "#252A30",
+        "bounds": {
+          "left": 124,
+          "top": 704,
+          "right": 956,
+          "bottom": 2040
+        }
+      },
+      {
+        "kind": "floor",
         "color": "#343338",
         "bounds": {
           "left": 440,
-          "top": 180,
+          "top": 704,
           "right": 640,
-          "bottom": 2160
-        }
-      },
-      {
-        "kind": "floor",
-        "color": "#252A30",
-        "bounds": {
-          "left": 124,
-          "top": 704,
-          "right": 416,
-          "bottom": 1280
-        }
-      },
-      {
-        "kind": "floor",
-        "color": "#252A30",
-        "bounds": {
-          "left": 124,
-          "top": 1304,
-          "right": 416,
           "bottom": 2040
         }
       },
       {
-        "kind": "floor",
-        "color": "#252A30",
+        "kind": "stripe",
+        "color": "#454047",
         "bounds": {
-          "left": 664,
-          "top": 704,
-          "right": 956,
-          "bottom": 1280
-        }
-      },
-      {
-        "kind": "floor",
-        "color": "#252A30",
-        "bounds": {
-          "left": 664,
-          "top": 1304,
-          "right": 956,
-          "bottom": 2040
+          "left": 490,
+          "top": 820,
+          "right": 590,
+          "bottom": 1920
         }
       }
     ]

@@ -1,12 +1,12 @@
 # 文档索引与阅读约定
 
-> 当前实现：七人小队、小屋中央走廊与四扇耐久门、喷火范围攻击、沿墙角寻路，以及小屋 700/楼下 270 只僵尸的分批尸潮。Creator 导入、构建和设备表现仍待人工验证；详见 [当前场景验证记录](testing/scenes-test-report.md) 与 [Cocos 手测表](testing/cocos-manual-checklist.md)。
+> 当前实现：七人小队、大屋大厅与南北两扇耐久门、喷火范围攻击、沿墙角寻路，以及大屋 700/楼下 270 只僵尸的分批尸潮。Creator 导入、构建和设备表现仍待人工验证；详见 [当前场景验证记录](testing/scenes-test-report.md) 与 [Cocos 手测表](testing/cocos-manual-checklist.md)。
 
 [返回首页](../README.md)
 
 ## 当前使用与实现
 
-- [故事与场景设计稿](10-story-scenes-design.md)：模式入口、小屋→大楼楼下、每关三波、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入两个场景，旧文档中的“只有一关、没有菜单”描述已被本次实现替代。
+- [故事与场景设计稿](10-story-scenes-design.md)：模式入口、大屋→大楼楼下、每关三波、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入两个场景，旧文档中的“只有一关、没有菜单”描述已被本次实现替代。
 - [上手与操作](getting-started.md)：Node 无渲染运行、Creator 首次导入、手势与后撤。
 - [实际架构](architecture.md)：以当前源码为依据的模块和数据流。
 - [开发指南](development.md)：配置、命令、测试、构建和排错。

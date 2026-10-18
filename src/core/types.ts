@@ -99,6 +99,9 @@ export interface ProjectileEventData {
   splashRadius_px: number;
   speed_px_per_s: number;
   max_flight_time_s: number;
+  continuous_duration_s?: number;
+  damage_tick_interval_s?: number;
+  damage_elapsed_s?: number;
   spawnedAt_s: number;
   elapsed_s: number;
 }

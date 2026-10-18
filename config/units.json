@@ -16,7 +16,9 @@
     "attack_range_px": 190,
     "area_radius_px": 72,
     "projectile_speed_px_per_s": 520,
-    "projectile_max_flight_time_s": 0.45
+    "projectile_max_flight_time_s": 0.45,
+    "continuous_duration_s": 0.6,
+    "damage_tick_interval_s": 0.1
   },
   "shield": {
     "hitPoints": 220,
