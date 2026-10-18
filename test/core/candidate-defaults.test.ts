@@ -7,8 +7,10 @@ import { MapModel, type MapDefinition } from '../../src/core/MapModel.js';
 test('balance defaults cap soldiers, increase rifle damage and double unit size', () => {
   assert.equal(units.normal_zombie.speed_px_per_s, 41.9);
   assert.equal(units.normal_zombie.attack_interval_s, 0.13);
-  assert.equal(units.rifleman.attack_range_px, 260);
-  assert.ok(units.rifleman.attack_range_px <= units.projectile.speed_px_per_s * units.projectile.max_flight_time_s);
+  assert.equal(units.rifleman.attack_range_px, 460);
+  assert.ok(units.rifleman.attack_range_px <= units.projectile.speed_px_per_s * units.rifleman.projectile_max_flight_time_s);
+  assert.equal(units.flamethrower.attack_range_px, 220);
+  assert.ok(units.flamethrower.attack_range_px < units.rifleman.attack_range_px / 2);
   assert.equal(units.rifleman.speed_px_per_s, 48);
   assert.ok(units.rifleman.speed_px_per_s > units.normal_zombie.speed_px_per_s);
   assert.ok(units.rifleman.speed_px_per_s / units.normal_zombie.speed_px_per_s < 1.2);

@@ -64,10 +64,16 @@ test('gut zombie throws only after a hit and releases its remaining inventory on
   const attacker = store.spawn('rifleman', { x: 540, y: 500 }, 'B');
   combat.update(.05, .05);
   assert.equal(gut.storedGutUnitIds.length, 1);
+  assert.equal(swallowed.state, 'StoredInGut', 'same-frame AI must not reactivate swallowed zombies');
+  assert.equal(attacker.targetId, gut.id, 'stored zombies cannot be targeted from an earlier frame snapshot');
+  assert.deepEqual(combat.applyDamage(swallowed.id, 1, attacker.id, .1), [], 'in-flight shots cannot hit stored zombies');
   const hit = combat.applyDamage(gut.id, 1, attacker.id, .1, 'bullet', attacker.position);
   assert.ok(hit.some(event => event.type === 'gut_thrown'));
   assert.equal(swallowed.state, 'Suicidal');
-  for (let i = 0; i < 20; i++) combat.update(.05, .15 + i * .05);
+  combat.update(.05, .15);
+  assert.equal(swallowed.state, 'Suicidal', 'a thrown zombie cannot be swallowed again');
+  assert.equal(gut.storedGutUnitIds.length, 0);
+  for (let i = 0; i < 20; i++) combat.update(.05, .20 + i * .05);
   assert.equal(swallowed.state, 'Dead');
   const remaining = store.spawn('normal_zombie', { x: 512, y: 500 }, 'B');
   gut.storedGutUnitIds.push(remaining.id);

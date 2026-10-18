@@ -36,6 +36,8 @@ export interface Unit {
   weaponHeat: number;
   weaponCooldown_s: number;
   stateElapsed_s: number;
+  /** Current anchored flame length, including release/retraction animation. */
+  flameLength_px: number;
   facing: Point;
   storedGutUnitIds: string[];
   storedInGutById: string | null;
@@ -105,6 +107,8 @@ export type BattleEvent =
   | TimedEvent<'damage', DamageEventData>
   | TimedEvent<'door_damaged', { id: string; hp: number; maxHp: number; destroyed: boolean; sourceId: string; amount: number }>
   | TimedEvent<'door_destroyed', { doorId: string; sourceId: string }>
+  | TimedEvent<'window_damaged', { id: string; hp: number; maxHp: number; destroyed: boolean; sourceId: string; amount: number }>
+  | TimedEvent<'window_destroyed', { windowId: string; sourceId: string }>
   | TimedEvent<'unit_died', { unitId: string; faction: Unit['faction']; killerId: string | null; killerUnitType: UnitType | null; damageKind: DamageKind | null }>
   | TimedEvent<'unit_state_changed', { unitId: string; from: UnitState; to: UnitState }>
   | TimedEvent<'route_breached', { routeId: string; unitId: string }>

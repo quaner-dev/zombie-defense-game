@@ -13,7 +13,7 @@ export class ProjectileSystem {
 
   public spawn(source: Unit, target: Unit, time_s: number): BattleEvent {
     // This public helper remains a one-shot fixture primitive. Runtime combat
-    // creates continuous flame streams through CombatSystem.update().
+    // owns anchored flame cones directly, without travelling flame projectiles.
     return this.combat.createProjectile(source, target, time_s, false);
   }
 

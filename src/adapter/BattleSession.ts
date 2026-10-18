@@ -36,7 +36,7 @@ export class BattleSession {
   public restart(levelId=this.levelId):void {
     this.levelId=levelId;this.scene=sceneForLevel(levelId)??SCENES[0];
     this.battle.start(this.levelId,1);this.screen='battle';this.paused=false;
-    this.deploymentRemaining=DEFAULT_BATTLE_CONFIG.deploymentDuration_s;this.cursor=0;this.events=[];
+    this.deploymentRemaining=this.scene.scenarioKind==='villa_rescue'?0:DEFAULT_BATTLE_CONFIG.deploymentDuration_s;this.cursor=0;this.events=[];
   }
   public tick(dt:number):void {
     this.events=[];

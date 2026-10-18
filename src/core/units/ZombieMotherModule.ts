@@ -7,6 +7,6 @@ export const zombieMotherModule: ZombieModule = {
   getAttackProfile: () => null,
   getMeleeAttackProfile: () => {
     const stats = readUnitStats('zombie_mother');
-    return meleeAttack(stats, stats.infectsSoldiers ?? true);
+    return meleeAttack(stats, stats.infectsSoldiers ?? false);
   },
 };

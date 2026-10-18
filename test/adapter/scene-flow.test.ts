@@ -62,7 +62,12 @@ test('victory button advances story using the same controller and shows final co
   assert.equal(s.activeScene.id,'courtyard');assert.equal(s.deploymentRemaining,3);
   assert.equal(c.root.children.length,nodes);assert.equal(c.projectiles.counts.active,0);
   s.battle.getSnapshot=()=>({...snapshot(),result:'win'});c.draw();
-  assert.match(c.hud.result.string,/故事通关/);assert.equal(c.hud.boxes.length,3);
+  assert.match(c.hud.result.string,/场景胜利/);assert.equal(c.hud.boxes.length,4);
+  assert.match(c.hud.next.string,/保护平民/);
+  f.button(3,'start');f.button(3,'end');
+  assert.equal(s.activeScene.id,'villa-rescue');assert.equal(s.deploymentRemaining,0);
+  c.draw();assert.match(c.hud.result.string,/6 名平民成功获救/);
+  assert.equal(c.hud.boxes.length,3);
   s.battle.getSnapshot=snapshot;c.onDestroy();
 });
 

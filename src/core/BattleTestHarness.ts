@@ -13,7 +13,6 @@ import { CombatStats } from './CombatStats.js';
 import type { BattleConfig, BattleEvent, BattleSnapshot, HumanUnitType, Unit } from './types.js';
 import { HUMAN_UNIT_TYPES } from './units/index.js';
 import { CivilianStore } from './CivilianStore.js';
-import { VillaWallModel } from './VillaWallModel.js';
 import { ALL_SCENES } from '../scenes/index.js';
 import type { ScenarioKind } from './types.js';
 
@@ -40,7 +39,6 @@ export class BattleTestHarness {
   private spawnSystem: SpawnSystem | null = null;
   private readonly stats = new CombatStats();
   private readonly civilians = new CivilianStore();
-  private villaWalls: VillaWallModel | null = null;
   private scenarioKind: ScenarioKind = 'legacy';
 
   public constructor(
@@ -65,26 +63,28 @@ export class BattleTestHarness {
     this.deploymentTick = 0;
     // Load level config; battle time stays at zero until deployment ends.
     this.waveManager = this.createWaveScheduler(levelId);
-    this.scenarioKind = levelId === 'LV03_villa_rescue' ? 'villa_rescue' : 'legacy';
-    this.civilians.clear(); this.villaWalls = this.scenarioKind === 'villa_rescue' ? new VillaWallModel() : null;
+    const villaScene = ALL_SCENES.find(scene => scene.levelId === levelId);
+    this.scenarioKind = villaScene?.scenarioKind ?? 'legacy';
+    this.civilians.clear();
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
     if (this.scenarioKind === 'villa_rescue') {
-      this.spawnSystem.configureContinuous({ totalTarget: 240, interval_s: 1.2, initialInterval_s: 1.2, minInterval_s: 0.45, rampDuration_s: 120, batchSize: 2, spawnPoints: ['north', 'east', 'south', 'west'], distribution: { north: .25, east: .25, south: .25, west: .25 } });
+      const continuous = villaScene!.level.continuousSpawn!;
+      this.spawnSystem.configureContinuous({ ...continuous, interval_s: continuous.initialInterval_s,
+        continuousEventsOnly: true, distribution: { north: .25, east: .25, south: .25, west: .25 } });
     } else if (this.waveManager.getMapId() === 'LV02_building_courtyard') {
       this.spawnSystem.configureContinuous({ totalTarget: 720, interval_s: 0.35, batchSize: 10, spawnPoints: ['north', 'south', 'east', 'west'], distribution: { north: .3, south: .3, east: .2, west: .2 }, specialRatios: { gut_zombie: .05 } });
     }
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.stats.reset();
-    this.combat = new CombatSystem(this.units, this.mapModel, this.stats);
+    this.combat = new CombatSystem(this.units, this.mapModel, this.stats, this.scenarioKind === 'villa_rescue' ? this.civilians : undefined);
     this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const villaScene = ALL_SCENES.find(scene => scene.levelId === levelId);
     const humanTypes = this.scenarioKind === 'villa_rescue' ? (villaScene?.level.initialSoldiers ?? ['rifleman','rifleman','rifleman','rifleman','flamethrower','flamethrower','shield']) : this.humanSpawnTypes(this.initialHumanCount);
     // Deploy one squad around the middle route instead of splitting it across lanes.
     const routeId = routes[Math.floor(routes.length / 2)];
@@ -95,7 +95,7 @@ export class BattleTestHarness {
     if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
       throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
     }
-    const positions = this.scenarioKind === 'villa_rescue' ? [{x:540,y:1400},{x:405,y:1170},{x:675,y:1170},{x:450,y:970},{x:630,y:970},{x:420,y:1420},{x:660,y:1420}] : formationPositions(this.initialHumanCount, route.defend, this.mapModel);
+    const positions = this.scenarioKind === 'villa_rescue' ? villaScene!.level.soldierPositions! : formationPositions(this.initialHumanCount, route.defend, this.mapModel);
     for (let index = 0; index < positions.length; index++) {
       const position = positions[index];
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
@@ -108,6 +108,7 @@ export class BattleTestHarness {
       this.runWaves();
     }
     this.started = true;
+    if (this.scenarioKind === 'villa_rescue') this.resolveFrame();
   }
 
   private humanSpawnTypes(count: number): HumanUnitType[] {
@@ -184,6 +185,8 @@ export class BattleTestHarness {
     return cloneData(this.units.all());
   }
 
+  public getCivilians() { return cloneData(this.civilians.all()); }
+
   public getSnapshot(): BattleSnapshot {
     return {
       ...this.snapshot,
@@ -194,7 +197,7 @@ export class BattleTestHarness {
       civilianTransformed: this.civilians.all().some(c => c.state === 'transformed'),
       civilianCount: this.civilians.all().length,
       scenarioKind: this.scenarioKind,
-      walls: this.villaWalls?.snapshots(),
+      walls: this.scenarioKind === 'villa_rescue' ? this.mapModel?.getWallStates() : undefined,
     };
   }
 
@@ -205,9 +208,10 @@ export class BattleTestHarness {
 
   public getWaveCount(): number { return this.spawnSystem?.isContinuous() ? 0 : (this.waveManager?.getWaveCount() ?? 0); }
 
-  public getInitialHumans(): number { return this.initialHumanCount; }
+  public getInitialHumans(): number { return this.scenarioKind === 'villa_rescue' ? 7 : this.initialHumanCount; }
 
   public hitCivilian(civilianId: string, sourceId = 'zombie', amount = 1): void {
+    if (!this.started || this.snapshot.result !== 'running') return;
     this.events.push(...this.civilians.hit(civilianId, sourceId, amount, this.battleTime_s));
   }
 
@@ -238,8 +242,8 @@ export class BattleTestHarness {
   }
 
   private allZombieBatchesSpawned(): boolean {
-    return this.spawnSystem?.isGenerationComplete() === true ||
-      (this.waveManager?.allWavesSpawned() === true && !this.spawnSystem?.hasPending());
+    if (this.spawnSystem?.isContinuous()) return this.spawnSystem.isGenerationComplete();
+    return this.waveManager?.allWavesSpawned() === true && !this.spawnSystem?.hasPending();
   }
 
   private resolveFrame(): void {

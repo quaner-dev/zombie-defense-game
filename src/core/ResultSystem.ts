@@ -19,7 +19,8 @@ export class ResultSystem {
     if (context?.scenarioKind === 'villa_rescue') {
       const civilians = context.civilians;
       if (civilians?.all().some(c => c.state === 'transformed')) this.result = 'lose';
-      else if (allWavesSpawned && !living.some(unit => unit.faction === 'zombie') && civilians && civilians.living().length === civilians.all().length) this.result = 'win';
+      else if (allWavesSpawned && !living.some(unit => unit.faction === 'zombie') && civilians &&
+        civilians.all().length === 6 && civilians.all().every(c => c.state === 'idle')) this.result = 'win';
     } else if (!living.some(unit => unit.faction === 'human')) this.result = 'lose';
     else if (allWavesSpawned && !living.some(unit => unit.faction === 'zombie')) this.result = 'win';
     if (this.result === 'running') return [];

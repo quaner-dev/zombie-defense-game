@@ -21,7 +21,7 @@ export class UnitStore {
       routeId, targetId: null, moveTarget: null,
       attackElapsed_s: 0, breached: false, spawnPointId, climbingWallId: null,
       climbTarget: null, stackLevel: 0, weaponHeat: 0, weaponCooldown_s: 0,
-      stateElapsed_s: 0, facing: { x: 0, y: -1 }, storedGutUnitIds: [],
+      stateElapsed_s: 0, flameLength_px: 0, facing: { x: 0, y: -1 }, storedGutUnitIds: [],
       storedInGutById: null, suicideTriggerId: null, active: true,
     };
     const unit = Object.assign(this.pool.pop() ?? {}, fresh) as Unit;
@@ -57,6 +57,7 @@ export class UnitStore {
     unit.weaponHeat = 0;
     unit.weaponCooldown_s = 0;
     unit.stateElapsed_s = 0;
+    unit.flameLength_px = 0;
     unit.facing = { x: 0, y: -1 };
     unit.storedGutUnitIds = [];
     unit.storedInGutById = null;
@@ -76,6 +77,7 @@ export class UnitStore {
     unit.climbTarget = null;
     unit.stackLevel = 0;
     unit.stateElapsed_s = 0;
+    unit.flameLength_px = 0;
     unit.weaponCooldown_s = 0;
     unit.storedGutUnitIds = [];
     unit.storedInGutById = null;

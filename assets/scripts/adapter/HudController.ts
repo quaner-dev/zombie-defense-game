@@ -50,9 +50,9 @@ export class HudController {
     this.menuTitle=this.label('MenuTitle',0,0,960,180,64);
     this.menuHint=this.label('MenuHint',0,0,920,200,30);
     const story=this.label('StoryMode',0,0,800,210,38);
-    story.string='故事模式\n从小屋突围，前往大楼楼下\n按顺序挑战 · 每个场景 3 波';
+    story.string='故事模式\n从小屋突围，前往别墅解救平民\n按顺序挑战作战场景';
     const practice=this.label('PracticeMode',0,0,800,210,38);
-    practice.string='场景演练\n自由选择小屋或大楼楼下\n独立挑战 · 每个场景 3 波';
+    practice.string='场景演练\n自由选择作战地点\n别墅解救 · 保护六名蓝色平民';
     this.modeLabels=[story,practice];
     this.modeBoxes=[
       {id:'mode.story',x:0,y:0,width:860,height:240,action:action('mode.story',()=>session.startStory())},
@@ -61,7 +61,7 @@ export class HudController {
     this.sceneBoxes=SCENES.map(scene=>({id:`scene.${scene.id}`,x:0,y:0,width:860,height:300,action:action(`scene.${scene.id}`,()=>session.startScene(scene.id))}));
     this.sceneLabels=SCENES.map(scene=>{
       const label=this.label(`Scene-${scene.id}`,0,0,620,260,34);
-      label.string=`${scene.subtitle}\n${scene.title} · ${scene.level.waves.length} 波\n${scene.objective}`;
+      label.string=scene.scenarioKind==='villa_rescue'?`${scene.subtitle}\n${scene.title} · 中央 6 名蓝色平民\n破门破窗防守 · 连续生成`:`${scene.subtitle}\n${scene.title}\n${scene.objective}`;
       return label;
     });
     const back=this.label('BackToModes',0,0,320,100,34);back.string='返回模式选择';this.sceneLabels.push(back);
@@ -98,7 +98,7 @@ export class HudController {
     Object.assign(this.battleBoxes[3],{x:cx-350,y:cy-360});this.next.node.setPosition(cx,cy-310);
     const scale=this.menuScale=Math.min(1,safe.width/1040,safe.height/1800);
     this.menuTitle.node.setPosition(cx,cy+620*scale);this.menuTitle.node.setScale(scale,scale,1);
-    this.menuHint.node.setPosition(cx,cy-610*scale);this.menuHint.node.setScale(scale,scale,1);
+    this.menuHint.node.setPosition(cx,cy-740*scale);this.menuHint.node.setScale(scale,scale,1);
     for(let i=0;i<this.modeBoxes.length;i++){
       const box=this.modeBoxes[i];
       Object.assign(box,{x:cx-430*scale,y:cy+(i===0?120:-220)*scale,width:860*scale,height:240*scale});
@@ -106,11 +106,11 @@ export class HudController {
     }
     for(let i=0;i<SCENES.length;i++){
       const box=this.sceneBoxes[i];
-      Object.assign(box,{x:cx-430*scale,y:cy+(240-i*360)*scale-150*scale,width:860*scale,height:300*scale});
+      Object.assign(box,{x:cx-430*scale,y:cy+(340-i*320)*scale-150*scale,width:860*scale,height:300*scale});
       this.sceneLabels[i].node.setPosition(cx+90*scale,box.y+box.height/2);this.sceneLabels[i].node.setScale(scale,scale,1);
     }
     const back=this.sceneBoxes[this.sceneBoxes.length-1];
-    Object.assign(back,{x:cx-160*scale,y:cy-450*scale,width:320*scale,height:100*scale});
+    Object.assign(back,{x:cx-160*scale,y:cy-580*scale,width:320*scale,height:100*scale});
     this.sceneLabels[this.sceneLabels.length-1].node.setPosition(cx,back.y+back.height/2);
     this.sceneLabels[this.sceneLabels.length-1].node.setScale(scale,scale,1);
   }
@@ -154,7 +154,7 @@ export class HudController {
     if(!inBattle){
       this.waveBanner.node.active=false;this.backdrop(255);this.buttons();
       this.menuTitle.string=this.session.screen==='menu'?'四向僵尸防守\n选择出发方式':'场景演练\n选择作战地点';
-      this.menuHint.string=this.session.screen==='menu'?'每个场景抵御 3 波尸潮\n按住士兵并拖动，利用墙体调整阵地':'选择任一场景开始独立挑战\n故事模式从小屋开始，通关后进入大楼楼下';
+      this.menuHint.string=this.session.screen==='menu'?'按住士兵并拖动，利用建筑调整阵地\n别墅解救需要保护中央六名平民':'选择任一场景开始独立挑战\n故事模式按顺序解锁作战地点';
       if(this.session.screen==='scenes')for(let i=0;i<SCENES.length;i++)this.thumbnail(SCENES[i],this.sceneBoxes[i]);
       return;
     }
@@ -171,7 +171,14 @@ export class HudController {
     this.buttons();this.next.node.active=this.session.canAdvance;
     this.next.string=`进入${this.session.nextScene?.subtitle.split(' · ')[1]??'下一场景'}`;
     const mode=this.session.mode==='story'?'故事':'演练';
-    this.status.string=`${mode} · ${this.session.activeScene.title} · ${this.session.initialHumans} 名守军 / ${this.session.waveCount} 波\n人类 ${s.aliveHumans}  ·  僵尸 ${s.aliveZombies}\n第 ${s.waveIndex}/${this.session.waveCount} 波   ${s.time_s.toFixed(1)} 秒`;
+    const rescue=s.scenarioKind==='villa_rescue';
+    if(rescue){
+      const sideNames={north:'北窗',east:'东窗',south:'南侧',west:'西窗'};
+      const walls=(s.walls??[]).map(w=>`${sideNames[w.side]}${w.status==='breached'?'已破':w.status==='damaged'?'受损':'完整'}`).join(' · ');
+      this.status.string=`${mode} · ${this.session.activeScene.title} · 平民：${s.civiliansRemaining}/${s.civilianCount}${s.civiliansTransforming?' · 变身中':''}\n${walls}\n僵尸 ${s.aliveZombies} · 已生成 ${s.spawnedZombies}/240 · 右下角大门`;
+    }else if(this.session.waveCount===0){
+      this.status.string=`${mode} · ${this.session.activeScene.title} · 持续防守\n人类 ${s.aliveHumans} · 僵尸 ${s.aliveZombies}\n已生成 ${s.spawnedZombies} · ${s.time_s.toFixed(1)} 秒`;
+    }else this.status.string=`${mode} · ${this.session.activeScene.title} · ${this.session.initialHumans} 名守军 / ${this.session.waveCount} 波\n人类 ${s.aliveHumans}  ·  僵尸 ${s.aliveZombies}\n第 ${s.waveIndex}/${this.session.waveCount} 波   ${s.time_s.toFixed(1)} 秒`;
     this.pause.string=this.session.paused?'继续':'暂停';
     const victory=s.result==='win';
     const endTitle=victory?(this.session.mode==='story'&&!this.session.nextScene?'故事通关':'场景胜利'):'失败';
@@ -180,6 +187,7 @@ export class HudController {
     const statNames:any={rifleman:'步枪兵',flamethrower:'喷火兵',shield:'盾兵',sniper:'狙击兵',engineer:'工兵机枪'};
     const statsText=s.result!=='running'&&s.stats?.byUnitType?Object.values(s.stats.byUnitType).map((v:any)=>`${statNames[v.unitType]}  击杀 ${v.kills}  伤害 ${Math.round(v.damage)}`).join('\\n'):'';
     this.result.string=s.result!=='running'?`${endTitle}\n${this.session.activeScene.title} · ${s.time_s.toFixed(1)} 秒\n存活 ${s.aliveHumans} 人 · 剩余僵尸 ${s.aliveZombies} 只\n${statsText}\n${endHint}`:this.session.paused?'已暂停':this.session.deploymentRemaining>0?`${this.session.activeScene.title}\n布阵 ${Math.ceil(this.session.deploymentRemaining)}\n拖动兵群调整位置`:'';
+    if(rescue)this.result.string=s.result!=='running'?`${victory?'6 名平民成功获救':'平民被感染，解救失败'}\n平民：${s.civiliansRemaining}/${s.civilianCount}\n点击“重新开始”再次挑战`:this.session.paused?'已暂停':'';
     if(this.result.string){
       const p=this.result.node.position;g.fillColor=color('#0B0B0F',220);g.roundRect(p.x-500,p.y-280,1000,560,20);g.fill();
     }

@@ -5,7 +5,8 @@
     "diameter_px": 28,
     "damagePerHit": 30,
     "attack_interval_s": 0.35,
-    "attack_range_px": 260
+    "attack_range_px": 460,
+    "projectile_max_flight_time_s": 0.55
   },
   "flamethrower": {
     "hitPoints": 110,
@@ -13,7 +14,7 @@
     "diameter_px": 30,
     "damagePerHit": 14,
     "attack_interval_s": 0.45,
-    "attack_range_px": 110,
+    "attack_range_px": 220,
     "area_radius_px": 42,
     "projectile_speed_px_per_s": 520,
     "projectile_max_flight_time_s": 0.45,
@@ -93,7 +94,7 @@
     "damagePerHit": 8,
     "attack_interval_s": 0.55,
     "attack_range_px": 30,
-    "infectsSoldiers": true
+    "infectsSoldiers": false
   },
   "gut_zombie": {
     "hitPoints": 300,

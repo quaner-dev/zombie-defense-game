@@ -2,8 +2,8 @@
   "id": "villa-rescue",
   "title": "别墅解救",
   "subtitle": "第三幕 · 保护平民",
-  "briefing": "保护别墅内的六名平民，抵御从四面外墙接近的僵尸。",
-  "objective": "保护六名平民直到持续生成结束",
+  "briefing": "六名蓝色平民固定留在中央，士兵已环绕就位。僵尸从地图边缘接近，破坏窗户和右下角大门后进入别墅。",
+  "objective": "保护中央六名蓝色平民，消灭全部持续生成的僵尸",
   "mapId": "LV03_villa_rescue",
   "levelId": "LV03_villa_rescue",
   "scenarioKind": "villa_rescue",
@@ -21,8 +21,8 @@
     "defense_line_y": 1200,
     "unit_selection_radius": 112,
     "spawn_layout": {
-      "columns": 4,
-      "spacing_px": 42
+      "columns": 20,
+      "spacing_px": 44
     },
     "routes": [
       {
@@ -54,80 +54,226 @@
         "x": 540,
         "y": 180,
         "side": "north",
-        "width": 900
+        "width": 900,
+        "spawnArea": {
+          "left": 92,
+          "top": 204,
+          "right": 988,
+          "bottom": 228
+        }
       },
       {
         "id": "south",
         "x": 540,
         "y": 2160,
         "side": "south",
-        "width": 900
+        "width": 900,
+        "spawnArea": {
+          "left": 92,
+          "top": 2112,
+          "right": 988,
+          "bottom": 2136
+        }
       },
       {
         "id": "east",
         "x": 1020,
         "y": 1170,
         "side": "east",
-        "width": 1800
+        "width": 1800,
+        "spawnArea": {
+          "left": 972,
+          "top": 260,
+          "right": 996,
+          "bottom": 2080
+        }
       },
       {
         "id": "west",
         "x": 60,
         "y": 1170,
         "side": "west",
-        "width": 1800
+        "width": 1800,
+        "spawnArea": {
+          "left": 84,
+          "top": 260,
+          "right": 108,
+          "bottom": 2080
+        }
       }
     ],
     "terrain": [
       {
-        "id": "villa-wall-north",
-        "kind": "villa_wall",
+        "id": "villa-wall-north-left",
+        "kind": "wall",
         "bounds": {
-          "left": 100,
-          "top": 400,
-          "right": 980,
-          "bottom": 424
+          "left": 220,
+          "top": 760,
+          "right": 476,
+          "bottom": 784
         },
-        "blocksMovement": true,
-        "maxHp": 1800
+        "blocksMovement": true
       },
       {
-        "id": "villa-wall-east",
-        "kind": "villa_wall",
+        "id": "villa-window-north",
+        "kind": "window",
         "bounds": {
-          "left": 956,
-          "top": 400,
-          "right": 980,
-          "bottom": 2024
+          "left": 476,
+          "top": 760,
+          "right": 604,
+          "bottom": 784
         },
         "blocksMovement": true,
-        "maxHp": 1800
+        "maxHp": 180,
+        "side": "north"
       },
       {
-        "id": "villa-wall-south",
-        "kind": "villa_wall",
+        "id": "villa-wall-north-right",
+        "kind": "wall",
         "bounds": {
-          "left": 100,
-          "top": 2000,
-          "right": 980,
-          "bottom": 2024
+          "left": 604,
+          "top": 760,
+          "right": 860,
+          "bottom": 784
         },
-        "blocksMovement": true,
-        "maxHp": 1800
+        "blocksMovement": true
       },
       {
-        "id": "villa-wall-west",
-        "kind": "villa_wall",
+        "id": "villa-wall-west-top",
+        "kind": "wall",
         "bounds": {
-          "left": 100,
-          "top": 400,
-          "right": 124,
-          "bottom": 2024
+          "left": 220,
+          "top": 784,
+          "right": 244,
+          "bottom": 1106
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "villa-window-west",
+        "kind": "window",
+        "bounds": {
+          "left": 220,
+          "top": 1106,
+          "right": 244,
+          "bottom": 1234
         },
         "blocksMovement": true,
-        "maxHp": 1800
+        "maxHp": 180,
+        "side": "west"
+      },
+      {
+        "id": "villa-wall-west-bottom",
+        "kind": "wall",
+        "bounds": {
+          "left": 220,
+          "top": 1234,
+          "right": 244,
+          "bottom": 1600
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "villa-wall-east-top",
+        "kind": "wall",
+        "bounds": {
+          "left": 836,
+          "top": 784,
+          "right": 860,
+          "bottom": 1106
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "villa-window-east",
+        "kind": "window",
+        "bounds": {
+          "left": 836,
+          "top": 1106,
+          "right": 860,
+          "bottom": 1234
+        },
+        "blocksMovement": true,
+        "maxHp": 180,
+        "side": "east"
+      },
+      {
+        "id": "villa-wall-east-bottom",
+        "kind": "wall",
+        "bounds": {
+          "left": 836,
+          "top": 1234,
+          "right": 860,
+          "bottom": 1600
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "villa-wall-south-left",
+        "kind": "wall",
+        "bounds": {
+          "left": 244,
+          "top": 1576,
+          "right": 396,
+          "bottom": 1600
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "villa-window-south",
+        "kind": "window",
+        "bounds": {
+          "left": 396,
+          "top": 1576,
+          "right": 524,
+          "bottom": 1600
+        },
+        "blocksMovement": true,
+        "maxHp": 180,
+        "side": "south"
+      },
+      {
+        "id": "villa-wall-south-middle",
+        "kind": "wall",
+        "bounds": {
+          "left": 524,
+          "top": 1576,
+          "right": 656,
+          "bottom": 1600
+        },
+        "blocksMovement": true
+      },
+      {
+        "id": "villa-door-southeast",
+        "kind": "door",
+        "bounds": {
+          "left": 656,
+          "top": 1576,
+          "right": 796,
+          "bottom": 1600
+        },
+        "blocksMovement": true,
+        "maxHp": 360,
+        "side": "south"
+      },
+      {
+        "id": "villa-wall-south-right",
+        "kind": "wall",
+        "bounds": {
+          "left": 796,
+          "top": 1576,
+          "right": 836,
+          "bottom": 1600
+        },
+        "blocksMovement": true
       }
-    ]
+    ],
+    "interior_bounds": {
+      "left": 244,
+      "top": 784,
+      "right": 836,
+      "bottom": 1576
+    }
   },
   "level": {
     "mapId": "LV03_villa_rescue",
@@ -191,12 +337,53 @@
           "y": 1125
         }
       }
+    ],
+    "soldierPositions": [
+      {
+        "x": 450,
+        "y": 970
+      },
+      {
+        "x": 630,
+        "y": 970
+      },
+      {
+        "x": 420,
+        "y": 1420
+      },
+      {
+        "x": 660,
+        "y": 1420
+      },
+      {
+        "x": 405,
+        "y": 1170
+      },
+      {
+        "x": 675,
+        "y": 1170
+      },
+      {
+        "x": 540,
+        "y": 1400
+      }
     ]
   },
   "presentation": {
-    "floorColor": "#4a514f",
-    "wallColor": "#8b9088",
-    "wallOutlineColor": "#c7c8be",
-    "decorations": []
+    "floorColor": "#202D29",
+    "wallColor": "#828D80",
+    "wallOutlineColor": "#C1C9B4",
+    "decorations": [
+      {
+        "kind": "floor",
+        "color": "#3F4C42",
+        "bounds": {
+          "left": 244,
+          "top": 784,
+          "right": 836,
+          "bottom": 1576
+        }
+      }
+    ]
   }
 }

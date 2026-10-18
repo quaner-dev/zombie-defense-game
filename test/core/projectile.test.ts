@@ -34,20 +34,20 @@ test('projectile flies at 900px/s to captured target point before authoritative 
   assert.deepEqual(projectiles.update(1, 1.2), []);
 });
 
-test('maximum flight time is 0.35s and resolves exactly once even short of target point', () => {
+test('rifle maximum flight time is 0.55s and resolves exactly once even short of target point', () => {
   const { projectiles, human, zombie } = setup(900);
   projectiles.spawn(human, zombie, 0);
-  projectiles.update(0.349, 0.349);
+  projectiles.update(0.549, 0.549);
   assert.equal(zombie.hp, 60);
-  const events = projectiles.update(0.001, 0.35);
+  const events = projectiles.update(0.001, 0.55);
   assert.equal(zombie.hp, 30);
   assert.equal(events.filter(e => e.type === 'projectile_hit').length, 1);
   assert.equal(events.filter(e => e.type === 'projectile_expired').length, 1);
-  assert.deepEqual(projectiles.update(10, 10.35), []);
+  assert.deepEqual(projectiles.update(10, 10.55), []);
 });
 
 for (const { distance, terminalX, terminalTime } of [
-  { distance: 900, terminalX: 855, terminalTime: 2.35 },
+  { distance: 900, terminalX: 1035, terminalTime: 2.55 },
   { distance: 180, terminalX: 720, terminalTime: 2.2 },
 ]) {
   test(`large updates stop flight at the earlier arrival/lifetime boundary for ${distance}px shots`, () => {

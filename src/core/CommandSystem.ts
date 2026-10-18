@@ -64,16 +64,22 @@ export class CommandSystem {
     const positions = formationPositions(selected.length, target, this.map, unitConfig.movement.arrival_spacing_px)
       .map((point, index) => this.map.walkablePoint(point, selected[index].radius_px ?? 7));
     selected.forEach((unit, i) => {
+      // Replacing a command during a transition changes only its destination.
+      if ((unit.unitType === 'engineer' && unit.state === 'Dismantling') ||
+          (unit.unitType === 'flamethrower' && unit.state === 'RetractingFlame')) {
+        unit.moveTarget = positions[i]; return;
+      }
       if (unit.unitType === 'engineer' && (unit.state === 'Deployed' || unit.state === 'Cooling' || unit.state === 'Overheated')) {
         unit.moveTarget = positions[i];
         if (unit.state === 'Deployed' || unit.state === 'Cooling') { unit.state = 'Dismantling'; unit.stateElapsed_s = 0; unit.targetId = null; }
         return;
       }
-      if (unit.unitType === 'flamethrower' && (unit.state === 'Firing' || unit.state === 'Aiming')) {
+      if (unit.unitType === 'flamethrower' && (unit.state === 'Firing' || unit.state === 'Aiming' || unit.state === 'ReleasingFlame')) {
+        const from = unit.state;
         unit.state = 'RetractingFlame'; unit.stateElapsed_s = 0; unit.targetId = null;
         unit.moveTarget = positions[i]; unit.attackElapsed_s = 0; unit.velocity = { x: 0, y: 0 };
         this.emit({ type: 'unit_state_changed', time_s,
-          data: { unitId: unit.id, from: 'Firing', to: 'RetractingFlame' } });
+          data: { unitId: unit.id, from, to: 'RetractingFlame' } });
         return;
       }
       const from = unit.state;

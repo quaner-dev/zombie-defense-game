@@ -25,7 +25,7 @@ export class MapView {
     for(let x=0;x<=width;x+=128)line(g,{x,y:0},{x,y:height});
     for(let y=0;y<=height;y+=128)line(g,{x:0,y},{x:width,y});
     for(const terrain of map.terrain){
-      if(terrain.kind!=='wall')continue;
+      if(terrain.kind!=='wall'&&terrain.kind!=='villa_wall')continue;
       const b=terrain.bounds;
       g.fillColor=color(style.wallColor);g.strokeColor=color(style.wallOutlineColor);g.lineWidth=2;
       g.rect(b.left,-b.bottom,b.right-b.left,b.bottom-b.top);g.fill();g.stroke();
@@ -44,19 +44,32 @@ export class MapView {
 
   private drawDoors():void {
     const g=this.doors;g.clear();if(!this.map)return;
-    for(const door of this.map.getDoorStates()){
+    for(const door of this.map.getEntranceStates()){
       const terrain=this.map.terrain.find(item=>item.id===door.id)!;
       const b=terrain.bounds,cx=(b.left+b.right)/2,cy=(b.top+b.bottom)/2;
+      const window=door.kind==='window',horizontal=b.right-b.left>b.bottom-b.top;
       if(door.destroyed){
-        g.strokeColor=color('#846D54',140);g.lineWidth=3;
+        g.strokeColor=color(window?'#82C8DF':'#B78D61',180);g.lineWidth=3;
         line(g,{x:b.left,y:b.top},{x:b.right+12,y:b.top+22});
         line(g,{x:b.right,y:b.bottom},{x:b.left-12,y:b.bottom-20});
         continue;
       }
-      g.fillColor=color('#95653E');g.strokeColor=color('#E4B575');g.lineWidth=3;
+      g.fillColor=color(window?'#326F8B':'#95653E');g.strokeColor=color(window?'#A8E1F2':'#E4B575');g.lineWidth=3;
       g.rect(b.left,-b.bottom,b.right-b.left,b.bottom-b.top);g.fill();g.stroke();
-      g.lineWidth=4;line(g,{x:cx,y:b.top+12},{x:cx,y:b.bottom-12});
-      g.fillColor=color('#FFE2A1');g.circle(cx+5,-cy,4);g.fill();
+      g.lineWidth=3;
+      if(horizontal)line(g,{x:cx,y:b.top},{x:cx,y:b.bottom});
+      else line(g,{x:b.left,y:cy},{x:b.right,y:cy});
+      if(window){
+        if(horizontal)line(g,{x:b.left+5,y:cy},{x:b.right-5,y:cy});
+        else line(g,{x:cx,y:b.top+5},{x:cx,y:b.bottom-5});
+      }else{
+        g.fillColor=color('#FFE2A1');g.circle(cx-8,-cy,3);g.fill();g.circle(cx+8,-cy,3);g.fill();
+      }
+      if(door.hp<door.maxHp){
+        g.strokeColor=color('#242826');g.lineWidth=2;
+        line(g,{x:cx-12,y:cy-10},{x:cx+2,y:cy+1});
+        line(g,{x:cx+2,y:cy+1},{x:cx-3,y:cy+9});
+      }
       // A separate bar stays readable even when the thin door leaf is crowded.
       g.fillColor=color('#1B1B20');g.rect(cx-40,-b.top+18,80,8);g.fill();
       g.fillColor=color(door.hp/door.maxHp>.35?'#A8CF73':'#EF7757');

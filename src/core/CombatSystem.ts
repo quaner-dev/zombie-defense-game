@@ -6,6 +6,7 @@ import type { BattleEvent, Point, Unit, UnitState, ZombieUnitType } from './type
 import { getUnitModule, getZombieModule, type AttackProfile, type ProjectileKind } from './units/index.js';
 import type { CombatStats } from './CombatStats.js';
 import type { DamageKind } from './types.js';
+import type { CivilianStore } from './CivilianStore.js';
 
 export interface Projectile {
   id: string;
@@ -39,7 +40,7 @@ export class CombatSystem {
   private zombies: Unit[] = [];
 
   public constructor(private readonly store: UnitStore, private readonly map: MapModel,
-    private readonly stats?: CombatStats) {}
+    private readonly stats?: CombatStats, private readonly civilians?: CivilianStore) {}
 
   public createProjectile(source: Unit, target: Unit, time_s: number, continuous = true): BattleEvent {
     const profile = getUnitModule(source.unitType).getAttackProfile();
@@ -72,7 +73,7 @@ export class CombatSystem {
   public applyDamage(targetId: string, amount: number, sourceId: string, time_s: number,
     damageKind: DamageKind = 'bullet', sourcePosition?: Point): BattleEvent[] {
     const target = this.store.get(targetId);
-    if (!target || !target.active || target.hp <= 0 || target.state === 'Dead' ||
+    if (!target || !target.active || target.hp <= 0 || target.state === 'Dead' || target.state === 'StoredInGut' ||
         !Number.isFinite(amount) || amount <= 0) return [];
     let adjustedAmount = amount;
     if (target.unitType === 'shield' && sourcePosition && damageKind !== 'flame' && damageKind !== 'explosion') {
@@ -139,12 +140,10 @@ export class CombatSystem {
     this.frameUnits = this.store.living();
     this.humans = this.frameUnits.filter(unit => unit.faction === 'human');
     this.zombies = this.frameUnits.filter(unit => unit.faction === 'zombie');
-    const frameStarts = new Map(this.zombies.filter(unit =>
-      !unit.climbingWallId).map(unit => [unit.id, { ...unit.position }]));
     // Generate attacks before projectile damage and final result evaluation.
     for (const unit of this.frameUnits) {
-      // Earlier melee attacks may have killed a unit in this living snapshot.
-      if (!unit.active || unit.hp <= 0 || unit.state === 'Dead') continue;
+      // Earlier actions can kill or swallow a unit in this living snapshot.
+      if (!unit.active || unit.hp <= 0 || unit.state === 'Dead' || unit.state === 'StoredInGut') continue;
       if (unit.faction === 'human') {
         if (unit.unitType === 'flamethrower') this.updateFlamethrower(unit, dt, time_s, events);
         else if (unit.unitType === 'engineer') this.updateEngineer(unit, dt, time_s, events);
@@ -152,9 +151,14 @@ export class CombatSystem {
       }
       else {
         if (unit.unitType === 'gut_zombie') this.gutBehavior(unit, dt, time_s, events);
-        if (unit.state === 'Suicidal') this.updateSuicidal(unit, dt, time_s, events);
-        if (unit.state === 'Suicidal') continue;
-        this.zombie(unit, dt, time_s, events);
+        if (unit.state === 'Suicidal') {
+          this.updateSuicidal(unit, dt, time_s, events);
+          // An explosion may kill this unit. Never let ordinary zombie AI
+          // overwrite Dead with an attack/movement state in the same frame.
+          continue;
+        }
+        if (this.civilians) this.rescueZombie(unit, dt, time_s, events);
+        else this.zombie(unit, dt, time_s, events);
         // Crossing is a one-time spatial warning, never a combat phase/gate.
         const side = unit.spawnPointId ? this.map.getSpawnPoint(unit.spawnPointId)?.side ?? null : null;
         if (!unit.breached && this.map.hasCrossedDefense(unit.position, side)) {
@@ -187,62 +191,110 @@ export class CombatSystem {
 
   private updateFlamethrower(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
     const stats = getUnitModule('flamethrower').getStats();
-    const retract = stats.retract_duration_s ?? 0.3;
-    const release = stats.release_duration_s ?? 0.25;
-    if (unit.state === 'RetractingFlame' || unit.state === 'ReleasingFlame') {
+    const range = stats.attack_range_px!;
+    const maxHeat = stats.heat_max ?? 100;
+    const lock = stats.overheat_lock_s ?? 2;
+    const rate = stats.cooling_rate_s ?? 45;
+    const threshold = stats.cooling_threshold ?? 25;
+    // Recovery is independent of movement/animation. Replacing a move command
+    // cannot cancel an overheat lock or reset a waiting progress bar.
+    this.coolWeapon(unit, dt, maxHeat, rate, threshold);
+    if (unit.state === 'RetractingFlame') {
       unit.stateElapsed_s += dt;
-      if (unit.state === 'RetractingFlame' && unit.stateElapsed_s >= retract) {
-        unit.state = 'Moving'; unit.stateElapsed_s = 0;
-      } else if (unit.state === 'ReleasingFlame' && unit.stateElapsed_s >= release) {
-        unit.state = 'Firing'; unit.stateElapsed_s = 0;
+      unit.flameLength_px = Math.max(0, unit.flameLength_px - range * dt / (stats.retract_duration_s ?? .3));
+      if (unit.stateElapsed_s + 1e-9 >= (stats.retract_duration_s ?? .3)) {
+        unit.flameLength_px = 0;
+        this.state(unit, unit.moveTarget ? 'Moving' : 'Idle', time_s, events);
+        unit.stateElapsed_s = 0;
       }
       return;
     }
-    if (unit.state === 'Overheated' || unit.state === 'Cooling') {
-      unit.stateElapsed_s += dt;
-      if (unit.state === 'Overheated' && unit.stateElapsed_s >= (stats.overheat_lock_s ?? 2)) {
-        unit.state = 'Cooling'; unit.stateElapsed_s = 0;
-      } else if (unit.state === 'Cooling') {
-        unit.weaponHeat = Math.max(0, unit.weaponHeat - (stats.cooling_rate_s ?? 45) * dt);
-        if (unit.weaponHeat <= (stats.cooling_threshold ?? 25)) { unit.state = 'Idle'; unit.stateElapsed_s = 0; }
-      }
+    if (unit.state === 'Moving') { unit.flameLength_px = 0; unit.targetId = null; return; }
+    if (unit.weaponCooldown_s > 0) {
+      unit.flameLength_px = 0;
+      unit.targetId = null;
+      this.state(unit, unit.weaponCooldown_s > (maxHeat - threshold) / rate + 1e-9 ? 'Overheated' : 'Cooling', time_s, events);
       return;
     }
     const target = this.humanTarget(unit, getUnitModule('flamethrower').getAttackProfile());
-    if (!target) { unit.targetId = null; if (unit.state !== 'Moving') unit.state = 'Idle'; return; }
+    if (!target) {
+      unit.targetId = null; unit.attackElapsed_s = 0;
+      this.state(unit, unit.flameLength_px > 0 ? 'RetractingFlame' : 'Idle', time_s, events);
+      unit.stateElapsed_s = 0;
+      return;
+    }
     unit.targetId = target.id;
     unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
-    if (unit.state === 'Moving') return;
-    unit.attackElapsed_s += dt;
-    if (unit.attackElapsed_s >= (stats.damage_tick_interval_s ?? 0.15)) {
-      unit.attackElapsed_s = 0;
-      unit.weaponHeat += stats.heat_per_tick ?? 8;
-      if (unit.weaponHeat >= (stats.heat_max ?? 100)) { unit.state = 'Overheated'; unit.stateElapsed_s = 0; return; }
-      unit.state = 'Firing';
-      events.push(this.createProjectile(unit, target, time_s));
+    if (unit.state !== 'Firing' && unit.state !== 'ReleasingFlame') {
+      this.state(unit, 'ReleasingFlame', time_s, events);
+      unit.stateElapsed_s = 0; unit.attackElapsed_s = 0; unit.flameLength_px = 0;
+      return;
     }
+    if (unit.state === 'ReleasingFlame') {
+      unit.stateElapsed_s += dt;
+      unit.flameLength_px = range * Math.min(1, unit.stateElapsed_s / (stats.release_duration_s ?? .25));
+      if (unit.stateElapsed_s + 1e-9 >= (stats.release_duration_s ?? .25)) {
+        this.state(unit, 'Firing', time_s, events); unit.stateElapsed_s = 0;
+      }
+      return;
+    }
+    unit.flameLength_px = range;
+    unit.attackElapsed_s += dt;
+    const tick = stats.damage_tick_interval_s ?? .15;
+    if (unit.attackElapsed_s + 1e-9 < tick) return;
+    unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - tick);
+    const length = Math.hypot(unit.facing.x, unit.facing.y);
+    const dx = length > 1e-9 ? unit.facing.x / length : 0;
+    const dy = length > 1e-9 ? unit.facing.y / length : -1;
+    // One anchored cone, one damage application per target per tick. There are
+    // no travelling fire shells or overlapping lingering damage projectiles.
+    for (const candidate of this.zombies) {
+      if (!candidate.active || candidate.hp <= 0 || candidate.state === 'Dead' || candidate.state === 'StoredInGut') continue;
+      const x = candidate.position.x - unit.position.x, y = candidate.position.y - unit.position.y;
+      const along = x * dx + y * dy;
+      const across = Math.abs(x * dy - y * dx);
+      if (along < 0 || along > range || across > (stats.area_radius_px ?? 42) * along / range) continue;
+      if (this.map.firstBlockingTerrain(unit.position, candidate.position)) continue;
+      events.push(...this.applyDamage(candidate.id, stats.damagePerHit!, unit.id, time_s, 'flame', unit.position));
+    }
+    unit.weaponHeat = Math.min(maxHeat, unit.weaponHeat + (stats.heat_per_tick ?? 8));
+    if (unit.weaponHeat >= maxHeat) {
+      unit.weaponCooldown_s = lock + (maxHeat - threshold) / rate;
+      unit.flameLength_px = 0; unit.stateElapsed_s = 0;
+      this.state(unit, 'Overheated', time_s, events);
+    }
+  }
+
+  private coolWeapon(unit: Unit, dt: number, maxHeat: number, rate: number, threshold: number): void {
+    if (unit.weaponCooldown_s <= 0) return;
+    const previous = unit.weaponCooldown_s;
+    unit.weaponCooldown_s = Math.max(0, previous - dt);
+    if (unit.weaponCooldown_s < 1e-9) unit.weaponCooldown_s = 0;
+    const coolingDuration = (maxHeat - threshold) / rate;
+    const cooledFor = Math.min(previous, coolingDuration) - Math.min(unit.weaponCooldown_s, coolingDuration);
+    unit.weaponHeat = unit.weaponCooldown_s === 0 ? threshold : Math.max(threshold, unit.weaponHeat - cooledFor * rate);
   }
 
   private updateEngineer(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
     const stats = getUnitModule('engineer').getStats();
-      if (unit.state === 'Deploying' || unit.state === 'Dismantling') {
+    this.coolWeapon(unit, dt, stats.gun_heat_max ?? 100, stats.gun_cooling_rate_s ?? 45, stats.gun_cooling_threshold ?? 25);
+    if (unit.state === 'Deploying' || unit.state === 'Dismantling') {
       unit.stateElapsed_s += dt;
       const duration = unit.state === 'Deploying' ? (stats.deploy_duration_s ?? 2) : (stats.dismantle_duration_s ?? 1.5);
-      if (unit.stateElapsed_s >= duration) {
+      if (unit.stateElapsed_s + 1e-9 >= duration) {
         if (unit.state === 'Deploying') unit.state = 'Deployed';
         else unit.state = unit.moveTarget ? 'Moving' : 'Idle';
         unit.stateElapsed_s = 0; unit.targetId = null;
       }
       return;
     }
-    if (unit.state === 'Overheated' || unit.state === 'Cooling') {
-      unit.stateElapsed_s += dt;
-      if (unit.state === 'Overheated' && unit.stateElapsed_s >= (stats.gun_overheat_lock_s ?? 2.5)) { unit.state = 'Cooling'; unit.stateElapsed_s = 0; }
-      else if (unit.state === 'Cooling') {
-        unit.weaponHeat = Math.max(0, unit.weaponHeat - (stats.gun_cooling_rate_s ?? 45) * dt);
-        if (unit.weaponHeat <= (stats.gun_cooling_threshold ?? 25)) {
-          unit.state = unit.moveTarget ? 'Dismantling' : 'Deployed'; unit.stateElapsed_s = 0;
-        }
+    if (unit.state === 'Overheated' || unit.state === 'Cooling' || (unit.state === 'Deployed' && unit.weaponCooldown_s > 0)) {
+      if (unit.weaponCooldown_s <= 0) {
+        this.state(unit, unit.moveTarget ? 'Dismantling' : 'Deployed', time_s, events);
+        unit.stateElapsed_s = 0;
+      } else {
+        const coolingDuration = ((stats.gun_heat_max ?? 100) - (stats.gun_cooling_threshold ?? 25)) / (stats.gun_cooling_rate_s ?? 45);
+        this.state(unit, unit.weaponCooldown_s > coolingDuration + 1e-9 ? 'Overheated' : 'Cooling', time_s, events);
       }
       return;
     }
@@ -250,14 +302,20 @@ export class CombatSystem {
     const target = this.humanTarget(unit, { damage: stats.gun_damage ?? 4, interval_s: 1 / (stats.gun_rate_per_s ?? 10), range_px: stats.gun_range_px ?? 300, projectileKind: 'machine_gun', splashRadius_px: 0 });
     unit.targetId = target?.id ?? null;
     if (!target) return;
+    unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
     unit.stateElapsed_s += dt;
     unit.attackElapsed_s += dt;
     if (unit.stateElapsed_s < (stats.target_refresh_s ?? 0.15) && unit.attackElapsed_s < 1 / (stats.gun_rate_per_s ?? 10)) return;
     unit.stateElapsed_s = 0;
     if (unit.attackElapsed_s >= 1 / (stats.gun_rate_per_s ?? 10)) {
-      unit.attackElapsed_s = 0; unit.weaponHeat += stats.gun_heat_per_shot ?? 3.3;
-      if (unit.weaponHeat >= (stats.gun_heat_max ?? 100)) { unit.state = 'Overheated'; unit.stateElapsed_s = 0; return; }
+      unit.attackElapsed_s = 0;
       events.push(this.createProjectile(unit, target, time_s));
+      unit.weaponHeat = Math.min(stats.gun_heat_max ?? 100, unit.weaponHeat + (stats.gun_heat_per_shot ?? 3.3));
+      if (unit.weaponHeat >= (stats.gun_heat_max ?? 100)) {
+        unit.weaponCooldown_s = (stats.gun_overheat_lock_s ?? 2.5) +
+          ((stats.gun_heat_max ?? 100) - (stats.gun_cooling_threshold ?? 25)) / (stats.gun_cooling_rate_s ?? 45);
+        this.state(unit, 'Overheated', time_s, events); unit.stateElapsed_s = 0;
+      }
     }
   }
 
@@ -265,7 +323,8 @@ export class CombatSystem {
     if (unit.state === 'StoredInGut' || unit.state === 'Suicidal') return;
     unit.weaponCooldown_s = Math.max(0, unit.weaponCooldown_s - dt);
     const candidates = this.zombies.filter(candidate => candidate.id !== unit.id && candidate.unitType === 'normal_zombie' &&
-      candidate.state !== 'Dead' && candidate.state !== 'StoredInGut' && !candidate.storedInGutById &&
+      candidate.active && candidate.hp > 0 && candidate.state !== 'Dead' && candidate.state !== 'StoredInGut' &&
+      candidate.state !== 'Suicidal' && !candidate.climbingWallId && !candidate.storedInGutById &&
       Math.hypot(candidate.position.x - unit.position.x, candidate.position.y - unit.position.y) <= 180)
       .sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1));
     while (unit.storedGutUnitIds.length < 5 && candidates.length) {
@@ -280,8 +339,8 @@ export class CombatSystem {
     let nearest: Unit | undefined;
     let bestDistance = range * range;
     for (const target of faction === 'human' ? this.humans : this.zombies) {
-      // Death and infection can change these references earlier in this frame.
-      if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === 'Dead') continue;
+      // Earlier actions can change these references within this frame.
+      if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === 'Dead' || target.state === 'StoredInGut') continue;
       const distance = (target.position.x - unit.position.x) ** 2 + (target.position.y - unit.position.y) ** 2;
       if (distance > bestDistance || (distance === bestDistance && nearest && target.id >= nearest.id)) continue;
       // Doors stop bodies, but a closed door still has a firing slit/vision
@@ -295,9 +354,9 @@ export class CombatSystem {
 
   private humanTarget(unit: Unit, profile: AttackProfile | null): Unit | undefined {
     if (!profile) return undefined;
-    const candidates = this.zombies.filter(target => target.active && target.hp > 0 && target.state !== 'Dead' &&
+    const candidates = this.zombies.filter(target => target.active && target.hp > 0 && target.state !== 'Dead' && target.state !== 'StoredInGut' &&
       Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y) <= profile.range_px &&
-      !this.map.firstBlockingTerrain(unit.position, target.position, 0, true));
+      !this.map.firstBlockingTerrain(unit.position, target.position, 0, profile.projectileKind !== 'flame'));
     if (unit.unitType === 'sniper') {
       const special = candidates.filter(target => target.unitType === 'gut_zombie');
       if (special.length) return special.sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1))[0];
@@ -465,25 +524,73 @@ export class CombatSystem {
     unit.attackElapsed_s += dt;
     if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
       unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
-      if (attack.infectsOnHit && target.faction === 'human') {
-        const infected = this.infect(target, unit, time_s, events);
-        if (!infected) events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
-      } else {
-        events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
-      }
+      events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s, 'melee', unit.position));
     }
   }
 
-  private infect(target: Unit, source: Unit, time_s: number, events: BattleEvent[]): boolean {
-    if (!target.active || target.hp <= 0 || target.state === 'Dead') return false;
-    const oldId = target.id;
-    const infected = this.store.transform(oldId, 'normal_zombie');
-    if (!infected) return false;
-    this.zombies.push(infected);
-    events.push({ type: 'unit_infected', time_s, data: {
-      sourceId: source.id, humanId: oldId, zombieId: infected.id,
-    }});
-    return true;
+  /** Plan through entrances, collide with closed leaves, and break them before entering. */
+  private rescueZombie(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
+    const radius = unit.radius_px;
+    unit.velocity = { x: 0, y: 0 };
+    if (this.map.terrain.some(t => this.map.isBlocking(t) && this.map.terrainContains(unit.position, t, radius))) {
+      unit.position = this.map.walkablePoint(unit.position, radius);
+    }
+    const attack = getZombieModule(unit.unitType as ZombieUnitType).getMeleeAttackProfile();
+    // A defender in melee reach can intercept the approach to a civilian.
+    const defender = this.nearest(unit, 'human', attack.range_px);
+    const reachableDefender = defender && !this.map.firstBlockingTerrain(unit.position, defender.position) ? defender : undefined;
+    const civilians = this.civilians!.living().sort((a, b) =>
+      Math.hypot(a.position.x - unit.position.x, a.position.y - unit.position.y) -
+      Math.hypot(b.position.x - unit.position.x, b.position.y - unit.position.y));
+    const civilian = civilians[0];
+    const target = reachableDefender ?? civilian ?? this.nearest(unit, 'human');
+    if (!target) { unit.targetId = null; this.state(unit, 'Idle', time_s, events); return; }
+    const waypoint = this.map.nextWaypoint(unit.position, target.position, radius, true);
+    if (!waypoint) { unit.targetId = null; unit.attackElapsed_s = 0; return; }
+    const obstruction = this.map.firstBlockingTerrain(unit.position, waypoint, radius);
+    if (obstruction && (obstruction.terrain.kind === 'door' || obstruction.terrain.kind === 'window') &&
+        Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= attack.range_px) {
+      const entrance = obstruction.terrain;
+      if (unit.targetId !== entrance.id) unit.attackElapsed_s = 0;
+      unit.targetId = entrance.id;
+      this.state(unit, 'Attacking', time_s, events);
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+        const damaged = this.map.damageDoor(entrance.id, attack.damage);
+        if (damaged) {
+          events.push({ type: entrance.kind === 'door' ? 'door_damaged' : 'window_damaged', time_s,
+            data: { ...damaged, sourceId: unit.id, amount: attack.damage } });
+          if (damaged.destroyed) events.push({ type: entrance.kind === 'door' ? 'door_destroyed' : 'window_destroyed', time_s,
+            data: entrance.kind === 'door' ? { doorId: entrance.id, sourceId: unit.id } : { windowId: entrance.id, sourceId: unit.id } });
+        }
+      }
+      return;
+    }
+    if (unit.targetId !== target.id) unit.attackElapsed_s = 0;
+    unit.targetId = target.id;
+    const distance = Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y);
+    const blocked = this.map.firstBlockingTerrain(unit.position, target.position);
+    if (distance <= attack.range_px + 1e-9 && !blocked) {
+      this.state(unit, 'Attacking', time_s, events);
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+        if (this.civilians!.get(target.id)) events.push(...this.civilians!.hit(target.id, unit.id, attack.damage, time_s));
+        else events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s, 'melee', unit.position));
+      }
+      return;
+    }
+    unit.attackElapsed_s = 0;
+    this.state(unit, 'Advancing', time_s, events);
+    const pathDistance = Math.hypot(waypoint.x - unit.position.x, waypoint.y - unit.position.y);
+    if (pathDistance < 1e-9) return;
+    const step = Math.min(pathDistance, unit.speed_px_per_s * dt, blocked ? Infinity : Math.max(0, distance - attack.range_px));
+    const dx = (waypoint.x - unit.position.x) / pathDistance, dy = (waypoint.y - unit.position.y) / pathDistance;
+    const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
+    const hit = this.map.firstBlockingTerrain(unit.position, destination, radius);
+    const fraction = hit ? Math.max(0, hit.fraction - 1e-5) : 1;
+    this.move(unit, { x: unit.position.x + dx * step * fraction, y: unit.position.y + dy * step * fraction }, dx, dy);
   }
 
   private climb(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {

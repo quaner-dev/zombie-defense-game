@@ -1,6 +1,7 @@
 import { Graphics, Node } from 'cc';
-import type { BattleEvent, Unit } from '../generated/core.js';
-import { arrow, color, graphics, palette } from './drawing';
+import type { BattleEvent, Unit, CivilianEntity } from '../generated/core.js';
+import { unitConfig } from '../generated/core.js';
+import { arrow, color, graphics, palette, unitColor } from './drawing';
 /** One shared Graphics stream avoids a component/node allocation per entity per frame. */
 export class UnitView {
   private readonly g:Graphics;
@@ -12,8 +13,48 @@ export class UnitView {
   public releaseTransient():void {this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();}
   public get retainedDeaths():number {return this.deaths.size;}
   public clear():void {this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();this.g.clear();}
-  public render(units:Unit[],selection:readonly string[]|null,time:number,events:readonly BattleEvent[]=[]):void {
+  private waitingProgress(u:Unit,r:number):void {
+    if(u.hp<=0||u.faction!=='human'||(u.unitType!=='engineer'&&u.unitType!=='flamethrower'))return;
+    const engineer=u.unitType==='engineer';
+    const cfg=unitConfig;
+    let progress:number|undefined;
+    let tint=unitColor(u);
+    if(u.state==='Deploying')progress=u.stateElapsed_s/cfg.engineer.deploy_duration_s;
+    else if(u.state==='Dismantling')progress=u.stateElapsed_s/cfg.engineer.dismantle_duration_s;
+    else if(u.state==='RetractingFlame')progress=u.stateElapsed_s/cfg.flamethrower.retract_duration_s;
+    else if(u.state==='ReleasingFlame')progress=u.stateElapsed_s/cfg.flamethrower.release_duration_s;
+    else if(u.weaponCooldown_s>0){
+      const cooling=engineer?(cfg.engineer.gun_heat_max-cfg.engineer.gun_cooling_threshold)/cfg.engineer.gun_cooling_rate_s:
+        (cfg.flamethrower.heat_max-cfg.flamethrower.cooling_threshold)/cfg.flamethrower.cooling_rate_s;
+      const lock=engineer?cfg.engineer.gun_overheat_lock_s:cfg.flamethrower.overheat_lock_s;
+      progress=1-u.weaponCooldown_s/(lock+cooling);
+      tint=u.weaponCooldown_s>cooling+1e-9?palette.warning:palette.command;
+    }
+    if(progress===undefined)return;
+    const g=this.g,w=Math.max(44,r*2+12),x=u.position.x-w/2,y=-u.position.y-r-13;
+    g.fillColor=color('#101923',240);g.roundRect(x-2,y-2,w+4,9,3);g.fill();
+    g.fillColor=color('#455363',230);g.rect(x,y,w,5);g.fill();
+    g.fillColor=color(tint);g.rect(x,y,w*Math.max(0,Math.min(1,progress)),5);g.fill();
+  }
+  public render(units:Unit[],selection:readonly string[]|null,time:number,events:readonly BattleEvent[]=[],civilians:readonly CivilianEntity[]=[]):void {
     const g=this.g;g.clear();
+    for(const civilian of civilians){
+      if(!civilian.active||civilian.state==='transformed')continue;
+      const {x,y}=civilian.position,transforming=civilian.state==='transforming';
+      const progress=Math.min(1,civilian.transformElapsed_s/.8);
+      const body=transforming?'#4266AA':palette.civilian;
+      const alpha=transforming?Math.round(170+65*Math.sin(time*24)):245;
+      g.fillColor=color(palette.civilian,45);g.circle(x,-y,23);g.fill();
+      g.fillColor=color(body,alpha);g.strokeColor=color('#B8DEFF');g.lineWidth=2;
+      g.circle(x,-y,14);g.fill();g.stroke();
+      // A small head-and-shoulders glyph identifies a civilian without a weapon.
+      g.fillColor=color('#E1F1FF');g.circle(x,-y+4,4);g.fill();
+      g.roundRect(x-6,-y-7,12,7,3);g.fill();
+      if(transforming){
+        g.fillColor=color('#172435');g.rect(x-20,-y-30,40,5);g.fill();
+        g.fillColor=color(palette.warning);g.rect(x-20,-y-30,40*progress,5);g.fill();
+      }
+    }
     const byId=new Map(units.map(u=>[u.id,u]));
     for(const event of events){
       if(event.type==='damage'){
@@ -45,13 +86,14 @@ export class UnitView {
     const selectedIds=new Set(selection??[]);
     for(const id of Array.from(this.selectionStarted.keys()))if(!selectedIds.has(id))this.selectionStarted.delete(id);
     for(const u of units){
+      if(u.state==='StoredInGut')continue;
       let fade=1;
       if(u.state==='Dead'){
         if(!this.deaths.has(u.id))this.deaths.set(u.id,time);
         fade=Math.max(0,1-(time-this.deaths.get(u.id)!)/.3);if(fade===0)continue;
       }
       const isZombie=u.faction==='zombie';
-      const c=!isZombie?(u.unitType==='flamethrower'?palette.flame:palette.human):u.unitType==='fat_zombie'?palette.fatZombie:u.unitType==='zombie_mother'?palette.zombieMother:palette.zombie;
+      const c=unitColor(u);
       // The authoritative radius is already the doubled presentation size
       // (14px for the default human and 16px for the default zombie). Keep
       // the rendered body at that radius so the visual and collision sizes
@@ -109,12 +151,13 @@ export class UnitView {
           g.strokeColor=color(palette.command,150);g.lineWidth=1;g.circle(u.moveTarget.x,-u.moveTarget.y,3);g.stroke();
         }
       }
+      this.waitingProgress(u,r);
     }
     // Read-only AI feedback: target decisions stay in core, no hit box or command.
     const targets=new Set(units.filter(u=>u.faction==='human'&&u.hp>0).map(u=>u.targetId));
     g.strokeColor=color('#F2F2F7',210);g.lineWidth=1;
     for(const u of units){
-      if(u.faction!=='zombie'||u.hp<=0||!targets.has(u.id))continue;
+      if(u.faction!=='zombie'||u.hp<=0||u.state==='StoredInGut'||!targets.has(u.id))continue;
       const x=u.position.x,y=-u.position.y;
       for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
         g.moveTo(x+dx*11,y+dy*11);g.lineTo(x+dx*17,y+dy*17);g.stroke();

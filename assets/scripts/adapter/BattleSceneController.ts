@@ -1,7 +1,7 @@
 import { _decorator, Camera, Canvas, Color, Component, Game, Graphics, Layers, Node, ResolutionPolicy, UITransform, game, sys, view } from 'cc';
 import { BattleSession, CORE_BUILD_ID, unitConfig } from '../generated/core.js';
 import { fitMap, type Frame } from './contracts';
-import { arrow, color, graphics, palette, uiNode } from './drawing';
+import { arrow, color, graphics, palette, uiNode, unitColor } from './drawing';
 import { MapView } from './MapView';
 import { UnitView } from './UnitView';
 import { ProjectileViewPool } from './ProjectileViewPool';
@@ -173,15 +173,15 @@ export class BattleSceneController extends Component {
   private draw():void {
     this.stage='render.hud';
     if(this.session.screen!=='battle'){this.preview.clear();this.hud.render();return;}
-    const s=this.session.snapshot,time=s.time_s+(3-this.session.deploymentRemaining);
+    const s=this.session.snapshot,time=s.time_s+(s.scenarioKind==='villa_rescue'?0:3-this.session.deploymentRemaining);
     this.stage='render.map';this.map.render(s.breachedRoutes,time);
     // Off-map spawn centers must not leak into the physical HUD reserve above
     // the fitted field. Suppress their bodies, halos and AI target indicators.
     const visibleUnits=this.session.battle.getUnits().filter(u=>
-      (s.result==='running'||u.hp>0)&&u.position.x>=0&&u.position.x<=this.frame.width&&
+      u.state!=='StoredInGut'&&(s.result==='running'||u.hp>0)&&u.position.x>=0&&u.position.x<=this.frame.width&&
       u.position.y>=0&&u.position.y<=this.frame.height);
-    this.stage='render.units';this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??this.controls.selectedUnitIds,time,this.session.events);
-    this.stage='render.projectiles';this.projectiles.render(this.session.events,s.time_s);
+    this.stage='render.units';this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??this.controls.selectedUnitIds,time,this.session.events,this.session.battle.getCivilians());
+    this.stage='render.projectiles';this.projectiles.render(this.session.events,s.time_s,visibleUnits,this.session.battle.getMapModel());
     if(s.result!=='running'){this.projectiles.clear();this.units.releaseTransient();}
     const pools=this.projectiles.counts;
     this.performance.recordPools(pools.active,pools.hits,this.units.retainedDeaths);
@@ -193,10 +193,10 @@ export class BattleSceneController extends Component {
       // covering a large selection with overlapping circles.
       const soldier=visibleUnits.find(unit=>unit.id===p.unitIds[0]&&unit.hp>0);
       if(soldier){
-        const unitColor=soldier.unitType==='flamethrower'?palette.flame:soldier.unitType==='shield'?palette.shield:palette.human;
-        this.preview.strokeColor=color(unitColor,75);this.preview.lineWidth=1;
-        const stats=unitConfig[soldier.unitType] as {attack_range_px?:number};
-        if(stats.attack_range_px!==undefined){this.preview.circle(soldier.position.x,-soldier.position.y,stats.attack_range_px);this.preview.stroke();}
+        this.preview.strokeColor=color(unitColor(soldier),75);this.preview.lineWidth=1;
+        const stats=unitConfig[soldier.unitType] as {attack_range_px?:number;gun_range_px?:number};
+        const range=stats.attack_range_px??stats.gun_range_px;
+        if(range!==undefined){this.preview.circle(soldier.position.x,-soldier.position.y,range);this.preview.stroke();}
       }
     }
     const selection=this.controls.selectionPreview;

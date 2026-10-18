@@ -848,8 +848,8 @@ var villa_rescue_default = {
   id: "villa-rescue",
   title: "\u522B\u5885\u89E3\u6551",
   subtitle: "\u7B2C\u4E09\u5E55 \xB7 \u4FDD\u62A4\u5E73\u6C11",
-  briefing: "\u4FDD\u62A4\u522B\u5885\u5185\u7684\u516D\u540D\u5E73\u6C11\uFF0C\u62B5\u5FA1\u4ECE\u56DB\u9762\u5916\u5899\u63A5\u8FD1\u7684\u50F5\u5C38\u3002",
-  objective: "\u4FDD\u62A4\u516D\u540D\u5E73\u6C11\u76F4\u5230\u6301\u7EED\u751F\u6210\u7ED3\u675F",
+  briefing: "\u516D\u540D\u84DD\u8272\u5E73\u6C11\u56FA\u5B9A\u7559\u5728\u4E2D\u592E\uFF0C\u58EB\u5175\u5DF2\u73AF\u7ED5\u5C31\u4F4D\u3002\u50F5\u5C38\u4ECE\u5730\u56FE\u8FB9\u7F18\u63A5\u8FD1\uFF0C\u7834\u574F\u7A97\u6237\u548C\u53F3\u4E0B\u89D2\u5927\u95E8\u540E\u8FDB\u5165\u522B\u5885\u3002",
+  objective: "\u4FDD\u62A4\u4E2D\u592E\u516D\u540D\u84DD\u8272\u5E73\u6C11\uFF0C\u6D88\u706D\u5168\u90E8\u6301\u7EED\u751F\u6210\u7684\u50F5\u5C38",
   mapId: "LV03_villa_rescue",
   levelId: "LV03_villa_rescue",
   scenarioKind: "villa_rescue",
@@ -867,8 +867,8 @@ var villa_rescue_default = {
     defense_line_y: 1200,
     unit_selection_radius: 112,
     spawn_layout: {
-      columns: 4,
-      spacing_px: 42
+      columns: 20,
+      spacing_px: 44
     },
     routes: [
       {
@@ -900,80 +900,226 @@ var villa_rescue_default = {
         x: 540,
         y: 180,
         side: "north",
-        width: 900
+        width: 900,
+        spawnArea: {
+          left: 92,
+          top: 204,
+          right: 988,
+          bottom: 228
+        }
       },
       {
         id: "south",
         x: 540,
         y: 2160,
         side: "south",
-        width: 900
+        width: 900,
+        spawnArea: {
+          left: 92,
+          top: 2112,
+          right: 988,
+          bottom: 2136
+        }
       },
       {
         id: "east",
         x: 1020,
         y: 1170,
         side: "east",
-        width: 1800
+        width: 1800,
+        spawnArea: {
+          left: 972,
+          top: 260,
+          right: 996,
+          bottom: 2080
+        }
       },
       {
         id: "west",
         x: 60,
         y: 1170,
         side: "west",
-        width: 1800
+        width: 1800,
+        spawnArea: {
+          left: 84,
+          top: 260,
+          right: 108,
+          bottom: 2080
+        }
       }
     ],
     terrain: [
       {
-        id: "villa-wall-north",
-        kind: "villa_wall",
+        id: "villa-wall-north-left",
+        kind: "wall",
         bounds: {
-          left: 100,
-          top: 400,
-          right: 980,
-          bottom: 424
+          left: 220,
+          top: 760,
+          right: 476,
+          bottom: 784
         },
-        blocksMovement: true,
-        maxHp: 1800
+        blocksMovement: true
       },
       {
-        id: "villa-wall-east",
-        kind: "villa_wall",
+        id: "villa-window-north",
+        kind: "window",
         bounds: {
-          left: 956,
-          top: 400,
-          right: 980,
-          bottom: 2024
+          left: 476,
+          top: 760,
+          right: 604,
+          bottom: 784
         },
         blocksMovement: true,
-        maxHp: 1800
+        maxHp: 180,
+        side: "north"
       },
       {
-        id: "villa-wall-south",
-        kind: "villa_wall",
+        id: "villa-wall-north-right",
+        kind: "wall",
         bounds: {
-          left: 100,
-          top: 2e3,
-          right: 980,
-          bottom: 2024
+          left: 604,
+          top: 760,
+          right: 860,
+          bottom: 784
         },
-        blocksMovement: true,
-        maxHp: 1800
+        blocksMovement: true
       },
       {
-        id: "villa-wall-west",
-        kind: "villa_wall",
+        id: "villa-wall-west-top",
+        kind: "wall",
         bounds: {
-          left: 100,
-          top: 400,
-          right: 124,
-          bottom: 2024
+          left: 220,
+          top: 784,
+          right: 244,
+          bottom: 1106
+        },
+        blocksMovement: true
+      },
+      {
+        id: "villa-window-west",
+        kind: "window",
+        bounds: {
+          left: 220,
+          top: 1106,
+          right: 244,
+          bottom: 1234
         },
         blocksMovement: true,
-        maxHp: 1800
+        maxHp: 180,
+        side: "west"
+      },
+      {
+        id: "villa-wall-west-bottom",
+        kind: "wall",
+        bounds: {
+          left: 220,
+          top: 1234,
+          right: 244,
+          bottom: 1600
+        },
+        blocksMovement: true
+      },
+      {
+        id: "villa-wall-east-top",
+        kind: "wall",
+        bounds: {
+          left: 836,
+          top: 784,
+          right: 860,
+          bottom: 1106
+        },
+        blocksMovement: true
+      },
+      {
+        id: "villa-window-east",
+        kind: "window",
+        bounds: {
+          left: 836,
+          top: 1106,
+          right: 860,
+          bottom: 1234
+        },
+        blocksMovement: true,
+        maxHp: 180,
+        side: "east"
+      },
+      {
+        id: "villa-wall-east-bottom",
+        kind: "wall",
+        bounds: {
+          left: 836,
+          top: 1234,
+          right: 860,
+          bottom: 1600
+        },
+        blocksMovement: true
+      },
+      {
+        id: "villa-wall-south-left",
+        kind: "wall",
+        bounds: {
+          left: 244,
+          top: 1576,
+          right: 396,
+          bottom: 1600
+        },
+        blocksMovement: true
+      },
+      {
+        id: "villa-window-south",
+        kind: "window",
+        bounds: {
+          left: 396,
+          top: 1576,
+          right: 524,
+          bottom: 1600
+        },
+        blocksMovement: true,
+        maxHp: 180,
+        side: "south"
+      },
+      {
+        id: "villa-wall-south-middle",
+        kind: "wall",
+        bounds: {
+          left: 524,
+          top: 1576,
+          right: 656,
+          bottom: 1600
+        },
+        blocksMovement: true
+      },
+      {
+        id: "villa-door-southeast",
+        kind: "door",
+        bounds: {
+          left: 656,
+          top: 1576,
+          right: 796,
+          bottom: 1600
+        },
+        blocksMovement: true,
+        maxHp: 360,
+        side: "south"
+      },
+      {
+        id: "villa-wall-south-right",
+        kind: "wall",
+        bounds: {
+          left: 796,
+          top: 1576,
+          right: 836,
+          bottom: 1600
+        },
+        blocksMovement: true
       }
-    ]
+    ],
+    interior_bounds: {
+      left: 244,
+      top: 784,
+      right: 836,
+      bottom: 1576
+    }
   },
   level: {
     mapId: "LV03_villa_rescue",
@@ -1037,13 +1183,54 @@ var villa_rescue_default = {
           y: 1125
         }
       }
+    ],
+    soldierPositions: [
+      {
+        x: 450,
+        y: 970
+      },
+      {
+        x: 630,
+        y: 970
+      },
+      {
+        x: 420,
+        y: 1420
+      },
+      {
+        x: 660,
+        y: 1420
+      },
+      {
+        x: 405,
+        y: 1170
+      },
+      {
+        x: 675,
+        y: 1170
+      },
+      {
+        x: 540,
+        y: 1400
+      }
     ]
   },
   presentation: {
-    floorColor: "#4a514f",
-    wallColor: "#8b9088",
-    wallOutlineColor: "#c7c8be",
-    decorations: []
+    floorColor: "#202D29",
+    wallColor: "#828D80",
+    wallOutlineColor: "#C1C9B4",
+    decorations: [
+      {
+        kind: "floor",
+        color: "#3F4C42",
+        bounds: {
+          left: 244,
+          top: 784,
+          right: 836,
+          bottom: 1576
+        }
+      }
+    ]
   }
 };
 
@@ -1080,9 +1267,11 @@ var MapModel = class _MapModel {
     __publicField(this, "terrain");
     __publicField(this, "design_size");
     __publicField(this, "unit_selection_radius");
+    __publicField(this, "interior_bounds");
     var _a, _b, _c;
     this.design_size = { ...(_a = definition.design_size) != null ? _a : { width: 1080, height: 2400 } };
     this.unit_selection_radius = (_b = definition.unit_selection_radius) != null ? _b : 112;
+    this.interior_bounds = definition.interior_bounds && { ...definition.interior_bounds };
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
     this.spawn_top = definition.spawn_bounds === void 0 ? this.battle_bounds.top : definition.spawn_bounds.top;
@@ -1130,14 +1319,41 @@ var MapModel = class _MapModel {
       if (![b.left, b.top, b.right, b.bottom].every(Number.isFinite) || b.left > b.right || b.top > b.bottom || b.left < left || b.right > right || b.top < top || b.bottom > bottom || terrain.stackRequired !== void 0 && (!Number.isInteger(terrain.stackRequired) || terrain.stackRequired < 1)) {
         throw new Error(`Map terrain ${terrain.id} has invalid bounds or stack requirement`);
       }
-      if (terrain.kind === "door") {
+      if (terrain.kind === "door" || terrain.kind === "window") {
         if (!Number.isFinite(terrain.maxHp) || terrain.maxHp <= 0) throw new Error(`Door ${terrain.id} needs positive durability`);
         this.doors.set(terrain.id, { id: terrain.id, hp: terrain.maxHp, maxHp: terrain.maxHp, destroyed: false });
       }
     }
   }
   getDoorStates() {
-    return Array.from(this.doors.values(), (door) => ({ ...door }));
+    return this.getEntranceStates().filter((entrance) => entrance.kind === "door").map(({ id, hp, maxHp, destroyed }) => ({ id, hp, maxHp, destroyed }));
+  }
+  getEntranceStates() {
+    return this.terrain.filter((t) => t.kind === "door" || t.kind === "window").map((t) => ({
+      ...this.doors.get(t.id),
+      kind: t.kind,
+      side: t.side
+    }));
+  }
+  /** Wall status reflects its entrances. Solid wall segments never disappear. */
+  getWallStates() {
+    if (!this.interior_bounds) return [];
+    return ["north", "east", "south", "west"].map((side) => {
+      const entrances = this.getEntranceStates().filter((e) => e.side === side);
+      const hp = entrances.reduce((sum, e) => sum + e.hp, 0);
+      const maxHp = entrances.reduce((sum, e) => sum + e.maxHp, 0);
+      const broken = entrances.find((e) => e.destroyed);
+      const b = broken && this.terrain.find((t) => t.id === broken.id).bounds;
+      return {
+        id: `villa-wall-${side}`,
+        side,
+        hp,
+        maxHp,
+        status: broken ? "breached" : hp < maxHp ? "damaged" : "intact",
+        breachCenter: b ? { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 } : null,
+        breachWidth_px: b ? Math.max(b.right - b.left, b.bottom - b.top) : 0
+      };
+    });
   }
   damageDoor(id, damage) {
     const door = this.doors.get(id);
@@ -1149,7 +1365,7 @@ var MapModel = class _MapModel {
   }
   isBlocking(terrain, ignoreDoors = false) {
     var _a;
-    return !!terrain.blocksMovement && (terrain.kind !== "door" || !ignoreDoors && !((_a = this.doors.get(terrain.id)) == null ? void 0 : _a.destroyed));
+    return !!terrain.blocksMovement && (terrain.kind !== "door" && terrain.kind !== "window" || !ignoreDoors && !((_a = this.doors.get(terrain.id)) == null ? void 0 : _a.destroyed));
   }
   static load(mapId = "default") {
     var _a;
@@ -1661,7 +1877,8 @@ var units_default = {
     diameter_px: 28,
     damagePerHit: 30,
     attack_interval_s: 0.35,
-    attack_range_px: 260
+    attack_range_px: 460,
+    projectile_max_flight_time_s: 0.55
   },
   flamethrower: {
     hitPoints: 110,
@@ -1669,7 +1886,7 @@ var units_default = {
     diameter_px: 30,
     damagePerHit: 14,
     attack_interval_s: 0.45,
-    attack_range_px: 110,
+    attack_range_px: 220,
     area_radius_px: 42,
     projectile_speed_px_per_s: 520,
     projectile_max_flight_time_s: 0.45,
@@ -1749,7 +1966,7 @@ var units_default = {
     damagePerHit: 8,
     attack_interval_s: 0.55,
     attack_range_px: 30,
-    infectsSoldiers: true
+    infectsSoldiers: false
   },
   gut_zombie: {
     hitPoints: 300,
@@ -1891,7 +2108,7 @@ var zombieMotherModule = {
   getMeleeAttackProfile: () => {
     var _a;
     const stats = readUnitStats("zombie_mother");
-    return meleeAttack(stats, (_a = stats.infectsSoldiers) != null ? _a : true);
+    return meleeAttack(stats, (_a = stats.infectsSoldiers) != null ? _a : false);
   }
 };
 
@@ -1961,6 +2178,7 @@ var UnitStore = class {
       weaponHeat: 0,
       weaponCooldown_s: 0,
       stateElapsed_s: 0,
+      flameLength_px: 0,
       facing: { x: 0, y: -1 },
       storedGutUnitIds: [],
       storedInGutById: null,
@@ -2003,6 +2221,7 @@ var UnitStore = class {
     unit.weaponHeat = 0;
     unit.weaponCooldown_s = 0;
     unit.stateElapsed_s = 0;
+    unit.flameLength_px = 0;
     unit.facing = { x: 0, y: -1 };
     unit.storedGutUnitIds = [];
     unit.storedInGutById = null;
@@ -2021,6 +2240,7 @@ var UnitStore = class {
     unit.climbTarget = null;
     unit.stackLevel = 0;
     unit.stateElapsed_s = 0;
+    unit.flameLength_px = 0;
     unit.weaponCooldown_s = 0;
     unit.storedGutUnitIds = [];
     unit.storedInGutById = null;
@@ -2091,6 +2311,10 @@ var CommandSystem = class {
       return this.map.walkablePoint(point, (_a = selected[index].radius_px) != null ? _a : 7);
     });
     selected.forEach((unit, i) => {
+      if (unit.unitType === "engineer" && unit.state === "Dismantling" || unit.unitType === "flamethrower" && unit.state === "RetractingFlame") {
+        unit.moveTarget = positions[i];
+        return;
+      }
       if (unit.unitType === "engineer" && (unit.state === "Deployed" || unit.state === "Cooling" || unit.state === "Overheated")) {
         unit.moveTarget = positions[i];
         if (unit.state === "Deployed" || unit.state === "Cooling") {
@@ -2100,7 +2324,8 @@ var CommandSystem = class {
         }
         return;
       }
-      if (unit.unitType === "flamethrower" && (unit.state === "Firing" || unit.state === "Aiming")) {
+      if (unit.unitType === "flamethrower" && (unit.state === "Firing" || unit.state === "Aiming" || unit.state === "ReleasingFlame")) {
+        const from2 = unit.state;
         unit.state = "RetractingFlame";
         unit.stateElapsed_s = 0;
         unit.targetId = null;
@@ -2110,7 +2335,7 @@ var CommandSystem = class {
         this.emit({
           type: "unit_state_changed",
           time_s,
-          data: { unitId: unit.id, from: "Firing", to: "RetractingFlame" }
+          data: { unitId: unit.id, from: from2, to: "RetractingFlame" }
         });
         return;
       }
@@ -2281,10 +2506,11 @@ var MovementSystem = class {
 
 // src/core/CombatSystem.ts
 var CombatSystem = class {
-  constructor(store, map, stats) {
+  constructor(store, map, stats, civilians) {
     __publicField(this, "store", store);
     __publicField(this, "map", map);
     __publicField(this, "stats", stats);
+    __publicField(this, "civilians", civilians);
     __publicField(this, "nextProjectileId", 1);
     __publicField(this, "shots", []);
     __publicField(this, "frameUnits", []);
@@ -2327,7 +2553,7 @@ var CombatSystem = class {
   applyDamage(targetId, amount, sourceId, time_s, damageKind = "bullet", sourcePosition) {
     var _a, _b, _c, _d, _e;
     const target = this.store.get(targetId);
-    if (!target || !target.active || target.hp <= 0 || target.state === "Dead" || !Number.isFinite(amount) || amount <= 0) return [];
+    if (!target || !target.active || target.hp <= 0 || target.state === "Dead" || target.state === "StoredInGut" || !Number.isFinite(amount) || amount <= 0) return [];
     let adjustedAmount = amount;
     if (target.unitType === "shield" && sourcePosition && damageKind !== "flame" && damageKind !== "explosion") {
       const incomingX = sourcePosition.x - target.position.x;
@@ -2403,18 +2629,20 @@ var CombatSystem = class {
     this.frameUnits = this.store.living();
     this.humans = this.frameUnits.filter((unit) => unit.faction === "human");
     this.zombies = this.frameUnits.filter((unit) => unit.faction === "zombie");
-    const frameStarts = new Map(this.zombies.filter((unit) => !unit.climbingWallId).map((unit) => [unit.id, { ...unit.position }]));
     for (const unit of this.frameUnits) {
-      if (!unit.active || unit.hp <= 0 || unit.state === "Dead") continue;
+      if (!unit.active || unit.hp <= 0 || unit.state === "Dead" || unit.state === "StoredInGut") continue;
       if (unit.faction === "human") {
         if (unit.unitType === "flamethrower") this.updateFlamethrower(unit, dt, time_s, events);
         else if (unit.unitType === "engineer") this.updateEngineer(unit, dt, time_s, events);
         else this.rangedHuman(unit, dt, time_s, events);
       } else {
         if (unit.unitType === "gut_zombie") this.gutBehavior(unit, dt, time_s, events);
-        if (unit.state === "Suicidal") this.updateSuicidal(unit, dt, time_s, events);
-        if (unit.state === "Suicidal") continue;
-        this.zombie(unit, dt, time_s, events);
+        if (unit.state === "Suicidal") {
+          this.updateSuicidal(unit, dt, time_s, events);
+          continue;
+        }
+        if (this.civilians) this.rescueZombie(unit, dt, time_s, events);
+        else this.zombie(unit, dt, time_s, events);
         const side = unit.spawnPointId ? (_b = (_a = this.map.getSpawnPoint(unit.spawnPointId)) == null ? void 0 : _a.side) != null ? _b : null : null;
         if (!unit.breached && this.map.hasCrossedDefense(unit.position, side)) {
           unit.breached = true;
@@ -2441,64 +2669,103 @@ var CombatSystem = class {
     events.push({ type: "zombie_exploded", time_s, data: { zombieId: unit.id, sourceGutId: sourceId, position: { ...unit.position } } });
   }
   updateFlamethrower(unit, dt, time_s, events) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
     const stats = getUnitModule("flamethrower").getStats();
-    const retract = (_a = stats.retract_duration_s) != null ? _a : 0.3;
-    const release = (_b = stats.release_duration_s) != null ? _b : 0.25;
-    if (unit.state === "RetractingFlame" || unit.state === "ReleasingFlame") {
+    const range = stats.attack_range_px;
+    const maxHeat = (_a = stats.heat_max) != null ? _a : 100;
+    const lock = (_b = stats.overheat_lock_s) != null ? _b : 2;
+    const rate = (_c = stats.cooling_rate_s) != null ? _c : 45;
+    const threshold = (_d = stats.cooling_threshold) != null ? _d : 25;
+    this.coolWeapon(unit, dt, maxHeat, rate, threshold);
+    if (unit.state === "RetractingFlame") {
       unit.stateElapsed_s += dt;
-      if (unit.state === "RetractingFlame" && unit.stateElapsed_s >= retract) {
-        unit.state = "Moving";
-        unit.stateElapsed_s = 0;
-      } else if (unit.state === "ReleasingFlame" && unit.stateElapsed_s >= release) {
-        unit.state = "Firing";
+      unit.flameLength_px = Math.max(0, unit.flameLength_px - range * dt / ((_e = stats.retract_duration_s) != null ? _e : 0.3));
+      if (unit.stateElapsed_s + 1e-9 >= ((_f = stats.retract_duration_s) != null ? _f : 0.3)) {
+        unit.flameLength_px = 0;
+        this.state(unit, unit.moveTarget ? "Moving" : "Idle", time_s, events);
         unit.stateElapsed_s = 0;
       }
       return;
     }
-    if (unit.state === "Overheated" || unit.state === "Cooling") {
-      unit.stateElapsed_s += dt;
-      if (unit.state === "Overheated" && unit.stateElapsed_s >= ((_c = stats.overheat_lock_s) != null ? _c : 2)) {
-        unit.state = "Cooling";
-        unit.stateElapsed_s = 0;
-      } else if (unit.state === "Cooling") {
-        unit.weaponHeat = Math.max(0, unit.weaponHeat - ((_d = stats.cooling_rate_s) != null ? _d : 45) * dt);
-        if (unit.weaponHeat <= ((_e = stats.cooling_threshold) != null ? _e : 25)) {
-          unit.state = "Idle";
-          unit.stateElapsed_s = 0;
-        }
-      }
+    if (unit.state === "Moving") {
+      unit.flameLength_px = 0;
+      unit.targetId = null;
+      return;
+    }
+    if (unit.weaponCooldown_s > 0) {
+      unit.flameLength_px = 0;
+      unit.targetId = null;
+      this.state(unit, unit.weaponCooldown_s > (maxHeat - threshold) / rate + 1e-9 ? "Overheated" : "Cooling", time_s, events);
       return;
     }
     const target = this.humanTarget(unit, getUnitModule("flamethrower").getAttackProfile());
     if (!target) {
       unit.targetId = null;
-      if (unit.state !== "Moving") unit.state = "Idle";
+      unit.attackElapsed_s = 0;
+      this.state(unit, unit.flameLength_px > 0 ? "RetractingFlame" : "Idle", time_s, events);
+      unit.stateElapsed_s = 0;
       return;
     }
     unit.targetId = target.id;
     unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
-    if (unit.state === "Moving") return;
-    unit.attackElapsed_s += dt;
-    if (unit.attackElapsed_s >= ((_f = stats.damage_tick_interval_s) != null ? _f : 0.15)) {
+    if (unit.state !== "Firing" && unit.state !== "ReleasingFlame") {
+      this.state(unit, "ReleasingFlame", time_s, events);
+      unit.stateElapsed_s = 0;
       unit.attackElapsed_s = 0;
-      unit.weaponHeat += (_g = stats.heat_per_tick) != null ? _g : 8;
-      if (unit.weaponHeat >= ((_h = stats.heat_max) != null ? _h : 100)) {
-        unit.state = "Overheated";
+      unit.flameLength_px = 0;
+      return;
+    }
+    if (unit.state === "ReleasingFlame") {
+      unit.stateElapsed_s += dt;
+      unit.flameLength_px = range * Math.min(1, unit.stateElapsed_s / ((_g = stats.release_duration_s) != null ? _g : 0.25));
+      if (unit.stateElapsed_s + 1e-9 >= ((_h = stats.release_duration_s) != null ? _h : 0.25)) {
+        this.state(unit, "Firing", time_s, events);
         unit.stateElapsed_s = 0;
-        return;
       }
-      unit.state = "Firing";
-      events.push(this.createProjectile(unit, target, time_s));
+      return;
+    }
+    unit.flameLength_px = range;
+    unit.attackElapsed_s += dt;
+    const tick = (_i = stats.damage_tick_interval_s) != null ? _i : 0.15;
+    if (unit.attackElapsed_s + 1e-9 < tick) return;
+    unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - tick);
+    const length = Math.hypot(unit.facing.x, unit.facing.y);
+    const dx = length > 1e-9 ? unit.facing.x / length : 0;
+    const dy = length > 1e-9 ? unit.facing.y / length : -1;
+    for (const candidate of this.zombies) {
+      if (!candidate.active || candidate.hp <= 0 || candidate.state === "Dead" || candidate.state === "StoredInGut") continue;
+      const x = candidate.position.x - unit.position.x, y = candidate.position.y - unit.position.y;
+      const along = x * dx + y * dy;
+      const across = Math.abs(x * dy - y * dx);
+      if (along < 0 || along > range || across > ((_j = stats.area_radius_px) != null ? _j : 42) * along / range) continue;
+      if (this.map.firstBlockingTerrain(unit.position, candidate.position)) continue;
+      events.push(...this.applyDamage(candidate.id, stats.damagePerHit, unit.id, time_s, "flame", unit.position));
+    }
+    unit.weaponHeat = Math.min(maxHeat, unit.weaponHeat + ((_k = stats.heat_per_tick) != null ? _k : 8));
+    if (unit.weaponHeat >= maxHeat) {
+      unit.weaponCooldown_s = lock + (maxHeat - threshold) / rate;
+      unit.flameLength_px = 0;
+      unit.stateElapsed_s = 0;
+      this.state(unit, "Overheated", time_s, events);
     }
   }
+  coolWeapon(unit, dt, maxHeat, rate, threshold) {
+    if (unit.weaponCooldown_s <= 0) return;
+    const previous = unit.weaponCooldown_s;
+    unit.weaponCooldown_s = Math.max(0, previous - dt);
+    if (unit.weaponCooldown_s < 1e-9) unit.weaponCooldown_s = 0;
+    const coolingDuration = (maxHeat - threshold) / rate;
+    const cooledFor = Math.min(previous, coolingDuration) - Math.min(unit.weaponCooldown_s, coolingDuration);
+    unit.weaponHeat = unit.weaponCooldown_s === 0 ? threshold : Math.max(threshold, unit.weaponHeat - cooledFor * rate);
+  }
   updateEngineer(unit, dt, time_s, events) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
     const stats = getUnitModule("engineer").getStats();
+    this.coolWeapon(unit, dt, (_a = stats.gun_heat_max) != null ? _a : 100, (_b = stats.gun_cooling_rate_s) != null ? _b : 45, (_c = stats.gun_cooling_threshold) != null ? _c : 25);
     if (unit.state === "Deploying" || unit.state === "Dismantling") {
       unit.stateElapsed_s += dt;
-      const duration = unit.state === "Deploying" ? (_a = stats.deploy_duration_s) != null ? _a : 2 : (_b = stats.dismantle_duration_s) != null ? _b : 1.5;
-      if (unit.stateElapsed_s >= duration) {
+      const duration = unit.state === "Deploying" ? (_d = stats.deploy_duration_s) != null ? _d : 2 : (_e = stats.dismantle_duration_s) != null ? _e : 1.5;
+      if (unit.stateElapsed_s + 1e-9 >= duration) {
         if (unit.state === "Deploying") unit.state = "Deployed";
         else unit.state = unit.moveTarget ? "Moving" : "Idle";
         unit.stateElapsed_s = 0;
@@ -2506,43 +2773,40 @@ var CombatSystem = class {
       }
       return;
     }
-    if (unit.state === "Overheated" || unit.state === "Cooling") {
-      unit.stateElapsed_s += dt;
-      if (unit.state === "Overheated" && unit.stateElapsed_s >= ((_c = stats.gun_overheat_lock_s) != null ? _c : 2.5)) {
-        unit.state = "Cooling";
+    if (unit.state === "Overheated" || unit.state === "Cooling" || unit.state === "Deployed" && unit.weaponCooldown_s > 0) {
+      if (unit.weaponCooldown_s <= 0) {
+        this.state(unit, unit.moveTarget ? "Dismantling" : "Deployed", time_s, events);
         unit.stateElapsed_s = 0;
-      } else if (unit.state === "Cooling") {
-        unit.weaponHeat = Math.max(0, unit.weaponHeat - ((_d = stats.gun_cooling_rate_s) != null ? _d : 45) * dt);
-        if (unit.weaponHeat <= ((_e = stats.gun_cooling_threshold) != null ? _e : 25)) {
-          unit.state = unit.moveTarget ? "Dismantling" : "Deployed";
-          unit.stateElapsed_s = 0;
-        }
+      } else {
+        const coolingDuration = (((_f = stats.gun_heat_max) != null ? _f : 100) - ((_g = stats.gun_cooling_threshold) != null ? _g : 25)) / ((_h = stats.gun_cooling_rate_s) != null ? _h : 45);
+        this.state(unit, unit.weaponCooldown_s > coolingDuration + 1e-9 ? "Overheated" : "Cooling", time_s, events);
       }
       return;
     }
     if (unit.state !== "Deployed") return;
-    const target = this.humanTarget(unit, { damage: (_f = stats.gun_damage) != null ? _f : 4, interval_s: 1 / ((_g = stats.gun_rate_per_s) != null ? _g : 10), range_px: (_h = stats.gun_range_px) != null ? _h : 300, projectileKind: "machine_gun", splashRadius_px: 0 });
-    unit.targetId = (_i = target == null ? void 0 : target.id) != null ? _i : null;
+    const target = this.humanTarget(unit, { damage: (_i = stats.gun_damage) != null ? _i : 4, interval_s: 1 / ((_j = stats.gun_rate_per_s) != null ? _j : 10), range_px: (_k = stats.gun_range_px) != null ? _k : 300, projectileKind: "machine_gun", splashRadius_px: 0 });
+    unit.targetId = (_l = target == null ? void 0 : target.id) != null ? _l : null;
     if (!target) return;
+    unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
     unit.stateElapsed_s += dt;
     unit.attackElapsed_s += dt;
-    if (unit.stateElapsed_s < ((_j = stats.target_refresh_s) != null ? _j : 0.15) && unit.attackElapsed_s < 1 / ((_k = stats.gun_rate_per_s) != null ? _k : 10)) return;
+    if (unit.stateElapsed_s < ((_m = stats.target_refresh_s) != null ? _m : 0.15) && unit.attackElapsed_s < 1 / ((_n = stats.gun_rate_per_s) != null ? _n : 10)) return;
     unit.stateElapsed_s = 0;
-    if (unit.attackElapsed_s >= 1 / ((_l = stats.gun_rate_per_s) != null ? _l : 10)) {
+    if (unit.attackElapsed_s >= 1 / ((_o = stats.gun_rate_per_s) != null ? _o : 10)) {
       unit.attackElapsed_s = 0;
-      unit.weaponHeat += (_m = stats.gun_heat_per_shot) != null ? _m : 3.3;
-      if (unit.weaponHeat >= ((_n = stats.gun_heat_max) != null ? _n : 100)) {
-        unit.state = "Overheated";
-        unit.stateElapsed_s = 0;
-        return;
-      }
       events.push(this.createProjectile(unit, target, time_s));
+      unit.weaponHeat = Math.min((_p = stats.gun_heat_max) != null ? _p : 100, unit.weaponHeat + ((_q = stats.gun_heat_per_shot) != null ? _q : 3.3));
+      if (unit.weaponHeat >= ((_r = stats.gun_heat_max) != null ? _r : 100)) {
+        unit.weaponCooldown_s = ((_s = stats.gun_overheat_lock_s) != null ? _s : 2.5) + (((_t = stats.gun_heat_max) != null ? _t : 100) - ((_u = stats.gun_cooling_threshold) != null ? _u : 25)) / ((_v = stats.gun_cooling_rate_s) != null ? _v : 45);
+        this.state(unit, "Overheated", time_s, events);
+        unit.stateElapsed_s = 0;
+      }
     }
   }
   gutBehavior(unit, dt, time_s, events) {
     if (unit.state === "StoredInGut" || unit.state === "Suicidal") return;
     unit.weaponCooldown_s = Math.max(0, unit.weaponCooldown_s - dt);
-    const candidates = this.zombies.filter((candidate) => candidate.id !== unit.id && candidate.unitType === "normal_zombie" && candidate.state !== "Dead" && candidate.state !== "StoredInGut" && !candidate.storedInGutById && Math.hypot(candidate.position.x - unit.position.x, candidate.position.y - unit.position.y) <= 180).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1));
+    const candidates = this.zombies.filter((candidate) => candidate.id !== unit.id && candidate.unitType === "normal_zombie" && candidate.active && candidate.hp > 0 && candidate.state !== "Dead" && candidate.state !== "StoredInGut" && candidate.state !== "Suicidal" && !candidate.climbingWallId && !candidate.storedInGutById && Math.hypot(candidate.position.x - unit.position.x, candidate.position.y - unit.position.y) <= 180).sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1));
     while (unit.storedGutUnitIds.length < 5 && candidates.length) {
       const target = candidates.shift();
       target.state = "StoredInGut";
@@ -2556,7 +2820,7 @@ var CombatSystem = class {
     let nearest;
     let bestDistance = range * range;
     for (const target of faction === "human" ? this.humans : this.zombies) {
-      if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === "Dead") continue;
+      if (target.faction !== faction || !target.active || target.hp <= 0 || target.state === "Dead" || target.state === "StoredInGut") continue;
       const distance = (target.position.x - unit.position.x) ** 2 + (target.position.y - unit.position.y) ** 2;
       if (distance > bestDistance || distance === bestDistance && nearest && target.id >= nearest.id) continue;
       if (clearShot && this.map.firstBlockingTerrain(unit.position, target.position, 0, true)) continue;
@@ -2567,7 +2831,7 @@ var CombatSystem = class {
   }
   humanTarget(unit, profile) {
     if (!profile) return void 0;
-    const candidates = this.zombies.filter((target) => target.active && target.hp > 0 && target.state !== "Dead" && Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y) <= profile.range_px && !this.map.firstBlockingTerrain(unit.position, target.position, 0, true));
+    const candidates = this.zombies.filter((target) => target.active && target.hp > 0 && target.state !== "Dead" && target.state !== "StoredInGut" && Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y) <= profile.range_px && !this.map.firstBlockingTerrain(unit.position, target.position, 0, profile.projectileKind !== "flame"));
     if (unit.unitType === "sniper") {
       const special = candidates.filter((target) => target.unitType === "gut_zombie");
       if (special.length) return special.sort((a, b) => this.distance(unit, a) - this.distance(unit, b) || (a.id < b.id ? -1 : 1))[0];
@@ -2724,26 +2988,83 @@ var CombatSystem = class {
     unit.attackElapsed_s += dt;
     if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
       unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
-      if (attack.infectsOnHit && target.faction === "human") {
-        const infected = this.infect(target, unit, time_s, events);
-        if (!infected) events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
-      } else {
-        events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s));
-      }
+      events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s, "melee", unit.position));
     }
   }
-  infect(target, source, time_s, events) {
-    if (!target.active || target.hp <= 0 || target.state === "Dead") return false;
-    const oldId = target.id;
-    const infected = this.store.transform(oldId, "normal_zombie");
-    if (!infected) return false;
-    this.zombies.push(infected);
-    events.push({ type: "unit_infected", time_s, data: {
-      sourceId: source.id,
-      humanId: oldId,
-      zombieId: infected.id
-    } });
-    return true;
+  /** Plan through entrances, collide with closed leaves, and break them before entering. */
+  rescueZombie(unit, dt, time_s, events) {
+    var _a;
+    const radius = unit.radius_px;
+    unit.velocity = { x: 0, y: 0 };
+    if (this.map.terrain.some((t) => this.map.isBlocking(t) && this.map.terrainContains(unit.position, t, radius))) {
+      unit.position = this.map.walkablePoint(unit.position, radius);
+    }
+    const attack = getZombieModule(unit.unitType).getMeleeAttackProfile();
+    const defender = this.nearest(unit, "human", attack.range_px);
+    const reachableDefender = defender && !this.map.firstBlockingTerrain(unit.position, defender.position) ? defender : void 0;
+    const civilians = this.civilians.living().sort((a, b) => Math.hypot(a.position.x - unit.position.x, a.position.y - unit.position.y) - Math.hypot(b.position.x - unit.position.x, b.position.y - unit.position.y));
+    const civilian = civilians[0];
+    const target = (_a = reachableDefender != null ? reachableDefender : civilian) != null ? _a : this.nearest(unit, "human");
+    if (!target) {
+      unit.targetId = null;
+      this.state(unit, "Idle", time_s, events);
+      return;
+    }
+    const waypoint = this.map.nextWaypoint(unit.position, target.position, radius, true);
+    if (!waypoint) {
+      unit.targetId = null;
+      unit.attackElapsed_s = 0;
+      return;
+    }
+    const obstruction = this.map.firstBlockingTerrain(unit.position, waypoint, radius);
+    if (obstruction && (obstruction.terrain.kind === "door" || obstruction.terrain.kind === "window") && Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= attack.range_px) {
+      const entrance = obstruction.terrain;
+      if (unit.targetId !== entrance.id) unit.attackElapsed_s = 0;
+      unit.targetId = entrance.id;
+      this.state(unit, "Attacking", time_s, events);
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+        const damaged = this.map.damageDoor(entrance.id, attack.damage);
+        if (damaged) {
+          events.push({
+            type: entrance.kind === "door" ? "door_damaged" : "window_damaged",
+            time_s,
+            data: { ...damaged, sourceId: unit.id, amount: attack.damage }
+          });
+          if (damaged.destroyed) events.push({
+            type: entrance.kind === "door" ? "door_destroyed" : "window_destroyed",
+            time_s,
+            data: entrance.kind === "door" ? { doorId: entrance.id, sourceId: unit.id } : { windowId: entrance.id, sourceId: unit.id }
+          });
+        }
+      }
+      return;
+    }
+    if (unit.targetId !== target.id) unit.attackElapsed_s = 0;
+    unit.targetId = target.id;
+    const distance = Math.hypot(target.position.x - unit.position.x, target.position.y - unit.position.y);
+    const blocked = this.map.firstBlockingTerrain(unit.position, target.position);
+    if (distance <= attack.range_px + 1e-9 && !blocked) {
+      this.state(unit, "Attacking", time_s, events);
+      unit.attackElapsed_s += dt;
+      if (unit.attackElapsed_s + 1e-9 >= attack.interval_s) {
+        unit.attackElapsed_s = Math.max(0, unit.attackElapsed_s - attack.interval_s);
+        if (this.civilians.get(target.id)) events.push(...this.civilians.hit(target.id, unit.id, attack.damage, time_s));
+        else events.push(...this.applyDamage(target.id, attack.damage, unit.id, time_s, "melee", unit.position));
+      }
+      return;
+    }
+    unit.attackElapsed_s = 0;
+    this.state(unit, "Advancing", time_s, events);
+    const pathDistance = Math.hypot(waypoint.x - unit.position.x, waypoint.y - unit.position.y);
+    if (pathDistance < 1e-9) return;
+    const step = Math.min(pathDistance, unit.speed_px_per_s * dt, blocked ? Infinity : Math.max(0, distance - attack.range_px));
+    const dx = (waypoint.x - unit.position.x) / pathDistance, dy = (waypoint.y - unit.position.y) / pathDistance;
+    const destination = { x: unit.position.x + dx * step, y: unit.position.y + dy * step };
+    const hit = this.map.firstBlockingTerrain(unit.position, destination, radius);
+    const fraction = hit ? Math.max(0, hit.fraction - 1e-5) : 1;
+    this.move(unit, { x: unit.position.x + dx * step * fraction, y: unit.position.y + dy * step * fraction }, dx, dy);
   }
   climb(unit, dt, time_s, events) {
     const target = unit.climbTarget;
@@ -3006,7 +3327,7 @@ var ResultSystem = class {
     if ((context == null ? void 0 : context.scenarioKind) === "villa_rescue") {
       const civilians = context.civilians;
       if (civilians == null ? void 0 : civilians.all().some((c) => c.state === "transformed")) this.result = "lose";
-      else if (allWavesSpawned && !living.some((unit) => unit.faction === "zombie") && civilians && civilians.living().length === civilians.all().length) this.result = "win";
+      else if (allWavesSpawned && !living.some((unit) => unit.faction === "zombie") && civilians && civilians.all().length === 6 && civilians.all().every((c) => c.state === "idle")) this.result = "win";
     } else if (!living.some((unit) => unit.faction === "human")) this.result = "lose";
     else if (allWavesSpawned && !living.some((unit) => unit.faction === "zombie")) this.result = "win";
     if (this.result === "running") return [];
@@ -3073,7 +3394,7 @@ var SpawnSystem = class {
     });
   }
   update(time_s) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
     const events = [];
     if (this.continuous) {
       while (this.continuousGenerated < this.continuous.totalTarget && this.nextContinuousTime_s <= time_s + 1e-9) {
@@ -3101,17 +3422,23 @@ var SpawnSystem = class {
           if (existing) existing.count++;
           else batchSpawns.push({ unitType, route, spawnPoint, count: 1 });
         }
-        const side = this.continuous.spawnPoints[Math.floor((this.continuousGenerated - 1) / Math.max(1, count)) % this.continuous.spawnPoints.length];
-        events.push({ type: "continuous_zombie_spawn", time_s: this.nextContinuousTime_s, data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count } });
-        events.push({ type: "zombie_batch_spawn", time_s: this.nextContinuousTime_s, data: {
+        for (const spawn of batchSpawns) {
+          const side = (_d = this.map.getSpawnPoint(spawn.spawnPoint)) == null ? void 0 : _d.side;
+          if (side) events.push({
+            type: "continuous_zombie_spawn",
+            time_s: this.nextContinuousTime_s,
+            data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count: spawn.count }
+          });
+        }
+        if (!this.continuous.continuousEventsOnly) events.push({ type: "zombie_batch_spawn", time_s: this.nextContinuousTime_s, data: {
           waveIndex: 0,
           batchIndex: Math.floor(this.continuousGenerated / this.continuous.batchSize) - 1,
           batchSize: count,
           spawns: batchSpawns
         } });
-        const initial = (_d = this.continuous.initialInterval_s) != null ? _d : this.continuous.interval_s;
-        const minimum = (_e = this.continuous.minInterval_s) != null ? _e : this.continuous.interval_s;
-        const ramp = (_f = this.continuous.rampDuration_s) != null ? _f : 0;
+        const initial = (_e = this.continuous.initialInterval_s) != null ? _e : this.continuous.interval_s;
+        const minimum = (_f = this.continuous.minInterval_s) != null ? _f : this.continuous.interval_s;
+        const ramp = (_g = this.continuous.rampDuration_s) != null ? _g : 0;
         const progress = ramp > 0 ? Math.min(1, this.nextContinuousTime_s / ramp) : 1;
         this.nextContinuousTime_s += initial + (minimum - initial) * progress;
       }
@@ -3142,13 +3469,13 @@ var SpawnSystem = class {
           }
           if (!selected) break;
           const spawn = selected.spawn;
-          const key = (_g = spawn.spawnPoint) != null ? _g : `route:${spawn.route}`;
-          const offset = (_h = this.offsets.get(key)) != null ? _h : 0;
+          const key = (_h = spawn.spawnPoint) != null ? _h : `route:${spawn.route}`;
+          const offset = (_i = this.offsets.get(key)) != null ? _i : 0;
           const positions = this.map.spawnPositions(spawn.route, 1, spawn.spawnPoint, offset);
           this.offsets.set(key, offset + positions.length);
           for (const position of positions) {
             const radius = getZombieModule(spawn.unitType).getStats().diameter_px / 2;
-            this.store.spawn(spawn.unitType, this.map.walkablePoint(position, radius), spawn.route, (_i = spawn.spawnPoint) != null ? _i : null);
+            this.store.spawn(spawn.unitType, this.map.walkablePoint(position, radius), spawn.route, (_j = spawn.spawnPoint) != null ? _j : null);
             this.spawned++;
           }
           selected.remaining--;
@@ -3253,9 +3580,11 @@ var CivilianStore = class {
   constructor() {
     __publicField(this, "civilians", /* @__PURE__ */ new Map());
     __publicField(this, "nextId", 1);
+    __publicField(this, "transformStarted", /* @__PURE__ */ new Map());
   }
   clear() {
     this.civilians.clear();
+    this.transformStarted.clear();
     this.nextId = 1;
   }
   spawn(position, id = `civilian-${this.nextId++}`) {
@@ -3274,53 +3603,26 @@ var CivilianStore = class {
   }
   hit(id, sourceId, amount, time_s) {
     const c = this.civilians.get(id);
-    if (!c || c.state !== "idle") return [];
+    if (!c || c.state !== "idle" || !Number.isFinite(amount) || amount <= 0) return [];
     c.state = "transforming";
     c.transformElapsed_s = 0;
+    this.transformStarted.set(id, time_s);
     return [
       { type: "civilian_hit", time_s, data: { civilianId: id, sourceId, amount } },
       { type: "civilian_transform_started", time_s, data: { civilianId: id, duration_s: 0.8 } }
     ];
   }
-  update(dt, time_s, spawnZombie) {
+  update(_dt, time_s, spawnZombie) {
     const events = [];
     for (const c of this.civilians.values()) if (c.state === "transforming") {
-      c.transformElapsed_s += dt;
-      if (c.transformElapsed_s >= 0.8) {
+      c.transformElapsed_s = Math.max(0, time_s - this.transformStarted.get(c.id));
+      if (c.transformElapsed_s + 1e-9 >= 0.8) {
         c.state = "transformed";
         const zombieId = spawnZombie(c.position);
         events.push({ type: "civilian_transformed", time_s, data: { civilianId: c.id, zombieId } });
       }
     }
     return events;
-  }
-};
-
-// src/core/VillaWallModel.ts
-var VillaWallModel = class {
-  constructor() {
-    __publicField(this, "walls", /* @__PURE__ */ new Map());
-    const defs = [
-      ["north", "villa-wall-north", { x: 540, y: 424 }],
-      ["east", "villa-wall-east", { x: 956, y: 1212 }],
-      ["south", "villa-wall-south", { x: 540, y: 2e3 }],
-      ["west", "villa-wall-west", { x: 124, y: 1212 }]
-    ];
-    for (const [side, id] of defs) this.walls.set(side, { id, side, hp: 1800, maxHp: 1800, status: "intact", breachCenter: null, breachWidth_px: 0 });
-  }
-  snapshots() {
-    return [...this.walls.values()].map((w) => ({ ...w, breachCenter: w.breachCenter && { ...w.breachCenter } }));
-  }
-  damage(side, amount, point) {
-    const wall = this.walls.get(side);
-    if (!wall || wall.status === "breached" || amount <= 0) return null;
-    wall.hp = Math.max(0, wall.hp - amount);
-    wall.status = wall.hp === 0 ? "breached" : "damaged";
-    if (wall.hp === 0) {
-      wall.breachCenter = { ...point };
-      wall.breachWidth_px = 120;
-    }
-    return { ...wall, breachCenter: wall.breachCenter && { ...wall.breachCenter } };
   }
 };
 
@@ -3349,7 +3651,6 @@ var _BattleTestHarness = class _BattleTestHarness {
     __publicField(this, "spawnSystem", null);
     __publicField(this, "stats", new CombatStats());
     __publicField(this, "civilians", new CivilianStore());
-    __publicField(this, "villaWalls", null);
     __publicField(this, "scenarioKind", "legacy");
     this.config = config;
     this.initialHumanCount = Number.isFinite(config.initialHumans) ? Math.min(MAX_HUMANS, Math.max(0, Math.floor(config.initialHumans))) : 0;
@@ -3357,7 +3658,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.movement = new MovementSystem(this.units);
   }
   start(levelId, _seed) {
-    var _a, _b;
+    var _a, _b, _c;
     this.started = false;
     this.snapshot = this.initialSnapshot();
     this.events = [];
@@ -3367,28 +3668,33 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.battleTick = 0;
     this.deploymentTick = 0;
     this.waveManager = this.createWaveScheduler(levelId);
-    this.scenarioKind = levelId === "LV03_villa_rescue" ? "villa_rescue" : "legacy";
+    const villaScene = ALL_SCENES.find((scene) => scene.levelId === levelId);
+    this.scenarioKind = (_a = villaScene == null ? void 0 : villaScene.scenarioKind) != null ? _a : "legacy";
     this.civilians.clear();
-    this.villaWalls = this.scenarioKind === "villa_rescue" ? new VillaWallModel() : null;
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
     if (this.scenarioKind === "villa_rescue") {
-      this.spawnSystem.configureContinuous({ totalTarget: 240, interval_s: 1.2, initialInterval_s: 1.2, minInterval_s: 0.45, rampDuration_s: 120, batchSize: 2, spawnPoints: ["north", "east", "south", "west"], distribution: { north: 0.25, east: 0.25, south: 0.25, west: 0.25 } });
+      const continuous = villaScene.level.continuousSpawn;
+      this.spawnSystem.configureContinuous({
+        ...continuous,
+        interval_s: continuous.initialInterval_s,
+        continuousEventsOnly: true,
+        distribution: { north: 0.25, east: 0.25, south: 0.25, west: 0.25 }
+      });
     } else if (this.waveManager.getMapId() === "LV02_building_courtyard") {
       this.spawnSystem.configureContinuous({ totalTarget: 720, interval_s: 0.35, batchSize: 10, spawnPoints: ["north", "south", "east", "west"], distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 }, specialRatios: { gut_zombie: 0.05 } });
     }
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.stats.reset();
-    this.combat = new CombatSystem(this.units, this.mapModel, this.stats);
+    this.combat = new CombatSystem(this.units, this.mapModel, this.stats, this.scenarioKind === "villa_rescue" ? this.civilians : void 0);
     this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const villaScene = ALL_SCENES.find((scene) => scene.levelId === levelId);
-    const humanTypes = this.scenarioKind === "villa_rescue" ? (_a = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _a : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
+    const humanTypes = this.scenarioKind === "villa_rescue" ? (_b = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _b : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
     if (!route) {
@@ -3397,7 +3703,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
       throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
     }
-    const positions = this.scenarioKind === "villa_rescue" ? [{ x: 540, y: 1400 }, { x: 405, y: 1170 }, { x: 675, y: 1170 }, { x: 450, y: 970 }, { x: 630, y: 970 }, { x: 420, y: 1420 }, { x: 660, y: 1420 }] : formationPositions(this.initialHumanCount, route.defend, this.mapModel);
+    const positions = this.scenarioKind === "villa_rescue" ? villaScene.level.soldierPositions : formationPositions(this.initialHumanCount, route.defend, this.mapModel);
     for (let index = 0; index < positions.length; index++) {
       const position = positions[index];
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
@@ -3405,11 +3711,12 @@ var _BattleTestHarness = class _BattleTestHarness {
       unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
     if (this.scenarioKind === "villa_rescue") {
-      for (const civilian of (_b = villaScene == null ? void 0 : villaScene.level.civilians) != null ? _b : []) this.civilians.spawn(civilian.position);
+      for (const civilian of (_c = villaScene == null ? void 0 : villaScene.level.civilians) != null ? _c : []) this.civilians.spawn(civilian.position);
       this.deploymentTime_s = this.config.deploymentDuration_s;
       this.runWaves();
     }
     this.started = true;
+    if (this.scenarioKind === "villa_rescue") this.resolveFrame();
   }
   humanSpawnTypes(count) {
     var _a;
@@ -3483,6 +3790,9 @@ var _BattleTestHarness = class _BattleTestHarness {
   getUnits() {
     return cloneData(this.units.all());
   }
+  getCivilians() {
+    return cloneData(this.civilians.all());
+  }
   getSnapshot() {
     var _a;
     return {
@@ -3494,7 +3804,7 @@ var _BattleTestHarness = class _BattleTestHarness {
       civilianTransformed: this.civilians.all().some((c) => c.state === "transformed"),
       civilianCount: this.civilians.all().length,
       scenarioKind: this.scenarioKind,
-      walls: (_a = this.villaWalls) == null ? void 0 : _a.snapshots()
+      walls: this.scenarioKind === "villa_rescue" ? (_a = this.mapModel) == null ? void 0 : _a.getWallStates() : void 0
     };
   }
   getMapModel() {
@@ -3506,9 +3816,10 @@ var _BattleTestHarness = class _BattleTestHarness {
     return ((_a = this.spawnSystem) == null ? void 0 : _a.isContinuous()) ? 0 : (_c = (_b = this.waveManager) == null ? void 0 : _b.getWaveCount()) != null ? _c : 0;
   }
   getInitialHumans() {
-    return this.initialHumanCount;
+    return this.scenarioKind === "villa_rescue" ? 7 : this.initialHumanCount;
   }
   hitCivilian(civilianId, sourceId = "zombie", amount = 1) {
+    if (!this.started || this.snapshot.result !== "running") return;
     this.events.push(...this.civilians.hit(civilianId, sourceId, amount, this.battleTime_s));
   }
   getEvents() {
@@ -3537,7 +3848,8 @@ var _BattleTestHarness = class _BattleTestHarness {
   }
   allZombieBatchesSpawned() {
     var _a, _b, _c;
-    return ((_a = this.spawnSystem) == null ? void 0 : _a.isGenerationComplete()) === true || ((_b = this.waveManager) == null ? void 0 : _b.allWavesSpawned()) === true && !((_c = this.spawnSystem) == null ? void 0 : _c.hasPending());
+    if ((_a = this.spawnSystem) == null ? void 0 : _a.isContinuous()) return this.spawnSystem.isGenerationComplete();
+    return ((_b = this.waveManager) == null ? void 0 : _b.allWavesSpawned()) === true && !((_c = this.spawnSystem) == null ? void 0 : _c.hasPending());
   }
   resolveFrame() {
     const living = this.units.living();
@@ -3642,7 +3954,7 @@ var BattleSession = class {
     this.battle.start(this.levelId, 1);
     this.screen = "battle";
     this.paused = false;
-    this.deploymentRemaining = DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
+    this.deploymentRemaining = this.scene.scenarioKind === "villa_rescue" ? 0 : DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
     this.cursor = 0;
     this.events = [];
   }
@@ -3673,4 +3985,4 @@ export {
   units_default as unitConfig
 };
 
-export const CORE_BUILD_ID = "core-0dc268116bea";
+export const CORE_BUILD_ID = "core-919ca11ec342";

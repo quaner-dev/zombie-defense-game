@@ -64,7 +64,7 @@ test('entry screens freeze time and reject commands; practice replays the chosen
   assert.throws(() => session.startScene('missing'), /Unknown scene/);
   session.startScene('courtyard');
   assert.equal(session.screen, 'battle');assert.equal(session.mode, 'practice');
-  assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.waveCount, 3);
+  assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.waveCount, 0);
   assert.equal(session.map.terrain[0].id, 'northwest-building');
   session.tick(3);assert.equal(session.snapshot.waveIndex, 0);
   assert.ok(session.events.some(event => event.type === 'zombie_batch_spawn'));

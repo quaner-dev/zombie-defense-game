@@ -1,5 +1,6 @@
 import mapJson from '../../config/map.json' with { type: 'json' };
 import { ALL_SCENES } from '../scenes/index.js';
+import type { WallSide, WallSnapshot } from './types.js';
 
 export interface Waypoint {
   x: number;
@@ -36,6 +37,7 @@ export interface MapDefinition {
   spawn_layout?: { columns: number; spacing_px: number };
   /** Terrain rectangles used by rendering and movement collision. */
   terrain?: TerrainDefinition[];
+  interior_bounds?: MapDefinition['battle_bounds'];
 }
 
 export interface TerrainDefinition {
@@ -46,9 +48,11 @@ export interface TerrainDefinition {
   speedMultiplier?: number;
   stackRequired?: number;
   maxHp?: number;
+  side?: WallSide;
 }
 
 export interface DoorState { id: string; hp: number; maxHp: number; destroyed: boolean }
+export interface EntranceState extends DoorState { kind: 'door' | 'window'; side?: WallSide }
 
 export interface TerrainHit {
   terrain: TerrainDefinition;
@@ -80,10 +84,12 @@ export class MapModel {
   public readonly terrain: readonly TerrainDefinition[];
   public readonly design_size: { width: number; height: number };
   public readonly unit_selection_radius: number;
+  public readonly interior_bounds?: MapDefinition['battle_bounds'];
 
   public constructor(private readonly definition: MapDefinition) {
     this.design_size = { ...(definition.design_size ?? { width: 1080, height: 2400 }) };
     this.unit_selection_radius = definition.unit_selection_radius ?? 112;
+    this.interior_bounds = definition.interior_bounds && { ...definition.interior_bounds };
     this.battle_bounds = { ...definition.battle_bounds };
     this.defense_line_y = definition.defense_line_y;
     this.spawn_top = definition.spawn_bounds === undefined ? this.battle_bounds.top : definition.spawn_bounds.top;
@@ -137,14 +143,39 @@ export class MapModel {
           (terrain.stackRequired !== undefined && (!Number.isInteger(terrain.stackRequired) || terrain.stackRequired < 1))) {
         throw new Error(`Map terrain ${terrain.id} has invalid bounds or stack requirement`);
       }
-      if (terrain.kind === 'door') {
+      if (terrain.kind === 'door' || terrain.kind === 'window') {
         if (!Number.isFinite(terrain.maxHp) || terrain.maxHp! <= 0) throw new Error(`Door ${terrain.id} needs positive durability`);
         this.doors.set(terrain.id, { id: terrain.id, hp: terrain.maxHp!, maxHp: terrain.maxHp!, destroyed: false });
       }
     }
   }
 
-  public getDoorStates(): DoorState[] { return Array.from(this.doors.values(), door => ({ ...door })); }
+  public getDoorStates(): DoorState[] {
+    return this.getEntranceStates().filter(entrance => entrance.kind === 'door')
+      .map(({ id, hp, maxHp, destroyed }) => ({ id, hp, maxHp, destroyed }));
+  }
+
+  public getEntranceStates(): EntranceState[] {
+    return this.terrain.filter(t => t.kind === 'door' || t.kind === 'window').map(t => ({
+      ...this.doors.get(t.id)!, kind: t.kind as EntranceState['kind'], side: t.side,
+    }));
+  }
+
+  /** Wall status reflects its entrances. Solid wall segments never disappear. */
+  public getWallStates(): WallSnapshot[] {
+    if (!this.interior_bounds) return [];
+    return (['north', 'east', 'south', 'west'] as const).map(side => {
+      const entrances = this.getEntranceStates().filter(e => e.side === side);
+      const hp = entrances.reduce((sum, e) => sum + e.hp, 0);
+      const maxHp = entrances.reduce((sum, e) => sum + e.maxHp, 0);
+      const broken = entrances.find(e => e.destroyed);
+      const b = broken && this.terrain.find(t => t.id === broken.id)!.bounds;
+      return { id: `villa-wall-${side}`, side, hp, maxHp,
+        status: broken ? 'breached' : hp < maxHp ? 'damaged' : 'intact',
+        breachCenter: b ? { x: (b.left + b.right) / 2, y: (b.top + b.bottom) / 2 } : null,
+        breachWidth_px: b ? Math.max(b.right - b.left, b.bottom - b.top) : 0 };
+    });
+  }
 
   public damageDoor(id: string, damage: number): DoorState | null {
     const door = this.doors.get(id);
@@ -156,7 +187,7 @@ export class MapModel {
   }
 
   public isBlocking(terrain: TerrainDefinition, ignoreDoors = false): boolean {
-    return !!terrain.blocksMovement && (terrain.kind !== 'door' ||
+    return !!terrain.blocksMovement && ((terrain.kind !== 'door' && terrain.kind !== 'window') ||
       (!ignoreDoors && !this.doors.get(terrain.id)?.destroyed));
   }
 

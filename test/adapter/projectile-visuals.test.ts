@@ -37,7 +37,7 @@ test('flying bullets draw a traveled line, bright 44px tail, head and muzzle fla
   assert.ok(Math.abs(ends[0].args[0]-145)<1e-8);
   assert.ok(Math.abs(moves[1].args[0]-101)<1e-8);
   assert.ok(ends.every((c:any)=>c.args[0]<=145+1e-8),'no line drawn ahead of the bullet');
-  assert.ok(calls.some((c:any)=>c.kind==='stroke'&&c.width===4));
+  assert.ok(calls.some((c:any)=>c.kind==='stroke'&&c.width===6));
   assert.ok(calls.some((c:any)=>c.kind==='circle'&&c.fill.hex==='#FFD477'));
   assert.ok(calls.some((c:any)=>c.kind==='circle'&&c.fill.hex==='#FFFFFF'));
   controller.onDestroy();

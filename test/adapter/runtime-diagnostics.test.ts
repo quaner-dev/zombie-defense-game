@@ -20,7 +20,7 @@ test('practice selection records the entire touch, action, initialization and fi
   }
   const scene=entries.find(e=>e.event==='scene.first-draw:complete'&&e.data.screen==='scenes');
   assert.ok(scene);
-  assert.deepEqual(scene.data.hud.buttons.map((b:any)=>b.id),['scene.cabin','scene.courtyard','scenes.back']);
+  assert.deepEqual(scene.data.hud.buttons.map((b:any)=>b.id),['scene.cabin','scene.courtyard','scene.villa-rescue','scenes.back']);
   assert.ok(scene.data.hud.labels.every((label:any)=>label.active&&label.text.length>0));
   const begin=entries.findIndex(e=>e.event==='input.button-action:start'&&e.data.id==='scene.cabin');
   const tail=entries.slice(begin).map(e=>e.event);

@@ -19,7 +19,7 @@ export interface SceneDefinition {
   levelId: string;
   map: MapDefinition;
   scenarioKind?: ScenarioKind;
-  level: LevelDefinition & { continuousSpawn?: { totalTarget: number; initialInterval_s: number; minInterval_s: number; rampDuration_s: number; batchSize: number; spawnPoints: WallSide[] }; initialSoldiers?: HumanUnitType[]; civilians?: { position: { x: number; y: number } }[] };
+  level: LevelDefinition & { continuousSpawn?: { totalTarget: number; initialInterval_s: number; minInterval_s: number; rampDuration_s: number; batchSize: number; spawnPoints: WallSide[] }; initialSoldiers?: HumanUnitType[]; soldierPositions?: { x: number; y: number }[]; civilians?: { position: { x: number; y: number } }[] };
   presentation: {
     floorColor: string;
     wallColor: string;

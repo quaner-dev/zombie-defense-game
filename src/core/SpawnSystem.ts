@@ -24,6 +24,7 @@ export interface ContinuousSpawnDefinition {
   specialRatios?: { gut_zombie?: number };
   initialInterval_s?: number; minInterval_s?: number; rampDuration_s?: number;
   sides?: string[];
+  continuousEventsOnly?: boolean;
 }
 
 /** Turns scheduled wave declarations into time-based admissions at the map edge. */
@@ -101,9 +102,12 @@ export class SpawnSystem {
           if (existing) existing.count++;
           else batchSpawns.push({ unitType, route, spawnPoint, count: 1 });
         }
-        const side = this.continuous.spawnPoints[Math.floor((this.continuousGenerated - 1) / Math.max(1, count)) % this.continuous.spawnPoints.length] as any;
-        events.push({ type: 'continuous_zombie_spawn', time_s: this.nextContinuousTime_s, data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count } });
-        events.push({ type: 'zombie_batch_spawn', time_s: this.nextContinuousTime_s, data: {
+        for (const spawn of batchSpawns) {
+          const side = this.map.getSpawnPoint(spawn.spawnPoint!)?.side;
+          if (side) events.push({ type: 'continuous_zombie_spawn', time_s: this.nextContinuousTime_s,
+            data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count: spawn.count } });
+        }
+        if (!this.continuous.continuousEventsOnly) events.push({ type: 'zombie_batch_spawn', time_s: this.nextContinuousTime_s, data: {
           waveIndex: 0, batchIndex: Math.floor(this.continuousGenerated / this.continuous.batchSize) - 1,
           batchSize: count, spawns: batchSpawns,
         } });

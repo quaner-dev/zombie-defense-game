@@ -40,7 +40,7 @@ test('every press selects only the fixed circle, even when touching a previously
  assert.equal(f.controls.selectionPreview.radius,112);
  c.draw();
  assert.ok(c.preview.calls.some((call:any)=>call.kind==='circle'&&call.args[2]===112),'visible fixed selection radius');
- assert.ok(c.preview.calls.some((call:any)=>call.kind==='circle'&&call.args[2]===260),'individual soldier attack radius');
+ assert.ok(c.preview.calls.some((call:any)=>call.kind==='circle'&&call.args[2]===460),'individual soldier attack radius');
  f.touch('move',1,release.x,release.y);
  assert.equal(f.controls.selectionPreview.radius,112,'dragging does not enlarge selection');
  f.touch('end',1,release.x,release.y);
