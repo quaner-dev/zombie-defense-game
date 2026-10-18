@@ -4,7 +4,7 @@ import vm from 'node:vm';
 
 // Only the unavailable cc event/render boundary is doubled. Production controller,
 // HUD, InputManager, DragCommand and bundled core all execute unchanged.
-export function fixture(real=false,platform?:unknown,diagnostics:{console:unknown}={console:{warn(){}}},initialViewport?:{origin:{x:number;y:number};size:{width:number;height:number};safe?:{x:number;y:number;width:number;height:number}},atMenu=false) {
+export function fixture(real=false,platform?:unknown,diagnostics:{console:unknown;globals?:Record<string,unknown>}={console:{warn(){}}},initialViewport?:{origin:{x:number;y:number};size:{width:number;height:number};safe?:{x:number;y:number;width:number;height:number}},atMenu=false) {
   const listeners=new Map<string,{fn:Function;owner:any}[]>();
   const input={on(type:string,fn:Function,owner:any){listeners.set(type,[...(listeners.get(type)??[]),{fn,owner}]);},
     off(type:string,fn:Function,owner:any){listeners.set(type,(listeners.get(type)??[]).filter(l=>l.fn!==fn||l.owner!==owner));}};
@@ -28,15 +28,19 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
   class Color {a=255;hex='';static fromHEX(c:Color,h:string){c.hex=h;}}
   class Label {string='';node:any;}
   const viewport=initialViewport??{origin:{x:0,y:0},size:{width:1080,height:2400}};
+  const gameListeners=new Map<string,{fn:Function;owner:any}[]>();
+  const game={frameRate:60,on(type:string,fn:Function,owner:any){gameListeners.set(type,[...(gameListeners.get(type)??[]),{fn,owner}]);},
+    off(type:string,fn:Function,owner:any){gameListeners.set(type,(gameListeners.get(type)??[]).filter(l=>l.fn!==fn||l.owner!==owner));}};
   const cc={input,Input:{EventType:{TOUCH_START:'start',TOUCH_MOVE:'move',TOUCH_END:'end',TOUCH_CANCEL:'cancel'}},
     _decorator:{ccclass:()=> (C:any)=>C},Component:class {},Node,Graphics,Label,Color,
-    Camera:class {static ProjectionType={ORTHO:0};},Canvas:class {},ResolutionPolicy:{SHOW_ALL:0},Game:{EVENT_HIDE:'hide'},game:{on(){},off(){}},
+    Camera:class {static ProjectionType={ORTHO:0};},Canvas:class {},ResolutionPolicy:{SHOW_ALL:0},Game:{EVENT_HIDE:'hide',EVENT_SHOW:'show'},game,
     Layers:{Enum:{UI_2D:1}},UITransform:class {setContentSize(){}},
     view:{setDesignResolutionSize(){},on(){},off(){},getVisibleOrigin:()=>viewport.origin,getVisibleSize:()=>viewport.size},
     sys:{getSafeAreaRect:()=>initialViewport?.safe??({x:0,y:0,width:1080,height:2400})}};
   const code=buildSync({stdin:{contents:`export {BattleSceneController} from './assets/scripts/adapter/BattleSceneController'; export {InputManager} from './assets/scripts/adapter/InputManager'; export {HudController} from './assets/scripts/adapter/HudController'; export {UnitView} from './assets/scripts/adapter/UnitView';`,resolveDir:process.cwd()},bundle:true,write:false,format:'cjs',platform:'node',target:'es2020',tsconfigRaw:{compilerOptions:{experimentalDecorators:true}},external:['cc']}).outputFiles[0].text;
   const module={exports:{} as any};let now=1000;
-  vm.runInNewContext(code,{module,require:(id:string)=>{assert.equal(id,'cc');return cc;},wx:platform,performance:{now:()=>now},console:diagnostics.console});
+  const runtime=vm.createContext({module,require:(id:string)=>{assert.equal(id,'cc');return cc;},wx:platform,performance:{now:()=>now},console:diagnostics.console,...diagnostics.globals});
+  vm.runInContext(code,runtime);
   const exports=module.exports;
   const controller=new exports.BattleSceneController();
   if(real){controller.node=new Node('Battle');controller.onLoad();}
@@ -51,6 +55,7 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
   // New flow regressions opt into the untouched initial menu with atMenu=true.
   if(real&&!atMenu){button(0,'start');button(0,'end');}
   const group=()=>{const u=controller.session.battle.getUnits().find((u:any)=>u.faction==='human');return {x:u.position.x,y:2400-u.position.y};};
-  return {viewport,controller,hud,controls,root,touch,button,group,unitView:new exports.UnitView(new Node('Field')),platform,setTime:(ms:number)=>{now=ms;},advanceTime:(ms:number)=>{now+=ms;}};
+  const emitGame=(type:string)=>{for(const l of gameListeners.get(type)??[])l.fn.call(l.owner);};
+  return {viewport,controller,hud,controls,root,touch,button,group,unitView:new exports.UnitView(new Node('Field')),platform,runtime,emitGame,setTime:(ms:number)=>{now=ms;},advanceTime:(ms:number)=>{now+=ms;}};
 }
 

@@ -99,14 +99,19 @@ for(const [name,consoleValue] of [['absent',undefined],['null',null],['warn-only
   });
 }
 
-test('diagnostics keep console receiver and log only the first three update frames',()=>{
+test('diagnostics keep console receiver, snapshot values and limit frame logs',()=>{
   const calls:unknown[][]=[];
   const logger={log(...args:unknown[]){assert.equal(this,logger);calls.push(args);}};
   const f=fixture(true,undefined,{console:logger},undefined,true);
-  assert.deepEqual(calls.map(args=>args[0]),['[ZombieDefense] BattleSceneController.onLoad:start','[ZombieDefense] layout','[ZombieDefense] BattleSceneController.onLoad:complete']);
+  const entries=()=>calls.map(args=>JSON.parse(String(args[0]).slice(String(args[0]).indexOf('{'))));
+  assert.ok(entries().some(entry=>entry.event==='BattleSceneController.onLoad:start'));
+  assert.ok(entries().some(entry=>entry.event==='BattleSceneController.onLoad:complete'));
+  assert.equal(entries().find(entry=>entry.event==='scene.ready').data.screen,'menu');
   f.button(0,'start');f.button(0,'end');
   for(let i=0;i<5;i++)f.controller.update(.01);
-  const updates=calls.filter(args=>args[0]==='[ZombieDefense] update');
-  assert.deepEqual(updates.map(args=>(args[1] as any).frame),[1,2,3]);
+  const updates=entries().filter(entry=>entry.event==='update');
+  assert.deepEqual(updates.map(entry=>entry.data.frame),[1,2,3]);
+  assert.equal(entries().filter(entry=>entry.event==='runtime.heartbeat').length,1);
+  assert.equal(entries().find(entry=>entry.event==='scene.ready').data.screen,'menu','old logs retain their original state');
   assert.equal(f.controller.session.snapshot.result,'running');f.controller.onDestroy();
 });

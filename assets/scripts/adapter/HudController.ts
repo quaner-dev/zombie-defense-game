@@ -2,8 +2,9 @@ import { Graphics, Label, Node, view } from 'cc';
 import { SCENES, type BattleSession, type SceneDefinition } from '../generated/core.js';
 import type { Point } from './contracts';
 import { color, graphics, palette, uiNode } from './drawing';
+import { diagnostics } from './RuntimeDiagnostics';
 
-export interface HitBox {x:number;y:number;width:number;height:number;action:()=>void;pressed?:boolean;visible?:()=>boolean}
+export interface HitBox {id:string;x:number;y:number;width:number;height:number;action:()=>void;pressed?:boolean;visible?:()=>boolean}
 
 export class HudController {
   private readonly g:Graphics;
@@ -25,6 +26,10 @@ export class HudController {
   private menuScale=1;
 
   public constructor(private readonly root:Node,private readonly session:BattleSession,restart:()=>void,changed:()=>void=()=>{}){
+    const action=(id:string,work:()=>unknown)=>()=>{
+      diagnostics.run('session.action',work,{button:id,screen:session.screen,scene:session.activeScene.id});
+      changed();
+    };
     this.g=graphics('HUDPanels',root);
     this.status=this.label('Counts',0,0,1000,150,32);
     this.result=this.label('Result',0,0,1000,420,44);
@@ -37,10 +42,10 @@ export class HudController {
     this.next=this.label('NextScene',0,0,700,100,36);
     this.battleLabels=[this.status,this.result,this.pause,replay,home,this.next];
     this.battleBoxes=[
-      {x:0,y:0,width:260,height:100,action:()=>{if(session.snapshot.result==='running')session.paused=!session.paused;}},
-      {x:0,y:0,width:260,height:100,action:restart},
-      {x:0,y:0,width:160,height:90,action:()=>{session.returnToMenu();changed();}},
-      {x:0,y:0,width:700,height:100,visible:()=>session.canAdvance,action:()=>{if(session.advanceScene())changed();}},
+      {id:'battle.pause',x:0,y:0,width:260,height:100,action:()=>{if(session.snapshot.result==='running')session.paused=!session.paused;}},
+      {id:'battle.restart',x:0,y:0,width:260,height:100,action:restart},
+      {id:'battle.home',x:0,y:0,width:160,height:90,action:action('battle.home',()=>session.returnToMenu())},
+      {id:'battle.next',x:0,y:0,width:700,height:100,visible:()=>session.canAdvance,action:()=>{if(diagnostics.run('session.advance',()=>session.advanceScene()))changed();}},
     ];
     this.menuTitle=this.label('MenuTitle',0,0,960,180,64);
     this.menuHint=this.label('MenuHint',0,0,920,200,30);
@@ -50,22 +55,29 @@ export class HudController {
     practice.string='场景演练\n自由选择小屋或大楼楼下\n独立挑战 · 每个场景 3 波';
     this.modeLabels=[story,practice];
     this.modeBoxes=[
-      {x:0,y:0,width:860,height:240,action:()=>{session.startStory();changed();}},
-      {x:0,y:0,width:860,height:240,action:()=>{session.showSceneSelection();changed();}},
+      {id:'mode.story',x:0,y:0,width:860,height:240,action:action('mode.story',()=>session.startStory())},
+      {id:'mode.practice',x:0,y:0,width:860,height:240,action:action('mode.practice',()=>session.showSceneSelection())},
     ];
-    this.sceneBoxes=SCENES.map(scene=>({x:0,y:0,width:860,height:300,action:()=>{session.startScene(scene.id);changed();}}));
+    this.sceneBoxes=SCENES.map(scene=>({id:`scene.${scene.id}`,x:0,y:0,width:860,height:300,action:action(`scene.${scene.id}`,()=>session.startScene(scene.id))}));
     this.sceneLabels=SCENES.map(scene=>{
       const label=this.label(`Scene-${scene.id}`,0,0,620,260,34);
       label.string=`${scene.subtitle}\n${scene.title} · ${scene.level.waves.length} 波\n${scene.objective}`;
       return label;
     });
     const back=this.label('BackToModes',0,0,320,100,34);back.string='返回模式选择';this.sceneLabels.push(back);
-    this.sceneBoxes.push({x:0,y:0,width:320,height:100,action:()=>{session.returnToMenu();changed();}});
+    this.sceneBoxes.push({id:'scenes.back',x:0,y:0,width:320,height:100,action:action('scenes.back',()=>session.returnToMenu())});
   }
 
   public get boxes():HitBox[] {
     const boxes=this.session.screen==='menu'?this.modeBoxes:this.session.screen==='scenes'?this.sceneBoxes:this.battleBoxes;
     return boxes.filter(box=>!box.visible||box.visible());
+  }
+
+  public diagnosticState(){
+    const labels=this.session.screen==='menu'?this.modeLabels:this.session.screen==='scenes'?this.sceneLabels:this.battleLabels;
+    return {screen:this.session.screen,title:this.menuTitle.string,rootActive:this.root.active,
+      buttons:this.boxes.map(({id,x,y,width,height,pressed})=>({id,x,y,width,height,pressed:!!pressed})),
+      labels:labels.map(label=>({name:label.node.name,text:label.string,active:label.node.active,position:{x:label.node.position.x,y:label.node.position.y}}))};
   }
 
   private label(name:string,x:number,y:number,w:number,h:number,size:number):Label {
