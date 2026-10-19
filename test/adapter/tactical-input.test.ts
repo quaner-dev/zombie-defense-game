@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { fixture } from '../../test-support/cocos-fixture.js';
 import { mapToScreen } from '../../assets/scripts/adapter/contracts.js';
 
-test('three opening InputManager drags position the two flamethrowers and shield for a surviving victory', () => {
+test('three opening long-press InputManager drags position the two flamethrowers and shield for a surviving victory', () => {
   const f = fixture(true), c = f.controller, s = c.session;
   s.tick(3);
   const captured: any[] = [];
@@ -17,6 +17,7 @@ test('three opening InputManager drags position the two flamethrowers and shield
       f.advanceTime(301); // Respect the real gesture cooldown; no extra battle time is submitted.
       f.touch('start',1,press.x,press.y);
       assert.ok(f.controls.drag.preview,`${selected.unitType} ${selected.id} accepts a gesture`);
+      f.advanceTime(450);f.controls.update();
       assert.deepEqual(Array.from(f.controls.drag.preview.unitIds),[selected.id]);
       f.touch('end',1,release.x,release.y);
       const event = s.battle.getEvents().filter((e: any) => e.type === 'group_command').at(-1);

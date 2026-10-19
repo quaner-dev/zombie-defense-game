@@ -1,0 +1,97 @@
+<svg id="battle-preview" xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-labelledby="preview-title preview-desc">
+          <title id="preview-title">大屋守卫 · 战场统计设计</title>
+          <desc id="preview-desc">战场上方显示场景名称，下方第一行显示彩色兵种数量，其下显示绿色士兵与紫色僵尸的总量和比例。</desc>
+          <style>
+            .game-text { font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+            .tabular { font-variant-numeric: tabular-nums; }
+            .ratio-animation { transition: width 220ms ease-out, transform 220ms ease-out; }
+            @media (prefers-reduced-motion: reduce) { .ratio-animation { transition: none; } }
+          </style>
+          <defs>
+            <pattern id="map-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#c3d0db" stroke-opacity=".035"/></pattern>
+            <clipPath id="screen-clip"><rect width="390" height="844" rx="28"/></clipPath>
+            <clipPath id="field-clip"><rect x="20" y="130" width="350" height="460" rx="12"/></clipPath>
+            <clipPath id="bar-clip"><rect width="342" height="12" rx="6"/></clipPath>
+          </defs>
+          <g class="game-text" clip-path="url(#screen-clip)">
+            <rect width="390" height="844" fill="#0b0e14"/>
+            <text x="24" y="38" fill="#83909f" font-size="10" letter-spacing="2">尸潮防线</text>
+            <rect x="297" y="23" width="69" height="23" rx="11.5" fill="#63d68f12" stroke="#63d68f33"/>
+            <circle cx="310" cy="34.5" r="2.5" fill="#63d68f"/><text x="320" y="38" fill="#9de4b7" font-size="10">战斗中</text>
+            <!-- A: scene name stands above the battlefield. -->
+            <text x="24" y="83" fill="#f2f2f7" font-size="28" font-weight="650" letter-spacing="1">大屋守卫</text>
+            <text x="24" y="109" fill="#919ba9" font-size="11">故事模式 · 第一幕</text>
+            <text x="366" y="109" text-anchor="end" fill="#919ba9" font-size="11" class="tabular">第 2 / 3 波 · 00:28</text>
+            <!-- Existing cabin geometry, contained in the field without cropping. -->
+            <rect x="20" y="130" width="350" height="460" rx="12" fill="#10151d" stroke="#29313d"/>
+            <g clip-path="url(#field-clip)">
+              <rect x="20" y="130" width="350" height="460" fill="url(#map-grid)"/>
+              <g transform="translate(91.5 130) scale(.1916666667)">
+                <rect width="1080" height="2400" fill="#17191e"/>
+                <rect x="124" y="704" width="832" height="1336" fill="#252a30"/>
+                <rect x="440" y="704" width="200" height="1336" fill="#343338"/>
+                <rect x="490" y="820" width="100" height="1100" fill="#454047" opacity=".6"/>
+                <rect x="60" y="180" width="960" height="1980" fill="none" stroke="#454752" stroke-width="3"/>
+                <g fill="#7a7a85" stroke="#a4a4af" stroke-width="3">
+                  <rect x="100" y="680" width="24" height="1384"/><rect x="956" y="680" width="24" height="1384"/>
+                  <rect x="100" y="680" width="377" height="24"/><rect x="603" y="680" width="377" height="24"/>
+                  <rect x="100" y="2040" width="377" height="24"/><rect x="603" y="2040" width="377" height="24"/>
+                </g>
+                <g fill="#95653e" stroke="#e4b575" stroke-width="4"><rect x="477" y="680" width="126" height="24"/><rect x="477" y="2040" width="126" height="24"/></g>
+                <g fill="#63d68f"><rect x="477" y="653" width="126" height="7"/><rect x="477" y="2085" width="126" height="7"/></g>
+                <g fill="#9f8be8" opacity=".12"><ellipse cx="540" cy="360" rx="170" ry="160"/><ellipse cx="540" cy="2160" rx="160" ry="110"/></g>
+                <g id="map-zombies" fill="#9f8be8" stroke="#9f8be8" stroke-opacity=".16" stroke-width="16">
+                  <circle cx="496" cy="266" r="16"/><circle cx="538" cy="280" r="16"/><circle cx="580" cy="258" r="16"/>
+                  <circle cx="510" cy="325" r="16"/><circle cx="560" cy="340" r="16"/><circle cx="590" cy="385" r="16"/>
+                  <circle cx="488" cy="398" r="16"/><circle cx="535" cy="416" r="16"/><circle cx="565" cy="458" r="16"/>
+                  <circle cx="506" cy="490" r="16"/><circle cx="588" cy="510" r="16"/><circle cx="545" cy="550" r="16"/><circle cx="495" cy="590" r="16"/>
+                  <circle cx="495" cy="2110" r="16"/><circle cx="537" cy="2113" r="16"/><circle cx="579" cy="2115" r="16"/>
+                  <circle cx="504" cy="2135" r="16"/><circle cx="551" cy="2145" r="16"/><circle cx="594" cy="2140" r="16"/>
+                  <circle cx="488" cy="2174" r="16"/><circle cx="535" cy="2182" r="16"/><circle cx="581" cy="2175" r="16"/>
+                  <circle cx="504" cy="2210" r="16"/><circle cx="552" cy="2220" r="16"/><circle cx="594" cy="2210" r="16"/><circle cx="541" cy="2260" r="16"/>
+                </g>
+                <g id="map-soldiers" stroke-width="15" stroke-opacity=".17">
+                  <g fill="#63d68f" stroke="#63d68f"><circle cx="430" cy="1390" r="14"/><circle cx="485" cy="1360" r="14"/><circle cx="540" cy="1400" r="14"/><circle cx="595" cy="1360" r="14"/><circle cx="650" cy="1390" r="14"/><circle cx="470" cy="1460" r="14"/><circle cx="610" cy="1460" r="14"/></g>
+                  <g fill="#f04438" stroke="#f04438"><circle cx="425" cy="1510" r="16"/><circle cx="540" cy="1500" r="16"/><circle cx="655" cy="1510" r="16"/></g>
+                  <circle cx="540" cy="1580" r="14" fill="#55c5f4" stroke="#55c5f4"/>
+                  <g fill="#b9d7e8" stroke="#b9d7e8"><circle cx="490" cy="1310" r="18"/><circle cx="590" cy="1310" r="18"/></g>
+                </g>
+              </g>
+            </g>
+            <text x="346" y="152" text-anchor="middle" fill="#6e7a8a" font-size="9" letter-spacing="1">N</text>
+            <text x="195" y="249" text-anchor="middle" fill="#85818d" font-size="9">北门</text>
+            <text x="195" y="540" text-anchor="middle" fill="#85818d" font-size="9">南门</text>
+            <!-- B: the first row under the field is a single line of colored types and counts. -->
+            <rect x="12" y="610" width="366" height="145" rx="18" fill="#141923" stroke="#2b3340"/>
+            <g font-size="12" font-weight="500">
+              <g fill="#63d68f"><circle cx="28" cy="633" r="3"/><text x="38" y="638">枪兵</text><text id="count-rifle" x="73" y="639" font-size="17" font-weight="700" class="tabular">7</text></g>
+              <g fill="#f04438"><circle cx="109" cy="633" r="3"/><text x="119" y="638">喷火兵</text><text id="count-flame" x="164" y="639" font-size="17" font-weight="700" class="tabular">3</text></g>
+              <g fill="#55c5f4"><circle cx="208" cy="633" r="3"/><text x="218" y="638">狙击兵</text><text id="count-sniper" x="263" y="639" font-size="17" font-weight="700" class="tabular">1</text></g>
+              <g fill="#b9d7e8"><circle cx="303" cy="633" r="3"/><text x="313" y="638">盾兵</text><text id="count-shield" x="366" y="639" text-anchor="end" font-size="17" font-weight="700" class="tabular">2</text></g>
+            </g>
+            <path d="M24 654H366" stroke="#ffffff" stroke-opacity=".07"/>
+            <!-- C: totals and the division both use the same live ratio. -->
+            <g fill="#63d68f"><text x="24" y="681" font-size="12">士兵</text><text id="human-total" x="60" y="682" font-size="19" font-weight="650" class="tabular">13</text></g>
+            <text x="366" y="682" text-anchor="end" fill="#9f8be8" class="tabular"><tspan font-size="12">僵尸 </tspan><tspan id="zombie-total" font-size="19" font-weight="650">26</tspan></text>
+            <g transform="translate(24 699)">
+              <g clip-path="url(#bar-clip)">
+                <rect width="342" height="12" fill="#272e3b"/>
+                <rect id="zombie-segment" width="342" height="12" fill="#9f8be8"/>
+                <rect id="human-segment" class="ratio-animation" style="width:114px" width="114" height="12" fill="#63d68f"/>
+              </g>
+              <g id="division" class="ratio-animation" style="transform:translateX(114px)">
+                <rect x="-2.5" y="-4" width="5" height="20" rx="2.5" fill="#10151d"/>
+                <rect x="-1" y="-3" width="2" height="18" rx="1" fill="#f2f2f7"/>
+              </g>
+            </g>
+            <text id="bar-status" x="24" y="738" fill="#758191" font-size="10">当前存活单位</text>
+            <circle cx="313" cy="734.5" r="2" fill="#758191"/><text x="322" y="738" fill="#758191" font-size="10">实时</text>
+            <!-- Existing actions, kept below the statistics with 44 px touch targets. -->
+            <g font-size="12" text-anchor="middle">
+              <rect x="24" y="777" width="70" height="44" rx="10" fill="#151b25" stroke="#2b3340"/><text x="59" y="804" fill="#919ba9">首页</text>
+              <rect x="104" y="777" width="108" height="44" rx="10" fill="#151b25" stroke="#2b3340"/><text x="158" y="804" fill="#d8dfe8">暂停</text>
+              <rect x="222" y="777" width="144" height="44" rx="10" fill="#1c2b2e" stroke="#6ed4db55"/><text x="294" y="804" fill="#b6e1e4">重新开始</text>
+            </g>
+          </g>
+          <rect x=".5" y=".5" width="389" height="843" rx="27.5" fill="none" stroke="#333c49"/>
+        </svg>

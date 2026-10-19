@@ -31,6 +31,7 @@ export interface UnitStats {
   gun_cooling_rate_s?: number;
   gun_cooling_threshold?: number;
   target_refresh_s?: number;
+  overheating_enabled?: boolean;
   heat_per_tick?: number;
   heat_max?: number;
   overheat_lock_s?: number;

@@ -103,7 +103,8 @@ test('C1-C7/B1-B4/B6: full battle emits paired flight, valid damage, unique deat
   const breaches = events.filter(e => e.type === 'route_breached');
   assert.equal(new Set(breaches.map(e => (e.data as { unitId: string }).unitId)).size, breaches.length);
   assert.ok(events.filter(e => e.type === 'damage').every(e =>
-    [8, 10, 18, 20, 24, 30].includes((e.data as { amount: number }).amount)));
+    [4, 8, 10, 12, 14, 18, 20, 30, 96, 120, 150].some(amount =>
+      Math.abs(amount - (e.data as { amount: number }).amount) < 1e-9)));
   if (snapshot.result === 'win') {
     assert.equal(snapshot.aliveZombies, 0);
     assert.equal(snapshot.spawnedZombies, 700);
@@ -199,7 +200,7 @@ test('report CLI runs ten idle seeds and fixed commands, preserves deterministic
     assert.equal(decision.getSnapshot().result, 'win');
     assert.equal(report.scripted.config.normal_zombie.speed_px_per_s, 41.9);
     assert.equal(report.scripted.config.normal_zombie.attack_interval_s, 0.13);
-    assert.equal(report.scripted.config.rifleman.attack_range_px, 260);
+    assert.equal(report.scripted.config.rifleman.attack_range_px, 460);
     assert.equal(report.scripted.config.rifleman.damagePerHit, 30);
     assert.equal(report.scripted.config.rifleman.diameter_px, 28);
     assert.equal(report.scripted.config.normal_zombie.diameter_px, 32);

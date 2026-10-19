@@ -13,7 +13,7 @@ for (const [index, time, waveCount, cumulativeCount] of [[0, 0, 100, 10], [1, 7,
     const data = event.data as WaveSpawnEventData;
     assert.equal(data.spawns.reduce((sum, spawn) => sum + spawn.count, 0), waveCount);
     assert.equal(data.batchSize, 10);
-    assert.equal(data.batchInterval_s, 0.5);
+    assert.equal(data.batchInterval_s, 0.6);
     assert.equal(event.time_s, time);
     assert.equal(harness.getSnapshot().spawnedZombies, cumulativeCount);
   });

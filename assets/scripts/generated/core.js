@@ -15,7 +15,7 @@ function cloneData(value) {
 }
 
 // src/core/config.ts
-var MAX_HUMANS = 9;
+var MAX_HUMANS = 15;
 var DEFAULT_BATTLE_CONFIG = {
   deploymentDuration_s: 3,
   initialHumans: 9,
@@ -292,7 +292,7 @@ var cabin_default = {
       {
         battleTime_s: 0,
         batchSize: 10,
-        batchInterval_s: 0.5,
+        batchInterval_s: 0.6,
         spawns: [
           {
             unitType: "normal_zombie",
@@ -323,7 +323,7 @@ var cabin_default = {
       {
         battleTime_s: 7,
         batchSize: 10,
-        batchInterval_s: 0.5,
+        batchInterval_s: 0.6,
         spawns: [
           {
             unitType: "normal_zombie",
@@ -366,7 +366,7 @@ var cabin_default = {
       {
         battleTime_s: 20,
         batchSize: 10,
-        batchInterval_s: 0.5,
+        batchInterval_s: 0.6,
         spawns: [
           {
             unitType: "normal_zombie",
@@ -454,7 +454,11 @@ var cabin_default = {
           }
         ]
       }
-    ]
+    ],
+    spawnLimits: {
+      maxBatchSize: 10,
+      minInterval_s: 0.6
+    }
   },
   presentation: {
     floorColor: "#17191E",
@@ -746,9 +750,21 @@ var courtyard_default = {
       totalTarget: 720,
       interval_s: 0.35,
       batchSize: 10,
-      spawnPoints: ["north", "south", "east", "west"],
-      distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 },
-      specialRatios: { gut_zombie: 0.05 }
+      spawnPoints: [
+        "north",
+        "south",
+        "east",
+        "west"
+      ],
+      distribution: {
+        north: 0.3,
+        south: 0.3,
+        east: 0.2,
+        west: 0.2
+      },
+      specialRatios: {
+        gut_zombie: 0.05
+      }
     },
     waves: [
       {
@@ -844,7 +860,11 @@ var courtyard_default = {
           }
         ]
       }
-    ]
+    ],
+    spawnLimits: {
+      maxBatchSize: 10,
+      minInterval_s: 0.35
+    }
   }
 };
 
@@ -1138,7 +1158,12 @@ var villa_rescue_default = {
       minInterval_s: 0.2,
       rampDuration_s: 60,
       batchSize: 1,
-      distribution: { north: 0.25, east: 0.25, south: 0.25, west: 0.25 },
+      distribution: {
+        north: 0.25,
+        east: 0.25,
+        south: 0.25,
+        west: 0.25
+      },
       continuousEventsOnly: true,
       spawnPoints: [
         "north",
@@ -1222,8 +1247,44 @@ var villa_rescue_default = {
       {
         x: 540,
         y: 1400
+      },
+      {
+        x: 360,
+        y: 900
+      },
+      {
+        x: 720,
+        y: 900
+      },
+      {
+        x: 450,
+        y: 900
+      },
+      {
+        x: 630,
+        y: 900
+      },
+      {
+        x: 360,
+        y: 1020
+      },
+      {
+        x: 720,
+        y: 1020
+      },
+      {
+        x: 450,
+        y: 1020
+      },
+      {
+        x: 630,
+        y: 1020
       }
-    ]
+    ],
+    spawnLimits: {
+      maxBatchSize: 1,
+      minInterval_s: 0.2
+    }
   },
   presentation: {
     floorColor: "#202D29",
@@ -1643,7 +1704,7 @@ var levels_default = {
       {
         battleTime_s: 0,
         batchSize: 10,
-        batchInterval_s: 0.5,
+        batchInterval_s: 0.6,
         spawns: [
           {
             unitType: "normal_zombie",
@@ -1674,7 +1735,7 @@ var levels_default = {
       {
         battleTime_s: 7,
         batchSize: 10,
-        batchInterval_s: 0.5,
+        batchInterval_s: 0.6,
         spawns: [
           {
             unitType: "normal_zombie",
@@ -1717,7 +1778,7 @@ var levels_default = {
       {
         battleTime_s: 20,
         batchSize: 10,
-        batchInterval_s: 0.5,
+        batchInterval_s: 0.6,
         spawns: [
           {
             unitType: "normal_zombie",
@@ -1805,7 +1866,11 @@ var levels_default = {
           }
         ]
       }
-    ]
+    ],
+    spawnLimits: {
+      maxBatchSize: 10,
+      minInterval_s: 0.6
+    }
   }
 };
 
@@ -1843,6 +1908,9 @@ var WaveManager = class _WaveManager {
   }
   getMapId() {
     return this.level.mapId;
+  }
+  getSpawnLimits() {
+    return this.level.spawnLimits;
   }
   getContinuousSpawn() {
     return this.level.continuousSpawn;
@@ -1905,6 +1973,7 @@ var units_default = {
     projectile_max_flight_time_s: 0.45,
     continuous_duration_s: 0.45,
     damage_tick_interval_s: 0.15,
+    overheating_enabled: false,
     heat_max: 100,
     heat_per_tick: 8,
     overheat_lock_s: 2,
@@ -2278,6 +2347,77 @@ var UnitStore = class {
   }
 };
 
+// src/core/SquadSystem.ts
+var SquadSystem = class {
+  constructor(store, map) {
+    __publicField(this, "store", store);
+    __publicField(this, "map", map);
+    __publicField(this, "edges", /* @__PURE__ */ new Set());
+    __publicField(this, "squads", /* @__PURE__ */ new Map());
+    __publicField(this, "nextReview", -Infinity);
+    __publicField(this, "orders", []);
+  }
+  key(a, b) {
+    return [a, b].sort().join("|");
+  }
+  update(time) {
+    var _a;
+    const humans = this.store.living().filter((u) => u.faction === "human");
+    const living = new Map(humans.map((u) => [u.id, u]));
+    for (const order of this.orders) {
+      for (const id of Array.from(order.ids)) if (!((_a = living.get(id)) == null ? void 0 : _a.moveTarget)) order.ids.delete(id);
+      if (!order.departed && Array.from(order.ids).every((id) => {
+        var _a2;
+        return ((_a2 = living.get(id)) == null ? void 0 : _a2.state) === "Moving";
+      })) order.departed = true;
+    }
+    this.orders = this.orders.filter((order) => order.ids.size > 0);
+    if (time + 1e-9 < this.nextReview) return;
+    this.nextReview = time + 0.2;
+    const edges = /* @__PURE__ */ new Set(), adjacency = new Map(humans.map((u) => [u.id, []]));
+    for (let i = 0; i < humans.length; i++) for (let j = i + 1; j < humans.length; j++) {
+      const a = humans[i], b = humans[j], key = this.key(a.id, b.id);
+      const orderA = this.orders.find((o) => o.ids.has(a.id)), orderB = this.orders.find((o) => o.ids.has(b.id));
+      if (orderA !== orderB) continue;
+      if (Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y) > (this.edges.has(key) ? 160 : 120) || this.map.firstBlockingTerrain(a.position, b.position)) continue;
+      edges.add(key);
+      adjacency.get(a.id).push(b.id);
+      adjacency.get(b.id).push(a.id);
+    }
+    this.edges = edges;
+    this.squads.clear();
+    for (const human of humans) {
+      if (this.squads.has(human.id)) continue;
+      const ids = [], pending = [human.id], visited = /* @__PURE__ */ new Set();
+      while (pending.length) {
+        const id = pending.pop();
+        if (visited.has(id)) continue;
+        visited.add(id);
+        ids.push(id);
+        pending.push(...adjacency.get(id));
+      }
+      ids.sort();
+      for (const id of ids) this.squads.set(id, ids);
+    }
+  }
+  members(id, time) {
+    var _a;
+    this.update(time);
+    const order = this.orders.find((o) => o.ids.has(id));
+    return Array.from(order ? order.ids : (_a = this.squads.get(id)) != null ? _a : []);
+  }
+  command(units) {
+    const ids = new Set(units.map((u) => u.id));
+    for (const order of this.orders) for (const id of Array.from(ids)) order.ids.delete(id);
+    this.orders.push({ ids, speed: Math.min(...units.map((u) => u.speed_px_per_s)), departed: false });
+    this.nextReview = -Infinity;
+  }
+  speed(unit) {
+    const order = this.orders.find((o) => o.ids.has(unit.id));
+    return order ? order.departed ? order.speed : 0 : unit.speed_px_per_s;
+  }
+};
+
 // src/core/CommandSystem.ts
 function formationPositions(count, target, map, spacing = units_default.movement.formation_spacing_px) {
   const points = Array.from({ length: count }, (_, index) => {
@@ -2302,10 +2442,11 @@ function translatedPositions(points, target, map) {
 }
 var CommandSystem = class {
   constructor(store, map, emit = () => {
-  }) {
+  }, squads) {
     __publicField(this, "store", store);
     __publicField(this, "map", map);
     __publicField(this, "emit", emit);
+    __publicField(this, "squads", squads);
   }
   issueMoveAt(x, y, targetX, targetY, time_s) {
     if (![x, y, targetX, targetY, time_s].every(Number.isFinite)) return null;
@@ -2314,6 +2455,7 @@ var CommandSystem = class {
   }
   /** Only unique living human soldiers from the captured selection may receive a replacement. */
   issueMoveGroup(unitIds, targetX, targetY, time_s) {
+    var _a;
     if (![targetX, targetY, time_s].every(Number.isFinite)) return null;
     const ids = new Set(unitIds);
     const selected = this.store.living().filter((unit) => unit.faction === "human" && ids.has(unit.id));
@@ -2323,10 +2465,11 @@ var CommandSystem = class {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY))
     };
-    const positions = formationPositions(selected.length, target, this.map, units_default.movement.arrival_spacing_px).map((point, index) => {
-      var _a;
-      return this.map.walkablePoint(point, (_a = selected[index].radius_px) != null ? _a : 7);
+    const positions = translatedPositions(selected.map((unit) => unit.position), target, this.map).map((point, index) => {
+      var _a2;
+      return this.map.walkablePoint(point, (_a2 = selected[index].radius_px) != null ? _a2 : 7);
     });
+    (_a = this.squads) == null ? void 0 : _a.command(selected);
     selected.forEach((unit, i) => {
       if (unit.unitType === "engineer" && unit.state === "Dismantling" || unit.unitType === "flamethrower" && unit.state === "RetractingFlame") {
         unit.moveTarget = positions[i];
@@ -2400,23 +2543,68 @@ var CommandSystem = class {
   }
 };
 
+// src/core/Roster.ts
+var SOLDIER_NAMES = {
+  rifleman: "\u6B65\u67AA\u5175",
+  flamethrower: "\u55B7\u706B\u5175",
+  shield: "\u76FE\u5175",
+  sniper: "\u72D9\u51FB\u5175",
+  engineer: "\u5DE5\u5175"
+};
+function rosterTypes(roster) {
+  if (!roster || Object.keys(roster).some((key) => !HUMAN_UNIT_TYPES.includes(key)))
+    throw new Error("Unknown soldier type");
+  const types = [];
+  for (const type of HUMAN_UNIT_TYPES) {
+    const count = roster[type];
+    if (!Number.isSafeInteger(count) || count < 0 || count > MAX_HUMANS) throw new Error("Invalid soldier count");
+    for (let i = 0; i < count; i++) types.push(type);
+  }
+  if (types.length < 1 || types.length > MAX_HUMANS) throw new Error(`Choose 1\u2013${MAX_HUMANS} soldiers`);
+  return types;
+}
+function defaultRoster(scene) {
+  return scene.scenarioKind === "villa_rescue" ? { rifleman: 4, flamethrower: 2, shield: 1, sniper: 0, engineer: 0 } : { rifleman: 4, flamethrower: 2, shield: 1, sniper: 1, engineer: 1 };
+}
+function soldierPositions(scene, map, count, defend) {
+  var _a, _b;
+  if ((scene == null ? void 0 : scene.scenarioKind) !== "villa_rescue") return formationPositions(count, defend, map, 60);
+  const candidates = (_a = scene.level.soldierPositions) != null ? _a : [];
+  const positions = [];
+  for (const candidate of candidates) {
+    const point = map.walkablePoint(candidate, 19);
+    if (positions.some((p) => Math.hypot(p.x - point.x, p.y - point.y) < 50) || ((_b = scene.level.civilians) == null ? void 0 : _b.some((c) => Math.hypot(c.position.x - point.x, c.position.y - point.y) < 55))) continue;
+    positions.push(point);
+    if (positions.length === count) break;
+  }
+  if (positions.length !== count) throw new Error("Not enough safe deployment positions");
+  return positions;
+}
+
 // src/core/MovementSystem.ts
 var MovementSystem = class {
-  constructor(store, map) {
+  constructor(store, map, squads) {
     __publicField(this, "store", store);
     __publicField(this, "map", map);
+    __publicField(this, "squads", squads);
   }
   update(seconds, time_s) {
-    var _a, _b;
+    var _a, _b, _c, _d, _e;
     const events = [];
     if (!Number.isFinite(seconds) || seconds < 0) return events;
+    (_a = this.squads) == null ? void 0 : _a.update(time_s);
     const humans = this.store.living().filter((unit) => unit.faction === "human");
     const starts = new Map(humans.map((unit) => [unit.id, { ...unit.position }]));
     const tolerance = units_default.movement.arrival_tolerance_px;
     for (const unit of this.store.living()) {
       if (unit.state !== "Moving" || !unit.moveTarget) continue;
+      const speed = (_c = (_b = this.squads) == null ? void 0 : _b.speed(unit)) != null ? _c : unit.speed_px_per_s;
+      if (speed === 0) {
+        unit.velocity = { x: 0, y: 0 };
+        continue;
+      }
       const remaining = Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y);
-      const radius = (_a = unit.radius_px) != null ? _a : 7;
+      const radius = (_d = unit.radius_px) != null ? _d : 7;
       const waypoint = this.map ? this.map.nextWaypoint(unit.position, unit.moveTarget, radius) : unit.moveTarget;
       if (!waypoint) {
         unit.state = "Idle";
@@ -2433,13 +2621,13 @@ var MovementSystem = class {
       const dx = waypoint.x - unit.position.x;
       const dy = waypoint.y - unit.position.y;
       const distance = Math.hypot(dx, dy);
-      const step = remaining <= tolerance ? 0 : Math.min(distance, seconds * unit.speed_px_per_s);
+      const step = remaining <= tolerance ? 0 : Math.min(distance, seconds * speed);
       if (distance > 0 && step > 0) {
         const destination = {
           x: unit.position.x + dx / distance * step,
           y: unit.position.y + dy / distance * step
         };
-        const wall = (_b = this.map) == null ? void 0 : _b.firstBlockingTerrain(unit.position, destination, radius);
+        const wall = (_e = this.map) == null ? void 0 : _e.firstBlockingTerrain(unit.position, destination, radius);
         if (wall) {
           unit.position = wall.point;
           unit.state = "Idle";
@@ -2455,8 +2643,8 @@ var MovementSystem = class {
         }
         unit.position = destination;
         unit.velocity = {
-          x: dx / distance * unit.speed_px_per_s,
-          y: dy / distance * unit.speed_px_per_s
+          x: dx / distance * speed,
+          y: dy / distance * speed
         };
       }
       if (Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y) <= tolerance) {
@@ -2690,7 +2878,12 @@ var CombatSystem = class {
     const lock = (_b = stats.overheat_lock_s) != null ? _b : 2;
     const rate = (_c = stats.cooling_rate_s) != null ? _c : 45;
     const threshold = (_d = stats.cooling_threshold) != null ? _d : 25;
-    this.coolWeapon(unit, dt, maxHeat, rate, threshold);
+    const overheating = stats.overheating_enabled !== false;
+    if (overheating) this.coolWeapon(unit, dt, maxHeat, rate, threshold);
+    else {
+      unit.weaponHeat = 0;
+      unit.weaponCooldown_s = 0;
+    }
     if (unit.state === "RetractingFlame") {
       unit.stateElapsed_s += dt;
       unit.flameLength_px = Math.max(0, unit.flameLength_px - range * dt / ((_e = stats.retract_duration_s) != null ? _e : 0.3));
@@ -2755,6 +2948,7 @@ var CombatSystem = class {
       if (this.map.firstBlockingTerrain(unit.position, candidate.position)) continue;
       events.push(...this.applyDamage(candidate.id, stats.damagePerHit, unit.id, time_s, "flame", unit.position));
     }
+    if (!overheating) return;
     unit.weaponHeat = Math.min(maxHeat, unit.weaponHeat + ((_k = stats.heat_per_tick) != null ? _k : 8));
     if (unit.weaponHeat >= maxHeat) {
       unit.weaponCooldown_s = lock + (maxHeat - threshold) / rate;
@@ -3407,26 +3601,37 @@ var SpawnSystem = class {
   constructor(store, map) {
     __publicField(this, "store", store);
     __publicField(this, "map", map);
+    __publicField(this, "limits");
+    __publicField(this, "nextAdmission_s", 0);
     __publicField(this, "pending", []);
     __publicField(this, "spawned", 0);
     __publicField(this, "offsets", /* @__PURE__ */ new Map());
     __publicField(this, "continuous", null);
     __publicField(this, "nextContinuousTime_s", 0);
     __publicField(this, "continuousGenerated", 0);
+    __publicField(this, "continuousBatchIndex", 0);
     __publicField(this, "continuousGutSpawned", 0);
     __publicField(this, "continuousCompletionEmitted", false);
     __publicField(this, "continuousPointCounts", /* @__PURE__ */ new Map());
   }
   reset() {
+    this.limits = void 0;
+    this.nextAdmission_s = 0;
     this.pending = [];
     this.spawned = 0;
     this.offsets.clear();
     this.continuous = null;
     this.nextContinuousTime_s = 0;
     this.continuousGenerated = 0;
+    this.continuousBatchIndex = 0;
     this.continuousGutSpawned = 0;
     this.continuousCompletionEmitted = false;
     this.continuousPointCounts.clear();
+  }
+  configureLimits(limits) {
+    if (limits && (!Number.isSafeInteger(limits.maxBatchSize) || limits.maxBatchSize < 1 || !Number.isFinite(limits.minInterval_s) || limits.minInterval_s <= 0)) throw new Error("Invalid spawn limits");
+    this.limits = limits ? { ...limits } : void 0;
+    this.nextAdmission_s = 0;
   }
   get spawnedCount() {
     return this.spawned;
@@ -3472,6 +3677,7 @@ var SpawnSystem = class {
     this.continuous = cloneData(definition);
     this.nextContinuousTime_s = 0;
     this.continuousGenerated = 0;
+    this.continuousBatchIndex = 0;
     this.continuousGutSpawned = 0;
     this.continuousCompletionEmitted = false;
     this.continuousPointCounts.clear();
@@ -3495,13 +3701,15 @@ var SpawnSystem = class {
     });
   }
   update(time_s) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
     const events = [];
+    if (!Number.isFinite(time_s) || time_s < 0 || this.limits && time_s + 1e-9 < this.nextAdmission_s) return events;
     if (this.continuous) {
       while (this.continuousGenerated < this.continuous.totalTarget && this.nextContinuousTime_s <= time_s + 1e-9) {
         const remaining = this.continuous.totalTarget - this.continuousGenerated;
-        const count = Math.min(this.continuous.batchSize, remaining);
-        const specialTarget = Math.ceil(this.continuous.totalTarget * ((_b = (_a = this.continuous.specialRatios) == null ? void 0 : _a.gut_zombie) != null ? _b : 0));
+        const count = Math.min(this.continuous.batchSize, remaining, (_b = (_a = this.limits) == null ? void 0 : _a.maxBatchSize) != null ? _b : Infinity);
+        const admittedAt = this.limits ? time_s : this.nextContinuousTime_s;
+        const specialTarget = Math.ceil(this.continuous.totalTarget * ((_d = (_c = this.continuous.specialRatios) == null ? void 0 : _c.gut_zombie) != null ? _d : 0));
         const batchSpawns = [];
         for (let index = 0; index < count; index++) {
           const pointIndex = this.weightedSpawnPointIndex(this.continuousGenerated);
@@ -3509,7 +3717,7 @@ var SpawnSystem = class {
           const route = this.map.routeIds()[pointIndex % Math.max(1, this.map.routeIds().length)];
           const unitType = this.continuousGutSpawned < specialTarget ? "gut_zombie" : "normal_zombie";
           const key = spawnPoint;
-          const offset = (_c = this.offsets.get(key)) != null ? _c : 0;
+          const offset = (_e = this.offsets.get(key)) != null ? _e : 0;
           const positions = this.map.spawnPositions(route, 1, spawnPoint, offset);
           this.offsets.set(key, offset + positions.length);
           for (const position of positions) {
@@ -3524,24 +3732,31 @@ var SpawnSystem = class {
           else batchSpawns.push({ unitType, route, spawnPoint, count: 1 });
         }
         for (const spawn of batchSpawns) {
-          const side = (_d = this.map.getSpawnPoint(spawn.spawnPoint)) == null ? void 0 : _d.side;
+          const side = (_f = this.map.getSpawnPoint(spawn.spawnPoint)) == null ? void 0 : _f.side;
           if (side) events.push({
             type: "continuous_zombie_spawn",
-            time_s: this.nextContinuousTime_s,
+            time_s: admittedAt,
             data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count: spawn.count }
           });
         }
-        if (!this.continuous.continuousEventsOnly) events.push({ type: "zombie_batch_spawn", time_s: this.nextContinuousTime_s, data: {
+        if (!this.continuous.continuousEventsOnly) events.push({ type: "zombie_batch_spawn", time_s: admittedAt, data: {
           waveIndex: 0,
-          batchIndex: Math.floor(this.continuousGenerated / this.continuous.batchSize) - 1,
+          batchIndex: this.continuousBatchIndex,
           batchSize: count,
           spawns: batchSpawns
         } });
-        const initial = (_e = this.continuous.initialInterval_s) != null ? _e : this.continuous.interval_s;
-        const minimum = (_f = this.continuous.minInterval_s) != null ? _f : this.continuous.interval_s;
-        const ramp = (_g = this.continuous.rampDuration_s) != null ? _g : 0;
+        this.continuousBatchIndex++;
+        const initial = (_g = this.continuous.initialInterval_s) != null ? _g : this.continuous.interval_s;
+        const minimum = (_h = this.continuous.minInterval_s) != null ? _h : this.continuous.interval_s;
+        const ramp = (_i = this.continuous.rampDuration_s) != null ? _i : 0;
         const progress = ramp > 0 ? Math.min(1, this.nextContinuousTime_s / ramp) : 1;
-        this.nextContinuousTime_s += initial + (minimum - initial) * progress;
+        const interval = initial + (minimum - initial) * progress;
+        this.nextContinuousTime_s += interval;
+        if (this.limits) {
+          if (this.nextContinuousTime_s <= time_s + 1e-9) this.nextContinuousTime_s = time_s + interval;
+          this.nextAdmission_s = time_s + this.limits.minInterval_s;
+          break;
+        }
       }
       if (this.isGenerationComplete() && !this.continuousCompletionEmitted) {
         this.continuousCompletionEmitted = true;
@@ -3557,7 +3772,7 @@ var SpawnSystem = class {
       while (wave.nextBatchTime_s <= time_s + 1e-9 && wave.spawns.some((item) => item.remaining > 0)) {
         const batchSpawns = [];
         let admitted = 0;
-        while (admitted < wave.batchSize && wave.spawns.some((item) => item.remaining > 0)) {
+        while (admitted < Math.min(wave.batchSize, (_k = (_j = this.limits) == null ? void 0 : _j.maxBatchSize) != null ? _k : Infinity) && wave.spawns.some((item) => item.remaining > 0)) {
           let selected;
           let selectedIndex = -1;
           for (let offset2 = 0; offset2 < wave.spawns.length; offset2++) {
@@ -3570,13 +3785,13 @@ var SpawnSystem = class {
           }
           if (!selected) break;
           const spawn = selected.spawn;
-          const key = (_h = spawn.spawnPoint) != null ? _h : `route:${spawn.route}`;
-          const offset = (_i = this.offsets.get(key)) != null ? _i : 0;
+          const key = (_l = spawn.spawnPoint) != null ? _l : `route:${spawn.route}`;
+          const offset = (_m = this.offsets.get(key)) != null ? _m : 0;
           const positions = this.map.spawnPositions(spawn.route, 1, spawn.spawnPoint, offset);
           this.offsets.set(key, offset + positions.length);
           for (const position of positions) {
             const radius = getZombieModule(spawn.unitType).getStats().diameter_px / 2;
-            this.store.spawn(spawn.unitType, this.map.walkablePoint(position, radius), spawn.route, (_j = spawn.spawnPoint) != null ? _j : null);
+            this.store.spawn(spawn.unitType, this.map.walkablePoint(position, radius), spawn.route, (_n = spawn.spawnPoint) != null ? _n : null);
             this.spawned++;
           }
           selected.remaining--;
@@ -3586,17 +3801,22 @@ var SpawnSystem = class {
           if (existing) existing.count++;
           else batchSpawns.push({ ...spawn, count: 1 });
         }
-        if (admitted > 0) events.push({ type: "zombie_batch_spawn", time_s: wave.nextBatchTime_s, data: {
+        if (admitted > 0) events.push({ type: "zombie_batch_spawn", time_s: this.limits ? time_s : wave.nextBatchTime_s, data: {
           waveIndex: wave.waveIndex,
           batchIndex: wave.batchIndex++,
           batchSize: admitted,
           spawns: batchSpawns
         } });
-        wave.nextBatchTime_s += wave.batchInterval_s;
+        wave.nextBatchTime_s = (this.limits ? time_s : wave.nextBatchTime_s) + wave.batchInterval_s;
+        if (this.limits) {
+          this.nextAdmission_s = time_s + this.limits.minInterval_s;
+          break;
+        }
         if (wave.batchInterval_s === 0) {
           wave.nextBatchTime_s = wave.spawns.some((item) => item.remaining > 0) ? time_s : Infinity;
         }
       }
+      if (this.limits && time_s + 1e-9 < this.nextAdmission_s) break;
     }
     this.pending = this.pending.filter((wave) => wave.spawns.some((item) => item.remaining > 0));
     return events;
@@ -3733,6 +3953,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     __publicField(this, "createWaveScheduler", createWaveScheduler);
     __publicField(this, "config");
     __publicField(this, "initialHumanCount");
+    __publicField(this, "squads", null);
     __publicField(this, "snapshot");
     __publicField(this, "events", []);
     __publicField(this, "deploymentTime_s", 0);
@@ -3758,8 +3979,10 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.snapshot = this.initialSnapshot();
     this.movement = new MovementSystem(this.units);
   }
-  start(levelId, _seed) {
-    var _a, _b, _c, _d, _e;
+  start(levelId, _seed, roster) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const exactTypes = roster === void 0 ? void 0 : rosterTypes(roster);
+    this.initialHumanCount = (_a = exactTypes == null ? void 0 : exactTypes.length) != null ? _a : Number.isFinite(this.config.initialHumans) ? Math.min(MAX_HUMANS, Math.max(0, Math.floor(this.config.initialHumans))) : 0;
     this.started = false;
     this.snapshot = this.initialSnapshot();
     this.events = [];
@@ -3770,12 +3993,14 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.deploymentTick = 0;
     this.waveManager = this.createWaveScheduler(levelId);
     const villaScene = ALL_SCENES.find((scene) => scene.levelId === levelId);
-    this.scenarioKind = (_a = villaScene == null ? void 0 : villaScene.scenarioKind) != null ? _a : "legacy";
+    this.scenarioKind = (_b = villaScene == null ? void 0 : villaScene.scenarioKind) != null ? _b : "legacy";
     this.civilians.clear();
     this.mapModel = MapModel.load(this.waveManager.getMapId());
-    this.movement = new MovementSystem(this.units, this.mapModel);
+    this.squads = new SquadSystem(this.units, this.mapModel);
+    this.movement = new MovementSystem(this.units, this.mapModel, this.squads);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
-    const continuous = (_c = (_b = this.waveManager).getContinuousSpawn) == null ? void 0 : _c.call(_b);
+    this.spawnSystem.configureLimits((_d = (_c = this.waveManager).getSpawnLimits) == null ? void 0 : _d.call(_c));
+    const continuous = (_f = (_e = this.waveManager).getContinuousSpawn) == null ? void 0 : _f.call(_e);
     if (continuous) this.spawnSystem.configureContinuous(continuous);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
@@ -3783,10 +4008,12 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.combat = new CombatSystem(this.units, this.mapModel, this.stats, this.scenarioKind === "villa_rescue" ? this.civilians : void 0);
     this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
-    this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
+    this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event), this.squads);
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const humanTypes = this.scenarioKind === "villa_rescue" ? (_d = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _d : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
+    const humanTypes = exactTypes != null ? exactTypes : this.scenarioKind === "villa_rescue" ? (_g = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _g : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
+    if (!exactTypes && this.scenarioKind === "villa_rescue") this.initialHumanCount = humanTypes.length;
+    this.snapshot.aliveHumans = this.initialHumanCount;
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
     if (!route) {
@@ -3795,7 +4022,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
       throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
     }
-    const positions = this.scenarioKind === "villa_rescue" ? villaScene.level.soldierPositions : formationPositions(this.initialHumanCount, route.defend, this.mapModel);
+    const positions = soldierPositions(villaScene, this.mapModel, this.initialHumanCount, route.defend);
     for (let index = 0; index < positions.length; index++) {
       const position = positions[index];
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
@@ -3803,11 +4030,12 @@ var _BattleTestHarness = class _BattleTestHarness {
       unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
     if (this.scenarioKind === "villa_rescue") {
-      for (const civilian of (_e = villaScene == null ? void 0 : villaScene.level.civilians) != null ? _e : []) this.civilians.spawn(civilian.position);
+      for (const civilian of (_h = villaScene == null ? void 0 : villaScene.level.civilians) != null ? _h : []) this.civilians.spawn(civilian.position);
       this.deploymentTime_s = this.config.deploymentDuration_s;
       this.runWaves();
     }
     this.started = true;
+    this.snapshot.stats = this.stats.snapshot(this.units.all());
     if (this.scenarioKind === "villa_rescue") this.resolveFrame();
   }
   humanSpawnTypes(count) {
@@ -3874,6 +4102,10 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.events.push(event);
     return true;
   }
+  getSquadMembers(id) {
+    var _a, _b;
+    return (_b = (_a = this.squads) == null ? void 0 : _a.members(id, this.battleTime_s)) != null ? _b : [];
+  }
   toggleEngineerDeployment(unitId) {
     var _a, _b;
     if (!this.started || this.snapshot.result !== "running") return false;
@@ -3908,7 +4140,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     return ((_a = this.spawnSystem) == null ? void 0 : _a.isContinuous()) ? 0 : (_c = (_b = this.waveManager) == null ? void 0 : _b.getWaveCount()) != null ? _c : 0;
   }
   getInitialHumans() {
-    return this.scenarioKind === "villa_rescue" ? 7 : this.initialHumanCount;
+    return this.initialHumanCount;
   }
   hitCivilian(civilianId, sourceId = "zombie", amount = 1) {
     if (!this.started || this.snapshot.result !== "running") return;
@@ -3993,6 +4225,48 @@ var BattleSession = class {
     __publicField(this, "deploymentRemaining", DEFAULT_BATTLE_CONFIG.deploymentDuration_s);
     __publicField(this, "events", []);
     __publicField(this, "cursor", 0);
+    __publicField(this, "rosterMemory", /* @__PURE__ */ new Map());
+    __publicField(this, "roster", defaultRoster(SCENES[0]));
+  }
+  get rosterTotal() {
+    return Object.values(this.roster).reduce((a, b) => a + b, 0);
+  }
+  get rosterValid() {
+    try {
+      rosterTypes(this.roster);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  changeRoster(type, delta) {
+    if (this.screen !== "roster" || !Number.isSafeInteger(delta) || !Object.prototype.hasOwnProperty.call(this.roster, type)) return false;
+    const count = this.roster[type] + delta, total = this.rosterTotal + delta;
+    if (count < 0 || count > MAX_HUMANS || total > MAX_HUMANS) return false;
+    this.roster = { ...this.roster, [type]: count };
+    return true;
+  }
+  rosterPreview() {
+    const types = this.rosterValid ? rosterTypes(this.roster) : [];
+    const map = MapModel.load(this.scene.mapId), routes = map.routeIds();
+    const defend = map.getRoute(routes[Math.floor(routes.length / 2)]).defend;
+    const positions = types.length ? soldierPositions(this.scene, map, types.length, defend) : [];
+    return types.map((unitType, index) => ({ unitType, position: positions[index] }));
+  }
+  cancelRoster() {
+    if (this.mode === "practice") this.showSceneSelection();
+    else this.returnToMenu();
+  }
+  confirmRoster() {
+    if (this.screen !== "roster" || !this.rosterValid) return false;
+    this.battle.start(this.levelId, 1, { ...this.roster });
+    this.rosterMemory.set(this.scene.id, { ...this.roster });
+    this.screen = "battle";
+    this.paused = false;
+    this.deploymentRemaining = this.scene.scenarioKind === "villa_rescue" ? 0 : DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
+    this.cursor = 0;
+    this.events = [];
+    return true;
   }
   get snapshot() {
     return this.battle.getSnapshot();
@@ -4007,7 +4281,7 @@ var BattleSession = class {
     return this.scene;
   }
   get map() {
-    return this.screen === "battle" ? this.battle.getMapModel() : this.previewMap;
+    return this.screen === "battle" ? this.battle.getMapModel() : this.screen === "roster" ? MapModel.load(this.scene.mapId) : this.previewMap;
   }
   get nextScene() {
     return this.mode === "story" ? SCENES[SCENES.indexOf(this.scene) + 1] : void 0;
@@ -4040,12 +4314,12 @@ var BattleSession = class {
     return true;
   }
   restart(levelId = this.levelId) {
-    var _a;
+    var _a, _b;
     this.levelId = levelId;
     this.scene = (_a = sceneForLevel(levelId)) != null ? _a : SCENES[0];
-    this.battle.start(this.levelId, 1);
-    this.screen = "battle";
-    this.paused = false;
+    this.roster = { ...(_b = this.rosterMemory.get(this.scene.id)) != null ? _b : defaultRoster(this.scene) };
+    this.screen = "roster";
+    this.paused = true;
     this.deploymentRemaining = this.scene.scenarioKind === "villa_rescue" ? 0 : DEFAULT_BATTLE_CONFIG.deploymentDuration_s;
     this.cursor = 0;
     this.events = [];
@@ -4072,9 +4346,12 @@ var BattleSession = class {
 };
 export {
   BattleSession,
+  HUMAN_UNIT_TYPES,
+  MAX_HUMANS,
   SCENES,
+  SOLDIER_NAMES,
   map_default as mapConfig,
   units_default as unitConfig
 };
 
-export const CORE_BUILD_ID = "core-c2084cb23ff1";
+export const CORE_BUILD_ID = "core-fb27b9480dde";

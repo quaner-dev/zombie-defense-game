@@ -5,7 +5,7 @@ import { fixture } from '../../test-support/cocos-fixture.js';
 function enterVilla() {
   const f=fixture(true,undefined,{console:undefined},undefined,true);
   f.button(1,'start');f.button(1,'end');
-  f.button(2,'start');f.button(2,'end');
+  f.button(2,'start');f.button(2,'end');f.confirm();
   return f;
 }
 
@@ -49,7 +49,7 @@ test('civilian transform freezes on pause, renders warning, fails, and resets on
   assert.match(c.hud.result.string,/平民被感染，解救失败/);
   assert.doesNotMatch(c.hud.result.string,/评分|星级|伤害|击杀|波/);
   assert.equal(c.units.g.calls.filter((call:any)=>call.kind==='circle'&&call.args[2]===14&&call.fill?.hex==='#4BA3FF').length,5);
-  c.restart();
+  c.restart();f.confirm();
   assert.equal(s.snapshot.civiliansRemaining,6);
   assert.equal(c.units.g.calls.filter((call:any)=>call.kind==='circle'&&call.args[2]===14&&call.fill?.hex==='#4BA3FF').length,6);
   assert.ok(s.map.getEntranceStates().every((e:any)=>!e.destroyed&&e.hp===e.maxHp));

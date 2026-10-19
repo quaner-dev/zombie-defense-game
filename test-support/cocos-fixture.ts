@@ -16,6 +16,7 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
     setPosition(x:number,y:number){this.position={x,y};}
     setScale(x:number,y=x){this.scale={x,y};}
     getChildByName(name:string){return this.children.find(n=>n.name===name);}
+    getComponent(C:any){return this.components.find(component=>component instanceof C);}
   }
   class Graphics {
     calls:any[]=[];fillColor:any;strokeColor:any;lineWidth=1;
@@ -34,7 +35,8 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
   const cc={input,Input:{EventType:{TOUCH_START:'start',TOUCH_MOVE:'move',TOUCH_END:'end',TOUCH_CANCEL:'cancel'}},
     _decorator:{ccclass:()=> (C:any)=>C},Component:function(){},Node,Graphics,Label,Color,
     Camera:class {static ProjectionType={ORTHO:0};},Canvas:class {},ResolutionPolicy:{SHOW_ALL:0},Game:{EVENT_HIDE:'hide',EVENT_SHOW:'show'},game,
-    Layers:{Enum:{UI_2D:1}},UITransform:class {setContentSize(){}},
+    HorizontalTextAlignment:{LEFT:0,CENTER:1,RIGHT:2},VerticalTextAlignment:{TOP:0,CENTER:1,BOTTOM:2},
+    Layers:{Enum:{UI_2D:1}},UITransform:class {width=0;height=0;setContentSize(width:number,height:number){this.width=width;this.height=height;}},
     view:{setDesignResolutionSize(){},on(){},off(){},getVisibleOrigin:()=>viewport.origin,getVisibleSize:()=>viewport.size},
     sys:{getSafeAreaRect:()=>initialViewport?.safe??({x:0,y:0,width:1080,height:2400})}};
   const code=buildSync({stdin:{contents:`export {BattleSceneController} from './assets/scripts/adapter/BattleSceneController'; export {InputManager} from './assets/scripts/adapter/InputManager'; export {HudController} from './assets/scripts/adapter/HudController'; export {UnitView} from './assets/scripts/adapter/UnitView';`,resolveDir:process.cwd()},bundle:true,write:false,format:'cjs',platform:'node',target:'es2020',tsconfigRaw:{compilerOptions:{experimentalDecorators:true}},external:['cc']}).outputFiles[0].text;
@@ -44,7 +46,7 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
   const exports=module.exports;
   const controller=new exports.BattleSceneController();
   if(real){controller.node=new Node('Battle');controller.onLoad();}
-  else controller.session.restart();
+  else {controller.session.restart();controller.session.confirmRoster();}
   const root=real?controller.root:new Node('HUD');
   const hud=real?controller.hud:new exports.HudController(root,controller.session,()=>controller.restart());hud.layout(cc.sys.getSafeAreaRect());
   const controls=real?controller.controls:new exports.InputManager(controller.session,hud,()=>({x:0,y:0,width:1080,height:2400,scale:1}));
@@ -53,9 +55,10 @@ export function fixture(real=false,platform?:unknown,diagnostics:{console:unknow
   const button=(index:number,type:string,id=1)=>{const b=hud.boxes[index];touch(type,id,b.x+b.width/2,b.y+b.height/2);};
   // Existing combat regressions enter through the production story button.
   // New flow regressions opt into the untouched initial menu with atMenu=true.
-  if(real&&!atMenu){button(0,'start');button(0,'end');}
+  if(real&&!atMenu){button(0,'start');button(0,'end');button(11,'start');button(11,'end');}
   const group=()=>{const u=controller.session.battle.getUnits().find((u:any)=>u.faction==='human');return {x:u.position.x,y:2400-u.position.y};};
   const emitGame=(type:string)=>{for(const l of gameListeners.get(type)??[])l.fn.call(l.owner);};
-  return {viewport,controller,hud,controls,root,touch,button,group,unitView:new exports.UnitView(new Node('Field')),platform,runtime,emitGame,setTime:(ms:number)=>{now=ms;},advanceTime:(ms:number)=>{now+=ms;}};
+  const confirm=()=>{button(11,'start');button(11,'end');};
+  return {confirm,viewport,controller,hud,controls,root,touch,button,group,unitView:new exports.UnitView(new Node('Field')),platform,runtime,emitGame,setTime:(ms:number)=>{now=ms;},advanceTime:(ms:number)=>{now+=ms;}};
 }
 

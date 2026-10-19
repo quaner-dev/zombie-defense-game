@@ -199,7 +199,9 @@ export class CombatSystem {
     const threshold = stats.cooling_threshold ?? 25;
     // Recovery is independent of movement/animation. Replacing a move command
     // cannot cancel an overheat lock or reset a waiting progress bar.
-    this.coolWeapon(unit, dt, maxHeat, rate, threshold);
+    const overheating = stats.overheating_enabled !== false;
+    if (overheating) this.coolWeapon(unit, dt, maxHeat, rate, threshold);
+    else { unit.weaponHeat = 0; unit.weaponCooldown_s = 0; }
     if (unit.state === 'RetractingFlame') {
       unit.stateElapsed_s += dt;
       unit.flameLength_px = Math.max(0, unit.flameLength_px - range * dt / (stats.retract_duration_s ?? .3));
@@ -258,6 +260,7 @@ export class CombatSystem {
       if (this.map.firstBlockingTerrain(unit.position, candidate.position)) continue;
       events.push(...this.applyDamage(candidate.id, stats.damagePerHit!, unit.id, time_s, 'flame', unit.position));
     }
+    if (!overheating) return;
     unit.weaponHeat = Math.min(maxHeat, unit.weaponHeat + (stats.heat_per_tick ?? 8));
     if (unit.weaponHeat >= maxHeat) {
       unit.weaponCooldown_s = lock + (maxHeat - threshold) / rate;

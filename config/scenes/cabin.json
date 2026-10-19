@@ -218,7 +218,7 @@
       {
         "battleTime_s": 0,
         "batchSize": 10,
-        "batchInterval_s": 0.5,
+        "batchInterval_s": 0.6,
         "spawns": [
           {
             "unitType": "normal_zombie",
@@ -249,7 +249,7 @@
       {
         "battleTime_s": 7,
         "batchSize": 10,
-        "batchInterval_s": 0.5,
+        "batchInterval_s": 0.6,
         "spawns": [
           {
             "unitType": "normal_zombie",
@@ -292,7 +292,7 @@
       {
         "battleTime_s": 20,
         "batchSize": 10,
-        "batchInterval_s": 0.5,
+        "batchInterval_s": 0.6,
         "spawns": [
           {
             "unitType": "normal_zombie",
@@ -380,7 +380,11 @@
           }
         ]
       }
-    ]
+    ],
+    "spawnLimits": {
+      "maxBatchSize": 10,
+      "minInterval_s": 0.6
+    }
   },
   "presentation": {
     "floorColor": "#17191E",

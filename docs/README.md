@@ -1,12 +1,13 @@
 # 文档索引与阅读约定
 
-> 当前实现：七人小队、大屋大厅与南北两扇耐久门、喷火范围攻击、沿墙角寻路；大屋为 700 只僵尸的分批波次，楼下与别墅分别连续生成 720/240 只僵尸。Creator 导入、构建和设备表现仍待人工验证；详见 [当前场景验证记录](testing/scenes-test-report.md) 与 [Cocos 手测表](testing/cocos-manual-checklist.md)。
+> 当前实现：每局前自由选择五兵种，合计1～15人；大屋与楼下默认九人、别墅七人。战场按约50%安全区面积居中，近邻士兵自动组队，直接拖动整队、长按拖动单兵；喷火兵持续喷火，僵尸本体受击白闪。大屋700只、每0.60秒最多10只；楼下与别墅连续生成720/240只。Creator导入、构建和设备表现仍待人工验证；详见 [本轮设计与实现](14-battle-controls-and-pacing-design.md) 与 [Cocos手测表](testing/cocos-manual-checklist.md)。
 
 [返回首页](../README.md)
 
 ## 当前使用与实现
 
 - [故事与场景设计稿](10-story-scenes-design.md)：模式入口、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入大屋、楼下和别墅三个场景；前文保留历史三波设计，实际生成模式以各场景配置和扩展章节为准。
+- [战场统计 HUD 设计与实现](design/hud-statistics-design.md)：已接入场景标题、彩色兵种数量、实时绿紫对比条与零值规则；配套 [交互设计稿](design/hud-statistics-preview.html) 和 [静态效果图](design/hud-statistics-preview.svg)。自动化边界与引擎手测范围见文末。
 - [别墅解救平民场景设计](12-villa-civilian-rescue-scene-design.md)：已接入的第三场景，紧凑别墅、四窗一门、中央 6 名蓝色平民及环绕保护的士兵；僵尸从四边持续生成，间隔从 0.6s 加快到 0.2s。
 - [别墅解救平民实现规格](13-villa-civilian-rescue-implementation-spec.md)：当前平民、门窗、连续生成、变身与胜负契约、Cocos 适配和验收矩阵；引擎与设备显示仍需人工复核。
 - [上手与操作](getting-started.md)：Node 无渲染运行、Creator 首次导入、手势与后撤。
@@ -17,6 +18,7 @@
 - [页面与流程未完成项](页面与流程未完成项.md)：按当前实现梳理页面、玩家流程、验证缺口与待讨论决定。
 - [验证与自动审核](验证与自动审核.md)：Node 自动审核、完整测试、Cocos 运行入口和关卡扩展回归步骤。
 - [当前问题与讨论决策](open-issues-and-decisions.md)：逐项影响、建议、关闭条件及待确认决策。
+- [战斗编成、场景显示、编队操作与节奏调整设计](14-battle-controls-and-pacing-design.md)：六项功能已接通，记录确认决定、实际取值、实现边界和验证结果。
 - [后续版本实现规格](12-followup-implementation-spec.md)：9人编制、新兵种、尸群、持续刷怪、巨胃和结算统计的代码实现契约与测试清单。
 - [Cocos 详细集成参考](../README-cocos.md)：编辑器 bootstrap、性能字段与采集流程。
 

@@ -1,19 +1,23 @@
 import unitConfig from '../../config/units.json' with { type: 'json' };
+import type { SquadSystem } from './SquadSystem.js';
 import type { MapModel } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
 import type { BattleEvent, Point, Unit } from './types.js';
 
 export class MovementSystem {
-  public constructor(private readonly store: UnitStore, private readonly map?: MapModel) {}
+  public constructor(private readonly store: UnitStore, private readonly map?: MapModel, private readonly squads?: SquadSystem) {}
 
   public update(seconds: number, time_s: number): BattleEvent[] {
     const events: BattleEvent[] = [];
     if (!Number.isFinite(seconds) || seconds < 0) return events;
+    this.squads?.update(time_s);
     const humans = this.store.living().filter(unit => unit.faction === 'human');
     const starts = new Map(humans.map(unit => [unit.id, { ...unit.position }]));
     const tolerance = unitConfig.movement.arrival_tolerance_px;
     for (const unit of this.store.living()) {
       if (unit.state !== 'Moving' || !unit.moveTarget) continue;
+      const speed = this.squads?.speed(unit) ?? unit.speed_px_per_s;
+      if (speed === 0) { unit.velocity = { x: 0, y: 0 }; continue; }
       const remaining = Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y);
       const radius = unit.radius_px ?? 7;
       const waypoint = this.map ? this.map.nextWaypoint(unit.position, unit.moveTarget, radius) : unit.moveTarget;
@@ -26,7 +30,7 @@ export class MovementSystem {
       const dx = waypoint.x - unit.position.x;
       const dy = waypoint.y - unit.position.y;
       const distance = Math.hypot(dx, dy);
-      const step = remaining <= tolerance ? 0 : Math.min(distance, seconds * unit.speed_px_per_s);
+      const step = remaining <= tolerance ? 0 : Math.min(distance, seconds * speed);
       // Combat may have acquired a target during this frame. Keep that lock
       // while the soldier advances so moving fire and its visual feedback stay
       // available; CombatSystem clears it when the target leaves range.
@@ -45,8 +49,8 @@ export class MovementSystem {
           continue;
         }
         unit.position = destination;
-        unit.velocity = { x: dx / distance * unit.speed_px_per_s,
-          y: dy / distance * unit.speed_px_per_s };
+        unit.velocity = { x: dx / distance * speed,
+          y: dy / distance * speed };
       }
       if (Math.hypot(unit.moveTarget.x - unit.position.x, unit.moveTarget.y - unit.position.y) <= tolerance) {
         unit.state = 'Idle';

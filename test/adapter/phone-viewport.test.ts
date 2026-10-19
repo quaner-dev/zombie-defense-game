@@ -44,7 +44,7 @@ test('393x852: drawn field, camera frustum and HUD agree with actual touch comma
   assert.equal(c.session.paused,true);
   // The display radius is doubled while screen-to-map input coordinates remain unchanged.
   near(c.units.g.calls.find((call:any)=>call.kind==='circle').args[2],21);
-  near(14*c.field.scale.x*pixelsPerDesignUnit,14*(2030/2400)*(852/2400));
+  near(14*c.field.scale.x*pixelsPerDesignUnit,14*Math.SQRT1_2*(852/2400));
 });
 
 for(const safe of [{x:40,y:80,width:1000,height:2200},{x:0,y:0,width:0,height:0}])

@@ -63,10 +63,11 @@ test('actual projectile stream and death caches reset at terminal and across twe
       assert.ok(c.session.snapshot.result === 'win' || c.session.snapshot.result === 'lose',
         'the real battle reaches a terminal result before pool cleanup is checked');
     }
+    for(let frame=0;frame<8;frame++)c.update(.05);
     assert.equal(c.projectiles.counts.active,0);assert.equal(c.projectiles.counts.hits,0);
     assert.equal(c.units.retainedDeaths,0);
     assert.equal(c.performance.snapshot().pools.projectiles,0);
-    c.restart();assert.equal(c.projectiles.counts.active,0);assert.equal(c.units.retainedDeaths,0);
+    c.restart();f.confirm();assert.equal(c.projectiles.counts.active,0);assert.equal(c.units.retainedDeaths,0);
     assert.equal(c.root.children.length,initial,'restart does not allocate new render nodes');
     assert.equal(c.performance.snapshot().frames.sampleCount,0);
   }

@@ -3,7 +3,7 @@ import { ALL_SCENES } from '../scenes/index.js';
 import type { BattleEvent, WaveSpawnEventData } from './types.js';
 import type { MapModel } from './MapModel.js';
 import type { ZombieUnitType } from './types.js';
-import type { ContinuousSpawnDefinition } from './SpawnSystem.js';
+import type { ContinuousSpawnDefinition, SpawnLimits } from './SpawnSystem.js';
 
 export interface WaveSpawn {
   unitType: ZombieUnitType;
@@ -23,6 +23,7 @@ export interface LevelDefinition {
   mapId: string;
   waves: WaveDefinition[];
   continuousSpawn?: ContinuousSpawnDefinition;
+  spawnLimits?: SpawnLimits;
 }
 
 /**
@@ -34,6 +35,7 @@ export interface WaveScheduler {
   allWavesSpawned(): boolean;
   getMapId(): string;
   getWaveCount(): number;
+  getSpawnLimits?(): SpawnLimits | undefined;
   getContinuousSpawn?(): ContinuousSpawnDefinition | undefined;
   validateMap(map: MapModel): void;
 }
@@ -79,6 +81,8 @@ export class WaveManager implements WaveScheduler {
   public getMapId(): string {
     return this.level.mapId;
   }
+
+  public getSpawnLimits(): SpawnLimits | undefined { return this.level.spawnLimits; }
 
   public getContinuousSpawn(): ContinuousSpawnDefinition | undefined {
     return this.level.continuousSpawn;

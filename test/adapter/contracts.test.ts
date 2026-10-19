@@ -59,7 +59,7 @@ test('incremental events are isolated, cursor bounded, restart cursor resets',()
   b.start('LV01_zombie_wave',1); assert.deepEqual(b.readEvents(0),{cursor:0,events:[]});
 });
 test('deployment, pause, terminal freeze and restart are core-driven',()=>{
-  const s=new BattleSession(); s.restart();
+  const s=new BattleSession(); s.restart();s.confirmRoster();
   s.battle.getEvents=()=>{throw new Error('must use incremental events');};
   const human=s.battle.getUnits().find(u=>u.faction==='human')!;
   s.move(human.position.x,human.position.y,human.position.x+40,human.position.y);
@@ -73,7 +73,7 @@ test('deployment, pause, terminal freeze and restart are core-driven',()=>{
   for(let i=0;i<1200 && s.snapshot.result==='running';i++) s.tick(.1);
   assert.notEqual(s.snapshot.result,'running');
   const before=s.snapshot; s.tick(100); assert.deepEqual(s.snapshot,before);
-  s.restart(); s.tick(0);
+  s.restart();s.confirmRoster(); s.tick(0);
   assert.equal(s.events.length,0);
   assert.equal(s.snapshot.result,'running'); assert.equal(s.snapshot.aliveHumans,9);
   assert.equal(s.deploymentRemaining,3); assert.equal(s.paused,false); assert.equal(s.events.length,0);

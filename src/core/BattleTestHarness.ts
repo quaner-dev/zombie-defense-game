@@ -3,7 +3,9 @@ import { DEFAULT_BATTLE_CONFIG, MAX_HUMANS } from './config.js';
 import { MapModel } from './MapModel.js';
 import { WaveManager, type WaveScheduler, type WaveSpawnEventData } from './WaveManager.js';
 import { UnitStore } from './UnitStore.js';
-import { CommandSystem, formationPositions } from './CommandSystem.js';
+import { SquadSystem } from './SquadSystem.js';
+import { rosterTypes, soldierPositions, type SoldierRoster } from './Roster.js';
+import { CommandSystem } from './CommandSystem.js';
 import { MovementSystem } from './MovementSystem.js';
 import { CombatSystem } from './CombatSystem.js';
 import { ProjectileSystem } from './ProjectileSystem.js';
@@ -18,7 +20,8 @@ import type { ScenarioKind } from './types.js';
 
 export class BattleTestHarness {
   private readonly config: BattleConfig;
-  private readonly initialHumanCount: number;
+  private initialHumanCount: number;
+  private squads: SquadSystem | null = null;
   private snapshot: BattleSnapshot;
   private events: BattleEvent[] = [];
   private deploymentTime_s = 0;
@@ -52,7 +55,9 @@ export class BattleTestHarness {
     this.movement = new MovementSystem(this.units);
   }
 
-  public start(levelId: string, _seed: number): void {
+  public start(levelId: string, _seed: number, roster?: SoldierRoster): void {
+    const exactTypes = roster === undefined ? undefined : rosterTypes(roster);
+    this.initialHumanCount = exactTypes?.length ?? (Number.isFinite(this.config.initialHumans) ? Math.min(MAX_HUMANS, Math.max(0, Math.floor(this.config.initialHumans))) : 0);
     this.started = false;
     this.snapshot = this.initialSnapshot();
     this.events = [];
@@ -67,8 +72,10 @@ export class BattleTestHarness {
     this.scenarioKind = villaScene?.scenarioKind ?? 'legacy';
     this.civilians.clear();
     this.mapModel = MapModel.load(this.waveManager.getMapId());
-    this.movement = new MovementSystem(this.units, this.mapModel);
+    this.squads = new SquadSystem(this.units, this.mapModel);
+    this.movement = new MovementSystem(this.units, this.mapModel, this.squads);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
+    this.spawnSystem.configureLimits(this.waveManager.getSpawnLimits?.());
     const continuous = this.waveManager.getContinuousSpawn?.();
     if (continuous) this.spawnSystem.configureContinuous(continuous);
     this.waveManager.validateMap(this.mapModel);
@@ -77,10 +84,12 @@ export class BattleTestHarness {
     this.combat = new CombatSystem(this.units, this.mapModel, this.stats, this.scenarioKind === 'villa_rescue' ? this.civilians : undefined);
     this.projectiles = new ProjectileSystem(this.units, this.combat, this.mapModel);
     this.results = new ResultSystem(this.units);
-    this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event));
+    this.commands = new CommandSystem(this.units, this.mapModel, event => this.events.push(event), this.squads);
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const humanTypes = this.scenarioKind === 'villa_rescue' ? (villaScene?.level.initialSoldiers ?? ['rifleman','rifleman','rifleman','rifleman','flamethrower','flamethrower','shield']) : this.humanSpawnTypes(this.initialHumanCount);
+    const humanTypes = exactTypes ?? (this.scenarioKind === 'villa_rescue' ? (villaScene?.level.initialSoldiers ?? ['rifleman','rifleman','rifleman','rifleman','flamethrower','flamethrower','shield']) : this.humanSpawnTypes(this.initialHumanCount));
+    if (!exactTypes && this.scenarioKind === 'villa_rescue') this.initialHumanCount = humanTypes.length;
+    this.snapshot.aliveHumans = this.initialHumanCount;
     // Deploy one squad around the middle route instead of splitting it across lanes.
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
@@ -90,7 +99,7 @@ export class BattleTestHarness {
     if (!route.defend || !Number.isFinite(route.defend.x) || !Number.isFinite(route.defend.y)) {
       throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} route ${routeId} is missing a valid defend point`);
     }
-    const positions = this.scenarioKind === 'villa_rescue' ? villaScene!.level.soldierPositions! : formationPositions(this.initialHumanCount, route.defend, this.mapModel);
+    const positions = soldierPositions(villaScene, this.mapModel, this.initialHumanCount, route.defend);
     for (let index = 0; index < positions.length; index++) {
       const position = positions[index];
       const unit = this.units.spawn(humanTypes[index % humanTypes.length], position, routeId);
@@ -103,6 +112,8 @@ export class BattleTestHarness {
       this.runWaves();
     }
     this.started = true;
+    // Publish the fresh roster during deployment too, including immediately after replay.
+    this.snapshot.stats = this.stats.snapshot(this.units.all());
     if (this.scenarioKind === 'villa_rescue') this.resolveFrame();
   }
 
@@ -171,6 +182,8 @@ export class BattleTestHarness {
     return true;
   }
 
+  public getSquadMembers(id: string): string[] { return this.squads?.members(id, this.battleTime_s) ?? []; }
+
   public toggleEngineerDeployment(unitId: string): boolean {
     if (!this.started || this.snapshot.result !== 'running') return false;
     return this.commands?.toggleEngineerDeployment(unitId) ?? false;
@@ -203,7 +216,7 @@ export class BattleTestHarness {
 
   public getWaveCount(): number { return this.spawnSystem?.isContinuous() ? 0 : (this.waveManager?.getWaveCount() ?? 0); }
 
-  public getInitialHumans(): number { return this.scenarioKind === 'villa_rescue' ? 7 : this.initialHumanCount; }
+  public getInitialHumans(): number { return this.initialHumanCount; }
 
   public hitCivilian(civilianId: string, sourceId = 'zombie', amount = 1): void {
     if (!this.started || this.snapshot.result !== 'running') return;

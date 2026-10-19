@@ -40,7 +40,7 @@ test('projectile zero-distance, pre-spawn and overshoot positions stay bounded; 
 });
 
 test('session invalid ticks clear pending batches without advancing or consuming commands',()=>{
-  const s=new BattleSession();s.restart();
+  const s=new BattleSession();s.restart();s.confirmRoster();
   const human=s.battle.getUnits().find(u=>u.faction==='human')!;
   assert.equal(s.move(human.position.x,human.position.y,180,1600),true);
   const before=s.snapshot;
@@ -53,7 +53,7 @@ test('session invalid ticks clear pending batches without advancing or consuming
 });
 
 test('session group commands obey pause and terminal gates and recover after restart',()=>{
-  const s=new BattleSession();s.restart();
+  const s=new BattleSession();s.restart();s.confirmRoster();
   const humans=s.battle.getUnits().filter(u=>u.unitType==='rifleman').slice(0,2),human=humans[0];
   assert.equal(s.moveGroup(humans.map(u=>u.id),180,1600),true);
   s.paused=true;const count=s.battle.getEvents().length;
@@ -65,7 +65,7 @@ test('session group commands obey pause and terminal gates and recover after res
   assert.equal(s.moveGroup(humans.map(u=>u.id),180,1700),false);
   assert.equal(s.move(human.position.x,human.position.y,180,1700),false);
   assert.equal(s.battle.getEvents().length,terminal);
-  s.restart();assert.equal(s.moveGroup([],180,1700),false);
+  s.restart();s.confirmRoster();assert.equal(s.moveGroup([],180,1700),false);
   assert.equal(s.moveGroup(s.battle.getUnits().filter(u=>u.unitType==='rifleman').slice(0,2).map(u=>u.id),180,1700),true);
 });
 
@@ -91,7 +91,7 @@ test('vibration default clock and optional wx preserve the platform receiver',()
 for(const [name,consoleValue] of [['absent',undefined],['null',null],['warn-only',{warn(){}}]] as const){
   test(`diagnostics tolerate ${name} console through load, layout, restart and updates`,()=>{
     const f=fixture(true,undefined,{console:consoleValue});
-    f.controller.layout();f.controller.restart();
+    f.controller.layout();f.controller.restart();f.confirm();
     for(let i=0;i<4;i++)f.controller.update(.05);
     assert.equal(f.controller.session.snapshot.result,'running');
     assert.ok(Math.abs(f.controller.session.deploymentRemaining-2.8)<1e-9);

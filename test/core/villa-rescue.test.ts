@@ -14,7 +14,7 @@ import type { BattleEvent } from '../../src/core/types.js';
 const level = 'LV03_villa_rescue';
 
 test('villa starts with six stationary civilians and the correct seven-person protection ring', () => {
-  const session = new BattleSession(); session.startScene('villa-rescue');
+  const session = new BattleSession(); session.startScene('villa-rescue');session.confirmRoster();
   assert.equal(session.deploymentRemaining, 0);
   assert.equal(session.initialHumans, 7);
   assert.equal(session.snapshot.aliveHumans, 7);

@@ -10,7 +10,7 @@ execFileSync(process.execPath,['scripts/sync-cocos-core.mjs'],{stdio:'inherit'})
 const code=await build({absWorkingDir:process.cwd(),entryPoints:['assets/scripts/generated/core.js'],bundle:true,platform:'browser',format:'iife',globalName:'Core',write:false,target:'es2018'});
 const realm=vm.createContext({});vm.runInContext(code.outputFiles[0].text,realm);
 assert.match(vm.runInContext('Core.CORE_BUILD_ID',realm),/^core-[0-9a-f]{12}$/);
-const result=vm.runInContext(`(()=>{const s=new Core.BattleSession();s.restart();for(let i=0;i<3000&&s.snapshot.result==='running';i++)s.tick(.05);return s.snapshot})()`,realm);
+const result=vm.runInContext(`(()=>{const s=new Core.BattleSession();s.restart();s.confirmRoster();for(let i=0;i<3000&&s.snapshot.result==='running';i++)s.tick(.05);return s.snapshot})()`,realm);
 assert.notEqual(result.result,'running');assert.equal(result.waveIndex,3);
 // Parse/bundle all authored cc bindings, leaving only the genuine engine external.
 await mkdir('dist/cocos-check',{recursive:true});

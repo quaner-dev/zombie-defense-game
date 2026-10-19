@@ -1,4 +1,5 @@
 import unitConfig from '../../config/units.json' with { type: 'json' };
+import type { SquadSystem } from './SquadSystem.js';
 import type { MapModel } from './MapModel.js';
 import type { UnitStore } from './UnitStore.js';
 import type { BattleEvent, GroupCommandEvent, Point } from './types.js';
@@ -29,7 +30,8 @@ export function translatedPositions(points: readonly Point[], target: Point, map
 
 export class CommandSystem {
   public constructor(private readonly store: UnitStore, private readonly map: MapModel,
-    private readonly emit: (event: BattleEvent) => void = () => {}) {}
+    private readonly emit: (event: BattleEvent) => void = () => {},
+    private readonly squads?: SquadSystem) {}
 
   public issueMoveAt(x: number, y: number, targetX: number, targetY: number,
     time_s: number): GroupCommandEvent | null {
@@ -59,10 +61,9 @@ export class CommandSystem {
       x: Math.max(left, Math.min(right, targetX)),
       y: Math.max(top, Math.min(bottom, targetY)),
     };
-    // Each soldier converges on a personal spot near the finger, independent of
-    // the old squad shape. Small offsets keep arrivals from occupying one pixel.
-    const positions = formationPositions(selected.length, target, this.map, unitConfig.movement.arrival_spacing_px)
+    const positions = translatedPositions(selected.map(unit => unit.position), target, this.map)
       .map((point, index) => this.map.walkablePoint(point, selected[index].radius_px ?? 7));
+    this.squads?.command(selected);
     selected.forEach((unit, i) => {
       // Replacing a command during a transition changes only its destination.
       if ((unit.unitType === 'engineer' && unit.state === 'Dismantling') ||

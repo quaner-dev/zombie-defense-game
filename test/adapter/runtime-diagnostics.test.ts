@@ -9,7 +9,7 @@ test('practice selection records the entire touch, action, initialization and fi
   const f=entry(),c=f.controller;
   f.button(1,'start');c.update(.016);f.button(1,'end');
   assert.equal(c.session.screen,'scenes');
-  f.button(0,'start');c.update(.016);f.button(0,'end');
+  f.button(0,'start');c.update(.016);f.button(0,'end');assert.equal(c.session.screen,'roster');f.confirm();
   assert.equal(c.session.screen,'battle');assert.equal(c.session.activeScene.id,'cabin');
   const entries=logs(f);
   for(const id of ['mode.practice','scene.cabin']){
@@ -136,7 +136,7 @@ for(const [name,consoleValue] of [
   ['throwing',{log(){throw new Error('console unavailable');},warn(){throw new Error('console unavailable');},error(){throw new Error('console unavailable');}}],
 ] as const)test(`${name} console cannot stop a scene transition or lose buffered logs`,()=>{
   const f=entry(consoleValue);
-  f.button(1,'start');f.button(1,'end');f.button(1,'start');f.button(1,'end');f.controller.update(.05);
+  f.button(1,'start');f.button(1,'end');f.button(1,'start');f.button(1,'end');f.confirm();f.controller.update(.05);
   assert.equal(f.controller.session.activeScene.id,'courtyard');assert.equal(f.controller.session.screen,'battle');
   assert.ok(logs(f).some(e=>e.event==='scene.first-draw:complete'&&e.data.screen==='battle'));
   f.controller.onDestroy();

@@ -36,7 +36,7 @@ test('real session clears batches on pause/hide and restart resets cooldown with
   c.hide();f.advanceTime(2000);c.update(.05);assert.equal(calls,1);
   f.button(0,'start');f.button(0,'end');c.update(.05);assert.equal(calls,1);
   cross(c);c.update(.05);assert.equal(calls,2);
-  c.restart();c.update(0);c.draw();assert.equal(calls,2);
+  c.restart();f.confirm();c.update(0);c.draw();assert.equal(calls,2);
   cross(c);c.update(.05);assert.equal(calls,3,'fresh battle resets cooldown even at same wall time');
   c.onDestroy();
 });
@@ -56,7 +56,7 @@ test('terminal breach is discarded and never replayed after restart',()=>{
   c.update(.05);assert.equal(c.session.snapshot.result,'lose');assert.equal(calls,0);
   assert.ok(c.session.events.some((e:any)=>e.type==='route_breached'));
   f.advanceTime(2000);c.draw();c.update(.05);assert.equal(calls,0);
-  c.restart();c.update(0);assert.equal(calls,0);
+  c.restart();f.confirm();c.update(0);assert.equal(calls,0);
   cross(c);c.update(.05);assert.equal(calls,1);
   c.onDestroy();
 });

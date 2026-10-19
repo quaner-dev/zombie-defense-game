@@ -36,7 +36,7 @@ test('array-only build starts story and practice, runs combat, and restarts with
   const f = fixture(true, undefined, { console: undefined }, undefined, true, arrayOnly);
   const c = f.controller, s = c.session;
   const squadSize = s.initialHumans;
-  const click = (index: number) => { f.button(index, 'start'); f.button(index, 'end'); };
+  const click = (index: number) => { f.button(index, 'start'); f.button(index, 'end');if(s.screen==='roster')f.confirm(); };
   const soldiers = () => s.battle.getUnits().filter((unit: { faction: string }) => unit.faction === 'human');
   try {
     assert.ok(squadSize > 0);

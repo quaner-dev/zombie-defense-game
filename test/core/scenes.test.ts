@@ -62,13 +62,13 @@ test('entry screens freeze time and reject commands; practice replays the chosen
   session.showSceneSelection();session.tick(10);
   assert.equal(session.screen, 'scenes');assert.equal(session.deploymentRemaining, 3);
   assert.throws(() => session.startScene('missing'), /Unknown scene/);
-  session.startScene('courtyard');
+  session.startScene('courtyard');assert.equal(session.screen,'roster');session.confirmRoster();
   assert.equal(session.screen, 'battle');assert.equal(session.mode, 'practice');
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.waveCount, 0);
   assert.equal(session.map.terrain[0].id, 'northwest-building');
   session.tick(3);assert.equal(session.snapshot.waveIndex, 0);
   assert.ok(session.events.some(event => event.type === 'zombie_batch_spawn'));
-  session.paused = true;session.restart();
+  session.paused = true;session.restart();assert.equal(session.screen,'roster');session.confirmRoster();
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.paused, false);
   assert.equal(session.snapshot.time_s, 0);assert.equal(session.deploymentRemaining, 3);
   assert.deepEqual(session.events, []);assert.equal(session.snapshot.spawnedZombies, 0);
@@ -109,11 +109,11 @@ function shortBattle(initialHumans = 3) {
 }
 
 test('story advances after the first scene and the courtyard continues spawning without waves', () => {
-  const session = new BattleSession(shortBattle());session.startStory();
+  const session = new BattleSession(shortBattle());session.startStory();session.confirmRoster();
   assert.equal(session.activeScene.id, 'cabin');assert.equal(session.advanceScene(), false);
   session.tick(3.05);assert.equal(session.snapshot.result, 'running');
   session.tick(.05);assert.equal(session.snapshot.result, 'win');assert.equal(session.canAdvance, true);
-  session.paused = true;assert.equal(session.advanceScene(), true);
+  session.paused = true;assert.equal(session.advanceScene(), true);assert.equal(session.screen,'roster');session.confirmRoster();
   assert.equal(session.activeScene.id, 'courtyard');assert.equal(session.mode, 'story');
   assert.equal(session.deploymentRemaining, 3);assert.equal(session.paused, false);
   assert.equal(session.snapshot.waveIndex, 0);assert.equal(session.snapshot.result, 'running');assert.deepEqual(session.events, []);
@@ -121,14 +121,14 @@ test('story advances after the first scene and the courtyard continues spawning 
   assert.ok(session.snapshot.spawnedZombies > 0);
   assert.equal(session.nextScene?.id, 'villa-rescue');assert.equal(session.canAdvance, false);assert.equal(session.advanceScene(), false);
   session.restart();assert.equal(session.activeScene.id, 'courtyard');
-  session.startStory();assert.equal(session.activeScene.id, 'cabin');
+  session.startStory();session.confirmRoster();assert.equal(session.activeScene.id, 'cabin');
 });
 
 test('defeat and practice victory cannot advance story chapters', () => {
-  const loss = new BattleSession(shortBattle(0));loss.startStory();loss.tick(3.05);
+  const loss = new BattleSession(shortBattle(0));loss.startStory();loss.confirmRoster();for(const u of (loss.battle as any).units.living())(loss.battle as any).units.kill(u.id);loss.tick(3.05);
   assert.equal(loss.snapshot.result, 'lose');assert.equal(loss.advanceScene(), false);
   assert.equal(loss.activeScene.id, 'cabin');
-  const practice = new BattleSession(shortBattle());practice.startScene('cabin');practice.tick(3.1);
+  const practice = new BattleSession(shortBattle());practice.startScene('cabin');practice.confirmRoster();practice.tick(3.1);
   assert.equal(practice.snapshot.result, 'win');assert.equal(practice.nextScene, undefined);
   assert.equal(practice.canAdvance, false);assert.equal(practice.advanceScene(), false);
 });

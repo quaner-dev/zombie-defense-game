@@ -26,7 +26,7 @@ test('actual InputManager preserves one selected soldier throughout a one-second
  assert.deepEqual({...commands[1].data.target},{x:360,y:1800});
 });
 
-test('every press selects only the fixed circle, even when touching a previously selected soldier',()=>{
+test('every press captures the current nearby squad and excludes distant soldiers',()=>{
  const f=fixture(true),c=f.controller,s=c.session;
  s.battle.units.clear();
  const a=s.battle.units.spawn('rifleman',{x:300,y:1400},'A');
@@ -36,7 +36,7 @@ test('every press selects only the fixed circle, even when touching a previously
  f.controls.selectedUnitIds=[a.id,boundary.id,outside.id,old.id];
  const press=mapToScreen(a.position,c.frame),release=mapToScreen({x:700,y:1800},c.frame);
  f.touch('start',1,press.x,press.y);
- assert.deepEqual(Array.from(f.controls.drag.preview!.unitIds),[a.id]);
+ assert.deepEqual(Array.from(f.controls.drag.preview!.unitIds),[a.id,boundary.id,outside.id]);
  assert.equal(f.controls.selectionPreview.radius,112);
  c.draw();
  assert.ok(c.preview.calls.some((call:any)=>call.kind==='circle'&&call.args[2]===112),'visible fixed selection radius');
@@ -45,8 +45,8 @@ test('every press selects only the fixed circle, even when touching a previously
  assert.equal(f.controls.selectionPreview.radius,112,'dragging does not enlarge selection');
  f.touch('end',1,release.x,release.y);
  const command=s.battle.getEvents().filter((event:any)=>event.type==='group_command').at(-1);
- assert.deepEqual(Array.from(command.data.unitIds),[a.id]);
- assert.equal(outside.state,'Idle');assert.equal(old.state,'Idle');
+ assert.deepEqual(Array.from(command.data.unitIds),[a.id,boundary.id,outside.id]);
+ assert.equal(outside.state,'Moving');assert.equal(old.state,'Idle');
  assert.equal(f.controls.selectionPreview,null);
  // A second press on one member re-samples positions instead of restoring both.
  boundary.position.x=600;a.position={x:300,y:1400};a.state='Idle';a.moveTarget=null;f.advanceTime(301);

@@ -5,13 +5,14 @@ import { arrow, color, graphics, palette, unitColor } from './drawing';
 /** One shared Graphics stream avoids a component/node allocation per entity per frame. */
 export class UnitView {
   private readonly g:Graphics;
+  private readonly hitFlashes=new Map<string,number>();
   private readonly deaths=new Map<string,number>();
   private readonly selectionStarted=new Map<string,number>();
   private readonly meleePulses=new Map<string,{x:number;y:number;started:number}>();
   private readonly infectionPulses=new Map<string,{x:number;y:number;started:number}>();
   private readonly shots=new Map<string,number>();
   public constructor(parent:Node){this.g=graphics('Units',parent);}
-  public releaseTransient():void {this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();this.shots.clear();}
+  public releaseTransient():void {this.hitFlashes.clear();this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();this.shots.clear();}
   public get retainedDeaths():number {return this.deaths.size;}
   public clear():void {this.releaseTransient();this.g.clear();}
   private weapon(u:Unit,time:number,fade:number):void {
@@ -111,15 +112,18 @@ export class UnitView {
       }
     }
     const byId=new Map(units.map(u=>[u.id,u]));
+    for(const [id,started] of Array.from(this.hitFlashes))if(!byId.has(id)||byId.get(id)?.state==='StoredInGut'||time-started>=.15-1e-9)this.hitFlashes.delete(id);
+    for(const [id,started] of Array.from(this.deaths))if(!byId.has(id))this.deaths.delete(id);
     for(const [id,started] of Array.from(this.shots))if(time-started>=.22||!byId.has(id))this.shots.delete(id);
     for(const event of events){
       if(event.type==='projectile_spawned'){
         const data=event.data as {sourceId:string;projectileKind:string};
         if(data.projectileKind==='sniper'||data.projectileKind==='machine_gun')this.shots.set(data.sourceId,time);
       }else if(event.type==='damage'){
-        const data=event.data as {sourceId?:string;targetId?:string};
+        const data=event.data as {sourceId?:string;targetId?:string;appliedAmount?:number};
         const source=data.sourceId?byId.get(data.sourceId):undefined;
         const target=data.targetId?byId.get(data.targetId):undefined;
+        if(target?.faction==='zombie'&&(data.appliedAmount??0)>0&&target.state!=='StoredInGut'&&!this.hitFlashes.has(target.id))this.hitFlashes.set(target.id,time);
         if(source?.faction==='zombie'&&target?.faction==='human')
           this.meleePulses.set(target.id,{x:target.position.x,y:target.position.y,started:time});
       }else if(event.type==='unit_infected'){
@@ -160,7 +164,10 @@ export class UnitView {
       const r=(u.radius_px??(isZombie?16:14))*fade;
       g.fillColor=color(c,Math.round(52*fade));g.circle(u.position.x,-u.position.y,r*1.5);g.fill();
       const selected=selection!==null&&u.hp>0&&selectedIds.has(u.id);
-      g.fillColor=color(c,Math.round((selected?230:180)*fade));g.circle(u.position.x,-u.position.y,r);g.fill();
+      const age=time-(this.hitFlashes.get(u.id)??-Infinity);
+      const white=isZombie?Math.max(0,Math.min(1,1-(age-.02)/.08)):0;
+      const body=white>0?'#'+[1,3,5].map(offset=>Math.round(parseInt(c.slice(offset,offset+2),16)*(1-white)+255*white).toString(16).padStart(2,'0')).join('').toUpperCase():c;
+      g.fillColor=color(body,Math.round(((selected?230:180)*(1-white)+255*white)*fade));g.circle(u.position.x,-u.position.y,r);g.fill();
       this.weapon(u,time,fade);
       if(u.unitType==='shield'&&fade>0){
         // Shield direction follows the soldier's current target, then motion,

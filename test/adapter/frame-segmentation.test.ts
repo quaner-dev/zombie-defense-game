@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { BattleSession } from '../../src/adapter/BattleSession.js';
 
 function replay(cadence:number[], tactical:boolean) {
-  const s=new BattleSession();s.restart();
+  const s=new BattleSession();s.restart();s.confirmRoster();
   function elapsed(seconds:number){
     let remaining=seconds,i=0;
     while(remaining>1e-10&&s.snapshot.result==='running'){
@@ -36,7 +36,7 @@ for(const tactical of [false,true])test(`exact authoritative replay across singl
 });
 
 test('partial elapsed time waits for an authoritative step and commands enter at the current completed tick',()=>{
- const s=new BattleSession();s.restart();s.tick(3);s.tick(.019);
+ const s=new BattleSession();s.restart();s.confirmRoster();s.tick(3);s.tick(.019);
  const soldier=s.battle.getUnits().find(u=>u.faction==='human')!;
  assert.equal(s.snapshot.time_s,0);assert.equal(s.move(soldier.position.x,soldier.position.y,180,1600),true);
  assert.equal(s.battle.getEvents().find(e=>e.type==='group_command')?.time_s,0);

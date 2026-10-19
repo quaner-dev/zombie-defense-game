@@ -20,6 +20,7 @@
     "projectile_max_flight_time_s": 0.45,
     "continuous_duration_s": 0.45,
     "damage_tick_interval_s": 0.15,
+    "overheating_enabled": false,
     "heat_max": 100,
     "heat_per_tick": 8,
     "overheat_lock_s": 2,

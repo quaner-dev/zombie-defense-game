@@ -10,6 +10,7 @@ for(const scenario of ['pause','hide','terminal'] as const) test(`${scenario}: H
   f.button(scenario==='terminal'?1:0,'start');
   f.controller.update(.016);f.controller.update(.016);
   f.button(scenario==='terminal'?1:0,'end');
+  if(scenario==='terminal'){assert.equal(s.screen,'roster');f.confirm();}
   assert.equal(s.paused,false);
   assert.equal(s.snapshot.result,'running');
   if(scenario==='terminal')assert.equal(s.deploymentRemaining,3);
@@ -27,7 +28,7 @@ test('restart clears previous command cooldown but ordinary cancellation retains
   const f=fixture(),p=f.group();
   f.touch('start',1,p.x,p.y);f.touch('end',1,p.x+100,p.y);
   f.controls.cancel();f.setTime(1001);f.touch('start',1,p.x,p.y);assert.equal(f.controls.drag.preview,null);
-  f.button(1,'start');f.controller.update(.016);f.button(1,'end');
+  f.button(1,'start');f.controller.update(.016);f.button(1,'end');f.confirm();
   const fresh=f.group();f.touch('start',1,fresh.x,fresh.y);assert.ok(f.controls.drag.preview);
 });
 
@@ -54,7 +55,7 @@ test('wave banner animates on wave change, freezes paused, and resets on restart
   const initial=banner.scale.x;s.tick(.1);f.hud.render();assert.notEqual(banner.scale.x,initial);
   const scale=banner.scale.x;s.paused=true;s.tick(1);f.hud.render();assert.equal(banner.scale.x,scale);
   s.paused=false;s.tick(1);f.hud.render();assert.equal(banner.active,false);
-  f.controller.restart();assert.equal(banner.active,false);s.tick(3);f.hud.render();assert.equal(banner.active,true);
+  f.controller.restart();assert.equal(banner.active,false);f.confirm();s.tick(3);f.hud.render();assert.equal(banner.active,true);
 });
 
 test('AI crosshair marks deduplicated living core targets, never invents a target',()=>{

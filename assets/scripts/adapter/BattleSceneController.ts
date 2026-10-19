@@ -21,6 +21,9 @@ export class BattleSceneController extends Component {
   private root!:Node;private field!:Node;private map!:MapView;private units!:UnitView;
   private projectiles!:ProjectileViewPool;private hud!:HudController;private controls!:InputManager;private preview!:Graphics;
   private frame!:Frame;
+  private presentationTime=0;
+  private terminalAt:number|null=null;
+  private presentedEvents:unknown=null;
   private diagnosticFrames=0;
   private stage='created';
   private lastFrameAt=diagnostics.now();
@@ -44,8 +47,8 @@ export class BattleSceneController extends Component {
   }
   private step<T>(stage:string,work:()=>T):T {this.stage=stage;return diagnostics.run(stage,work);}
   private initialize():void {
-    // SHOW_ALL keeps the whole 1080x2400 design visible. The field is contained again
-    // within the safe area with HUD reserves; no route is cropped on wide screens.
+    // SHOW_ALL keeps the design visible. The centered field occupies half the
+    // safe screen area, with HUD clearance and no route cropped on wide screens.
     view.setDesignResolutionSize(1080,2400,ResolutionPolicy.SHOW_ALL);
     this.root=this.step('scene.canvas-create',()=>uiNode('BattleCanvas',this.node));
     // Canvas children are center-relative. Keep the camera at the Canvas center;
@@ -85,13 +88,13 @@ export class BattleSceneController extends Component {
     const safe=Number.isFinite(reportedSafe.width)&&Number.isFinite(reportedSafe.height)&&reportedSafe.width>0&&reportedSafe.height>0
       ? reportedSafe
       : {x:0,y:0,width:visibleWidth,height:visibleHeight};
-    const bottomReserve=150,topReserve=220;
     const {width,height}=this.session.map.design_size;
-    this.frame=fitMap({x:safe.x+20,y:safe.y+bottomReserve,width:Math.max(1,safe.width-40),height:Math.max(1,safe.height-topReserve-bottomReserve)},width,height);
+    const fieldArea=this.hud.layout(safe);
+    this.frame=fitMap(fieldArea,width,height);
     // Graphics uses (map.x, -map.y); place its origin at the fitted map's top-left.
     this.field.setPosition(this.frame.x-540,this.frame.y+this.frame.height*this.frame.scale-1200);
     this.field.setScale(this.frame.scale,this.frame.scale,1);
-    this.hud.layout(safe);this.controls?.cancel('layout');
+    this.controls?.cancel('layout');
     diagnostics.info('layout.geometry',{
       visible:{width:visibleWidth,height:visibleHeight},
       safe,
@@ -113,6 +116,7 @@ export class BattleSceneController extends Component {
   }
   private applyScene():void {
     diagnostics.info('scene.transition:state',{screen:this.session.screen,scene:this.session.activeScene.id,mode:this.session.mode});
+    this.presentationTime=0;this.terminalAt=null;this.presentedEvents=null;
     this.eventCounts={};
     this.performance.reset();this.controls.reset();this.vibration.reset();this.hud.reset();this.units.clear();this.projectiles.clear();
     if(this.field){
@@ -149,6 +153,8 @@ export class BattleSceneController extends Component {
     const measuring=this.session.screen==='battle'&&!this.session.paused&&this.session.snapshot.result==='running';
     if(!measuring)this.performance.suspend();
     const start=this.performance.now();
+    this.controls.update();
+    if(this.session.screen==='battle'&&!this.session.paused)this.presentationTime+=Number.isFinite(dt)?Math.min(.05,Math.max(0,dt)):0;
     this.stage='core.tick';
     this.session.tick(Math.min(Math.max(dt,0),.05));
     const afterCore=this.performance.now();
@@ -159,7 +165,7 @@ export class BattleSceneController extends Component {
     this.stage='feedback.vibration';
     this.vibration.consume(this.session.events,!this.session.paused,this.session.snapshot.result!=='running');
     if(this.session.paused||this.session.snapshot.result!=='running')this.controls.cancelBattlefield();
-    this.draw();
+    this.draw(Math.max(0,dt));
     const afterDraw=this.performance.now();
     if(measuring){this.performance.feedback();this.performance.frame(afterCore-start,afterDraw-afterCore);}
     const timing={rawDt:dt,appliedDt:Math.min(Math.max(dt,0),.05),coreMs:afterCore-start,presentationMs:afterDraw-afterCore};
@@ -170,19 +176,23 @@ export class BattleSceneController extends Component {
       this.eventCounts={};
     }
   }
-  private draw():void {
+  private draw(dt=0):void {
     this.stage='render.hud';
     if(this.session.screen!=='battle'){this.preview.clear();this.hud.render();return;}
-    const s=this.session.snapshot,time=s.time_s+(s.scenarioKind==='villa_rescue'?0:3-this.session.deploymentRemaining);
+    const s=this.session.snapshot,time=this.presentationTime;
+    if(s.result!=='running'&&this.terminalAt===null)this.terminalAt=time;
+    const finishFade=this.terminalAt!==null&&time-this.terminalAt>=.3;
+    const events=this.presentedEvents===this.session.events?[]:this.session.events;this.presentedEvents=this.session.events;
     this.stage='render.map';this.map.render(s.breachedRoutes,time);
     // Off-map spawn centers must not leak into the physical HUD reserve above
     // the fitted field. Suppress their bodies, halos and AI target indicators.
     const visibleUnits=this.session.battle.getUnits().filter(u=>
-      u.state!=='StoredInGut'&&(s.result==='running'||u.hp>0)&&u.position.x>=0&&u.position.x<=this.frame.width&&
+      u.state!=='StoredInGut'&&(!finishFade||u.hp>0)&&u.position.x>=0&&u.position.x<=this.frame.width&&
       u.position.y>=0&&u.position.y<=this.frame.height);
-    this.stage='render.units';this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??this.controls.selectedUnitIds,time,this.session.events,this.session.battle.getCivilians());
-    this.stage='render.projectiles';this.projectiles.render(this.session.events,s.time_s,visibleUnits,this.session.battle.getMapModel());
-    if(s.result!=='running'){this.projectiles.clear();this.units.releaseTransient();}
+    this.stage='render.units';this.units.render(visibleUnits,this.controls.drag.preview?.unitIds??this.controls.selectedUnitIds,time,events,this.session.battle.getCivilians());
+    this.stage='render.projectiles';this.projectiles.render(events,s.time_s,visibleUnits,this.session.battle.getMapModel());
+    if(s.result!=='running')this.projectiles.clear();
+    if(finishFade)this.units.releaseTransient();
     const pools=this.projectiles.counts;
     this.performance.recordPools(pools.active,pools.hits,this.units.retainedDeaths);
     this.preview.clear();
@@ -201,10 +211,11 @@ export class BattleSceneController extends Component {
     }
     const selection=this.controls.selectionPreview;
     if(selection){
-      this.preview.strokeColor=color(palette.command,180);this.preview.lineWidth=2;
+      this.preview.strokeColor=color(this.controls.drag.mode==='single'?'#FFFFFF':palette.command,180);this.preview.lineWidth=2;
       this.preview.circle(selection.center.x,-selection.center.y,selection.radius);this.preview.stroke();
     }
-    this.stage='render.hud';this.hud.render();
+    this.hud.setMoveHint(p?this.controls.drag.mode:null,p?.unitIds.length??0);
+    this.stage='render.hud';this.hud.render(dt);
   }
   public onDestroy():void {
     diagnostics.info('lifecycle.destroy',{screen:this.session.screen,frames:this.diagnosticFrames});

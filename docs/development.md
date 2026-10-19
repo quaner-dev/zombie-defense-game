@@ -16,7 +16,7 @@ Cocos 版本锁定 3.8.8，声明依赖也是 `@cocos/creator-types@3.8.8`。esb
 |---|---|
 | `npm ci` | 按锁安装开发依赖；不生成项目核心包 |
 | `npm run sync:core` | 生成忽略的浏览器核心、声明和 facade；编辑器导入/构建前必做 |
-| `npm test` | pretest 先同步，再由 Node 默认发现完整测试；含较慢性能和源码工作流测试 |
+| `npm test` | pretest 先同步，再由 Node 默认发现测试；当前环境只发现mjs文件，TS回归需显式指定 `test/core/*.test.ts` 等路径 |
 | `npm run test:adapter` | pretest:adapter 先同步，再运行适配层测试 |
 | `npm run test-adapter` | 上一命令的兼容别名 |
 | `npm run test:scenes` | 先同步核心，再验证场景配置、模式入口、选关、重开和故事推进 |
@@ -41,12 +41,12 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 | 权威文件 | 内容与注意事项 |
 |---|---|
 | [map.json](../config/map.json) | 1080×2400、战场边界、防线、112px 选择半径、四边出生点、墙体 terrain；地图默认注册键为 default，map_id 是描述字段 |
-| [levels.json](../config/levels.json) | 大屋兼容关卡 LV01_zombie_wave 的 mapId、按时排序的 waves、南北出生点与单位数量；0/7/20s 共 100/300/300 只，总计 700 |
+| [levels.json](../config/levels.json) | 大屋兼容关卡 LV01_zombie_wave 的 mapId、waves和共享限速；0/7/20s 共 100/200/400 只，总计700，每0.60s最多10只 |
 | [scenes/cabin.json](../config/scenes/cabin.json) | 大屋外围墙体、南北两扇 600 HP 大门、南北出生点、三波与场景文案 |
 | [scenes/courtyard.json](../config/scenes/courtyard.json) | 第二关的矩形建筑、出生区域与连续生成：每 0.35s 一批 10 只，共 720 只；南北各 30%、东西各 20%，巨胃占 5%；保留的旧 waves 不参与当前连续模式 |
-| [scenes/villa-rescue.json](../config/scenes/villa-rescue.json) | 保护平民场景：连续生成 240 只，每次 1 只，间隔从 0.6s 在 60s 内缩短到 0.2s；四边均衡，包含平民和士兵的固定站位 |
+| [scenes/villa-rescue.json](../config/scenes/villa-rescue.json) | 连续240只，每次1只，60s内间隔0.6s降至0.2s；四边均衡，含6名平民和最多15名士兵的站位 |
 | [units.json](../config/units.json) | 生命、速度、攻击、弹道与阵形；当前步枪0.35s一发、僵尸60HP/41.9px/s/0.13s |
-| [core/config.ts](../src/core/config.ts) | 3s 布阵、当前默认 7 初始人类（4 步枪兵、2 喷火兵、1 盾兵）；不是所有参数都在 JSON |
+| [core/config.ts](../src/core/config.ts)、[Roster.ts](../src/core/Roster.ts) | 大屋/楼下3s布阵、别墅0s；总上限15人，默认大屋/楼下9人、别墅7人，玩家可在每局前调整 |
 
 有效出生阵列示例（map.json 中的一个字段，不是完整配置）：
 
@@ -58,7 +58,7 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 
 路线可覆盖旧式 `spawn_layout`；关卡波次可通过 `spawnPoint` 从 north/south/east/west 四边出生。terrain 中 `blocksMovement` 墙体会阻挡移动，`stackRequired: 3` 表示墙边至少三只僵尸才能翻越。新增地图/兵种还须更新注册、类型和行为，不能只加任意 JSON 就保证扩展。当前未知关卡/地图 ID 会回落默认，不应拿成功加载当作 ID 校验。
 
-改配置后同步核心、跑相关测试和报告，对比确定字段并说明测量改变的规则原因。不要为了通过测试放宽胜利/减员目标；原型夹具中的 300px射程 / 0.5s射击 / 40HP / 60px/s僵尸 / 1s近战用于旧规则边界测试，当前默认射程260px、士兵速度48px/s、僵尸41.9px/s / 0.13s 有独立回归。子弹视觉不能自行造成伤害。
+改配置后同步核心、跑相关测试和报告，对比确定字段并说明测量改变的规则原因。不要为了通过测试放宽胜利/减员目标；原型夹具中的300px射程 / 0.5s射击 / 40HP / 60px/s僵尸 / 1s近战用于旧规则边界测试。当前步枪射程460px、速度48px/s；喷火持续模式仍每0.15s结算14伤害；僵尸41.9px/s / 0.13s 有独立回归。子弹视觉不能自行造成伤害。
 
 ### 按地图配置僵尸生成
 
@@ -75,8 +75,15 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 | `continuousSpawn.continuousEventsOnly` | 仅发布连续生成事件，不发布带波次号的批次事件；保护平民场景使用此项 |
 | `map.spawnPoints[].spawnArea / side` | 出生区域坐标与方向；有界区域循环复用槽位，不能让后续批次逐排延伸进室内 |
 | `waves[].battleTime_s / batchSize / batchInterval_s / spawns` | 波次模式的开始时间、每批数量、批次间隔，以及各兵种、路线、出生点和总数 |
+| `spawnLimits.maxBatchSize / minInterval_s` | 同场景所有生成队列共享的最大批量和最短批间隔；正整数/有限正数；积压时不集中补刷，实际生成后才计入总数 |
 
 连续模式在配置时校验间隔、批量、目标数量、出生点、权重和特殊僵尸比例。保护平民本次由 `1.2s → 0.45s / 120s` 调整为 `0.6s → 0.2s / 60s`，总数仍为 240，只提高入场节奏；楼下原有连续参数迁入 JSON。
+
+### 开局编成与战场操作
+
+`BattleSession` 的故事、演练、重开、下一关入口均先进入 `roster` 页面，`confirmRoster()` 后才创建本局。核心 `BattleTestHarness.start(levelId, seed, roster?)` 可接受五种兵种的确切非负整数数量，总和1～15；不传时使用场景默认。`Roster.ts` 共用预览与部署计算；别墅显式站位来自场景JSON的 `level.soldierPositions`。
+
+`SquadSystem` 按120地图像素连通组队、160像素拆已有连接，每0.20s复核并排除地形阻挡。普通拖动捕获整队，原地长按450ms后拖动捕获单兵；8屏幕逻辑像素以上的拖动锁定模式。整队保留相对落点，按最慢成员速度移动，等待收火/拆卸完成。`fitBattlefield()` 计算安全区约50%面积的等比居中变换，输入与所有场内绘制共用该变换。细节与实机待验项见 [设计与实现记录](14-battle-controls-and-pacing-design.md)。
 
 ### 新增场景前的确认
 

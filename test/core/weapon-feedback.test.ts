@@ -89,25 +89,14 @@ test('move commands retract the flame before movement and do not reset the waiti
   f.advance(2); assert.ok(flame.flameLength_px > 0 && flame.flameLength_px < 220);
 });
 
-test('overheated flame keeps its full recovery countdown across replacement move commands', () => {
+test('flame fires continuously without heat interruptions and retargets without another release', () => {
   const f = setup(), flame = f.store.spawn('flamethrower', { x: 300, y: 500 }, 'A');
-  const target = f.zombie(450);
-  f.advance(45);
-  assert.equal(flame.state, 'Overheated'); assert.equal(flame.weaponHeat, 100);
-  const remaining = flame.weaponCooldown_s, hp = target.hp;
-  f.commands.issueMoveGroup([flame.id], 300, 520, 2.25);
-  f.advance(10);
-  f.commands.issueMoveGroup([flame.id], 300, 525, 2.75);
-  assert.ok(Math.abs(flame.weaponCooldown_s - (remaining - .5)) < 1e-8);
-  f.advance(10);
-  assert.equal(target.hp, hp); assert.equal(flame.weaponHeat, 100, 'heat stays locked first');
-  f.advance(30);
-  assert.equal(flame.state, 'Cooling');
-  assert.ok(flame.weaponHeat < 100 && flame.weaponHeat > 25);
-  f.advance(24);
-  assert.equal(flame.weaponCooldown_s, 0);
-  assert.equal(flame.weaponHeat, 25);
-  assert.equal(flame.state, 'ReleasingFlame');
+  const target = f.zombie(450), other=f.zombie(460);
+  const events=f.advance(406);
+  assert.equal(flame.state,'Firing');assert.equal(flame.weaponHeat,0);assert.equal(flame.weaponCooldown_s,0);
+  assert.equal(events.filter(e=>e.type==='damage'&&(e.data as any).targetId===target.id).length,133);
+  assert.ok(!events.some(e=>e.type==='weapon_state_changed'&&['Cooling','Overheated'].includes((e.data as any).to)));
+  f.store.kill(target.id);f.advance(1);assert.equal(flame.targetId,other.id);assert.equal(flame.state,'Firing');
 });
 
 test('engineer dismantling never attacks or turns, and redeploying cannot skip cooling', () => {

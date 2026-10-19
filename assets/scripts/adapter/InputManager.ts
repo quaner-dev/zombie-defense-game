@@ -1,4 +1,4 @@
-import { EventTouch, Input, input } from 'cc';
+import { EventTouch, Input, input, view } from 'cc';
 import type { BattleSession } from '../generated/core.js';
 import { DragCommand, screenToMap, type Frame, type Point } from './contracts';
 import type { PerfBudget } from './PerfBudget';
@@ -31,6 +31,9 @@ export class InputManager {
   public diagnosticState(){return {lastTouch:this.lastTouch,heldButton:this.button?.box.id??null,dragFinger:this.dragFinger,selectedUnitIds:[...this.selectedUnitIds]};}
   private ignored(reason:string):void {diagnostics.info('input.ignored',{reason,screen:this.session.screen,heldButton:this.button?.box.id??null,dragFinger:this.dragFinger});}
   private point(e:EventTouch):Point {return e.getUILocation();}
+  /** UI coordinates use design units; gesture distances use logical screen pixels. */
+  private gesturePoint(p:Point):Point {const s=view.getScaleX?.()??1;const d=view.getDevicePixelRatio?.()??1;return {x:p.x*s/d,y:p.y*s/d};}
+  public update():void {this.drag.update(performance.now());if(this.drag.preview)this.selectedUnitIds=[...this.drag.preview.unitIds];}
   private map(e:EventTouch):Point {return screenToMap(this.point(e),this.frame(),this.session.map.battle_bounds);}
   private start(e:EventTouch):void {
     const id=e.getID();if(id===null){this.ignored('missing-touch-id');return;}
@@ -50,23 +53,24 @@ export class InputManager {
     const inside=p.x>=f.x&&p.x<=f.x+f.width*f.scale&&p.y>=f.y&&p.y<=f.y+f.height*f.scale;
     if(!inside||this.session.paused||this.session.snapshot.result!=='running'){this.ignored(!inside?'outside-battlefield':this.session.paused?'paused':'battle-ended');return;}
     const humans=this.session.battle.getUnits().filter(u=>u.faction==='human'&&u.hp>0&&u.active);
-    const nearby=humans.filter(u=>Math.hypot(u.position.x-m.x,u.position.y-m.y)<=this.session.map.unit_selection_radius)
+    const logicalScale=this.gesturePoint({x:f.scale,y:0}).x;
+    const radius=Math.max(this.session.map.unit_selection_radius,18/Math.max(.001,logicalScale));
+    const nearby=humans.filter(u=>Math.hypot(u.position.x-m.x,u.position.y-m.y)<=radius)
       .sort((a,b)=>Math.hypot(a.position.x-m.x,a.position.y-m.y)-Math.hypot(b.position.x-m.x,b.position.y-m.y)||
         (a.id<b.id?-1:a.id>b.id?1:0));
-    // Re-sample the fixed circle on every press and capture only the closest
-    // soldier. Empty drags select none; a later press never restores an old
-    // multi-unit selection.
-    const selected=nearby.length?[nearby[0].id]:[];
-    if(this.drag.begin(id,p,m,performance.now(),false,true,selected)){
+    // The closest soldier anchors the captured squad. A stationary long press
+    // can narrow this gesture to that soldier without changing its anchor.
+    const selected=nearby.length?this.session.battle.getSquadMembers(nearby[0].id):[];
+    if(this.drag.begin(id,this.gesturePoint(p),m,performance.now(),false,true,selected,nearby[0]?.id)){
       this.dragFinger=id;
       this.selectedUnitIds=[...selected];
-      this.selectionPreview={center:{...m},radius:this.session.map.unit_selection_radius};
-      diagnostics.info('input.selection',{point:m,selectedUnitIds:selected,radius:this.session.map.unit_selection_radius});
+      this.selectionPreview={center:{...m},radius};
+      diagnostics.info('input.selection',{point:m,selectedUnitIds:selected,radius});
     }else this.ignored('gesture-cooldown');
   }
   private move(e:EventTouch):void {
     const id=e.getID();if(id===null)return;
-    this.drag.move(id,this.point(e),this.map(e));
+    this.drag.move(id,this.gesturePoint(this.point(e)),this.map(e),performance.now());this.update();
   }
   private end(e:EventTouch):void {
     const id=e.getID();if(id===null)return;
@@ -84,8 +88,8 @@ export class InputManager {
     const releasedAtMs=performance.now();
     const ownsGesture=this.drag.preview!==null&&this.dragFinger===id;
     if(ownsGesture&&!this.drag.preview!.unitIds.length){this.ignored('no-soldier-selected');this.cancelGesture(id);return;}
-    const command=this.drag.end(id,this.point(e),this.map(e),releasedAtMs);
-    if(ownsGesture){this.selectionPreview=null;this.dragFinger=null;}
+    const command=this.drag.end(id,this.gesturePoint(this.point(e)),this.map(e),releasedAtMs);
+    if(ownsGesture){if(command)this.selectedUnitIds=[...command.unitIds];this.selectionPreview=null;this.dragFinger=null;}
     if(command?.unitIds.length&&!this.session.paused&&this.session.snapshot.result==='running'){
       // Observe authoritative acceptance rather than assuming a drag was accepted.
       const accepted=this.session.moveGroup(command.unitIds,command.target.x,command.target.y);

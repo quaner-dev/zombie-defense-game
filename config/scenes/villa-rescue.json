@@ -284,7 +284,12 @@
       "minInterval_s": 0.2,
       "rampDuration_s": 60,
       "batchSize": 1,
-      "distribution": { "north": 0.25, "east": 0.25, "south": 0.25, "west": 0.25 },
+      "distribution": {
+        "north": 0.25,
+        "east": 0.25,
+        "south": 0.25,
+        "west": 0.25
+      },
       "continuousEventsOnly": true,
       "spawnPoints": [
         "north",
@@ -368,8 +373,44 @@
       {
         "x": 540,
         "y": 1400
+      },
+      {
+        "x": 360,
+        "y": 900
+      },
+      {
+        "x": 720,
+        "y": 900
+      },
+      {
+        "x": 450,
+        "y": 900
+      },
+      {
+        "x": 630,
+        "y": 900
+      },
+      {
+        "x": 360,
+        "y": 1020
+      },
+      {
+        "x": 720,
+        "y": 1020
+      },
+      {
+        "x": 450,
+        "y": 1020
+      },
+      {
+        "x": 630,
+        "y": 1020
       }
-    ]
+    ],
+    "spawnLimits": {
+      "maxBatchSize": 1,
+      "minInterval_s": 0.2
+    }
   },
   "presentation": {
     "floorColor": "#202D29",

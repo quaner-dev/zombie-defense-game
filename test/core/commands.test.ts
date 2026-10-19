@@ -78,14 +78,15 @@ test('formation is deterministic, loosely scattered around its target, clamped a
   assert.notDeepEqual(a.moveTarget, b.moveTarget);
 });
 
-test('soldiers converge near the finger instead of translating their original shape', () => {
+test('soldiers translate their original shape toward the finger', () => {
   const { store, commands, movement } = setup();
   const a = store.spawn('rifleman', { x: 100, y: 400 }, 'A');
   const b = store.spawn('rifleman', { x: 900, y: 400 }, 'C');
   commands.issueMoveGroup([a.id, b.id], 540, 800, 0);
-  for (const soldier of [a, b]) assert.ok(Math.hypot(soldier.moveTarget!.x - 540, soldier.moveTarget!.y - 800) < 24);
+  assert.equal(b.moveTarget!.x-a.moveTarget!.x,800);
+  assert.equal((a.moveTarget!.x+b.moveTarget!.x)/2,540);
   movement.update(.5, .5);
-  assert.ok(a.velocity.x > 0 && b.velocity.x < 0, 'each soldier approaches the landing point from its own direction');
+  assert.ok(a.velocity.x > 0 && b.velocity.x > 0, 'soldiers retain parallel movement vectors');
   assert.ok(a.velocity.y > 0 && b.velocity.y > 0);
 });
 
@@ -98,14 +99,14 @@ test('a finger landing on a wall assigns walkable personal destinations', () => 
   }
 });
 
-test('an initially deployed squad also converges instead of keeping parallel movement vectors', () => {
+test('an initially deployed squad retains its spread', () => {
   const store = new UnitStore(), map = MapModel.load(), commands = new CommandSystem(store, map);
   const soldiers = formationPositions(17, { x: 540, y: 1370 }, map)
     .map(position => store.spawn('rifleman', position, 'B'));
   commands.issueMoveGroup(soldiers.map(soldier => soldier.id), 700, 1800, 0);
   const initialSpread = Math.max(...soldiers.map(soldier => Math.hypot(soldier.position.x - 540, soldier.position.y - 1370)));
   const finalSpread = Math.max(...soldiers.map(soldier => Math.hypot(soldier.moveTarget!.x - 700, soldier.moveTarget!.y - 1800)));
-  assert.ok(finalSpread < initialSpread * .75);
+  assert.ok(Math.abs(finalSpread-initialSpread)<1e-8);
 });
 
 test('movement uses configured speed, clears combat targets, and stops at inclusive 12px tolerance', () => {

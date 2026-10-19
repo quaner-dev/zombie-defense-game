@@ -16,6 +16,8 @@ interface PendingWave {
   spawns: PendingSpawn[];
 }
 
+export interface SpawnLimits { maxBatchSize: number; minInterval_s: number }
+
 export interface ContinuousSpawnDefinition {
   totalTarget: number;
   interval_s: number;
@@ -30,12 +32,15 @@ export interface ContinuousSpawnDefinition {
 
 /** Turns scheduled wave declarations into time-based admissions at the map edge. */
 export class SpawnSystem {
+  private limits: SpawnLimits | undefined;
+  private nextAdmission_s = 0;
   private pending: PendingWave[] = [];
   private spawned = 0;
   private offsets = new Map<string, number>();
   private continuous: ContinuousSpawnDefinition | null = null;
   private nextContinuousTime_s = 0;
   private continuousGenerated = 0;
+  private continuousBatchIndex = 0;
   private continuousGutSpawned = 0;
   private continuousCompletionEmitted = false;
   private continuousPointCounts = new Map<string, number>();
@@ -43,10 +48,17 @@ export class SpawnSystem {
   public constructor(private readonly store: UnitStore, private readonly map: MapModel) {}
 
   public reset(): void {
+    this.limits = undefined; this.nextAdmission_s = 0;
     this.pending = []; this.spawned = 0; this.offsets.clear(); this.continuous = null;
     this.nextContinuousTime_s = 0; this.continuousGenerated = 0;
+    this.continuousBatchIndex = 0;
     this.continuousGutSpawned = 0; this.continuousCompletionEmitted = false;
     this.continuousPointCounts.clear();
+  }
+  public configureLimits(limits?: SpawnLimits): void {
+    if (limits && (!Number.isSafeInteger(limits.maxBatchSize) || limits.maxBatchSize < 1 ||
+        !Number.isFinite(limits.minInterval_s) || limits.minInterval_s <= 0)) throw new Error('Invalid spawn limits');
+    this.limits = limits ? { ...limits } : undefined; this.nextAdmission_s = 0;
   }
   public get spawnedCount(): number { return this.spawned; }
   public hasPending(): boolean { return this.pending.length > 0; }
@@ -84,6 +96,7 @@ export class SpawnSystem {
     this.continuous = cloneData(definition);
     this.nextContinuousTime_s = 0;
     this.continuousGenerated = 0;
+    this.continuousBatchIndex = 0;
     this.continuousGutSpawned = 0;
     this.continuousCompletionEmitted = false;
     this.continuousPointCounts.clear();
@@ -107,10 +120,12 @@ export class SpawnSystem {
 
   public update(time_s: number): BattleEvent[] {
     const events: BattleEvent[] = [];
+    if (!Number.isFinite(time_s) || time_s < 0 || (this.limits && time_s + 1e-9 < this.nextAdmission_s)) return events;
     if (this.continuous) {
       while (this.continuousGenerated < this.continuous.totalTarget && this.nextContinuousTime_s <= time_s + 1e-9) {
         const remaining = this.continuous.totalTarget - this.continuousGenerated;
-        const count = Math.min(this.continuous.batchSize, remaining);
+        const count = Math.min(this.continuous.batchSize, remaining, this.limits?.maxBatchSize ?? Infinity);
+        const admittedAt = this.limits ? time_s : this.nextContinuousTime_s;
         const specialTarget = Math.ceil(this.continuous.totalTarget * (this.continuous.specialRatios?.gut_zombie ?? 0));
         const batchSpawns: WaveSpawnEventData['spawns'] = [];
         for (let index = 0; index < count; index++) {
@@ -135,18 +150,26 @@ export class SpawnSystem {
         }
         for (const spawn of batchSpawns) {
           const side = this.map.getSpawnPoint(spawn.spawnPoint!)?.side;
-          if (side) events.push({ type: 'continuous_zombie_spawn', time_s: this.nextContinuousTime_s,
+          if (side) events.push({ type: 'continuous_zombie_spawn', time_s: admittedAt,
             data: { generated: this.continuousGenerated, target: this.continuous.totalTarget, side, count: spawn.count } });
         }
-        if (!this.continuous.continuousEventsOnly) events.push({ type: 'zombie_batch_spawn', time_s: this.nextContinuousTime_s, data: {
-          waveIndex: 0, batchIndex: Math.floor(this.continuousGenerated / this.continuous.batchSize) - 1,
+        if (!this.continuous.continuousEventsOnly) events.push({ type: 'zombie_batch_spawn', time_s: admittedAt, data: {
+          waveIndex: 0, batchIndex: this.continuousBatchIndex,
           batchSize: count, spawns: batchSpawns,
         } });
+        this.continuousBatchIndex++;
         const initial = this.continuous.initialInterval_s ?? this.continuous.interval_s;
         const minimum = this.continuous.minInterval_s ?? this.continuous.interval_s;
         const ramp = this.continuous.rampDuration_s ?? 0;
         const progress = ramp > 0 ? Math.min(1, this.nextContinuousTime_s / ramp) : 1;
-        this.nextContinuousTime_s += initial + (minimum - initial) * progress;
+        const interval = initial + (minimum - initial) * progress;
+        this.nextContinuousTime_s += interval;
+        if (this.limits) {
+          // Preserve the ordinary schedule, but never replay an overdue backlog.
+          if (this.nextContinuousTime_s <= time_s + 1e-9) this.nextContinuousTime_s = time_s + interval;
+          this.nextAdmission_s = time_s + this.limits.minInterval_s;
+          break;
+        }
       }
       if (this.isGenerationComplete() && !this.continuousCompletionEmitted) {
         this.continuousCompletionEmitted = true;
@@ -161,7 +184,7 @@ export class SpawnSystem {
       while (wave.nextBatchTime_s <= time_s + 1e-9 && wave.spawns.some(item => item.remaining > 0)) {
         const batchSpawns: WaveSpawnEventData['spawns'] = [];
         let admitted = 0;
-        while (admitted < wave.batchSize && wave.spawns.some(item => item.remaining > 0)) {
+        while (admitted < Math.min(wave.batchSize, this.limits?.maxBatchSize ?? Infinity) && wave.spawns.some(item => item.remaining > 0)) {
           let selected: PendingSpawn | undefined;
           let selectedIndex = -1;
           for (let offset = 0; offset < wave.spawns.length; offset++) {
@@ -183,15 +206,20 @@ export class SpawnSystem {
           const existing = batchSpawns.find(item => item.route === spawn.route && item.spawnPoint === spawn.spawnPoint && item.unitType === spawn.unitType);
           if (existing) existing.count++; else batchSpawns.push({ ...spawn, count: 1 });
         }
-        if (admitted > 0) events.push({ type: 'zombie_batch_spawn', time_s: wave.nextBatchTime_s, data: {
+        if (admitted > 0) events.push({ type: 'zombie_batch_spawn', time_s: this.limits ? time_s : wave.nextBatchTime_s, data: {
           waveIndex: wave.waveIndex, batchIndex: wave.batchIndex++, batchSize: admitted, spawns: batchSpawns,
         }});
-        wave.nextBatchTime_s += wave.batchInterval_s;
+        wave.nextBatchTime_s = (this.limits ? time_s : wave.nextBatchTime_s) + wave.batchInterval_s;
+        if (this.limits) {
+          this.nextAdmission_s = time_s + this.limits.minInterval_s;
+          break;
+        }
         if (wave.batchInterval_s === 0) {
           // Zero interval is a single pulse; continue filling it until exhausted.
           wave.nextBatchTime_s = wave.spawns.some(item => item.remaining > 0) ? time_s : Infinity;
         }
       }
+      if (this.limits && time_s + 1e-9 < this.nextAdmission_s) break;
     }
     this.pending = this.pending.filter(wave => wave.spawns.some(item => item.remaining > 0));
     return events;

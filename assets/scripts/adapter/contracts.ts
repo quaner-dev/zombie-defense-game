@@ -7,6 +7,13 @@ export function fitMap(safe: {x:number;y:number;width:number;height:number}, wid
   const scale=Math.min(safe.width/width,safe.height/height);
   return {x:safe.x+(safe.width-width*scale)/2,y:safe.y+(safe.height-height*scale)/2,scale,width,height};
 }
+/** Half of safe screen area, with symmetric HUD clearance and no cropping. */
+export function fitBattlefield(safe:{x:number;y:number;width:number;height:number},width:number,height:number):Frame {
+  const fit=fitMap(safe,width,height),u=Math.min(1,safe.width/1080,safe.height/1800);
+  const scale=Math.min(fit.scale,Math.sqrt(.5*safe.width*safe.height/(width*height)),
+    Math.max(1,safe.height-700*u)/height,Math.max(1,safe.width-40*u)/width);
+  return {x:safe.x+(safe.width-width*scale)/2,y:safe.y+(safe.height-height*scale)/2,scale,width,height};
+}
 export function mapToScreen(p:Point,f:Frame):Point {return {x:f.x+p.x*f.scale,y:f.y+(f.height-p.y)*f.scale};}
 export function screenToMap(p:Point,f:Frame,b:Bounds):Point {
   return {x:Math.max(b.left,Math.min(b.right,(p.x-f.x)/f.scale)),y:Math.max(b.top,Math.min(b.bottom,f.height-(p.y-f.y)/f.scale))};
@@ -14,15 +21,31 @@ export function screenToMap(p:Point,f:Frame,b:Bounds):Point {
 export class DragCommand {
   private finger:number|null=null;
   private screen:Point={x:0,y:0};
+  private beganAt=0;
+  private anchorId:string|undefined;
+  private startedDragging=false;
+  public mode:'squad'|'single'='squad';
   private cooldownUntil=-Infinity;
   public preview:{start:Point;target:Point;unitIds:readonly string[]}|null=null;
-  public begin(id:number,screen:Point,map:Point,ms:number,ui:boolean,group:boolean,unitIds:readonly string[]=[]):boolean {
+  public begin(id:number,screen:Point,map:Point,ms:number,ui:boolean,group:boolean,unitIds:readonly string[]=[],anchorId=unitIds[0]):boolean {
     if(this.finger!==null||ui||!group||ms<this.cooldownUntil) return false;
+    this.beganAt=ms;this.anchorId=anchorId;this.startedDragging=false;this.mode='squad';
     this.finger=id; this.screen={...screen}; this.preview={start:{...map},target:{...map},unitIds:[...unitIds]}; return true;
   }
-  public move(id:number,_screen:Point,map:Point):void {if(id===this.finger&&this.preview)this.preview.target={...map};}
+  public update(ms:number):void {
+    if(this.preview&&!this.startedDragging&&ms-this.beganAt>=450&&this.anchorId){
+      this.mode='single';this.preview.unitIds=[this.anchorId];
+    }
+  }
+  public move(id:number,screen:Point,map:Point,ms?:number):void {
+    if(id!==this.finger||!this.preview)return;
+    if(ms!==undefined)this.update(ms);
+    if(Math.hypot(screen.x-this.screen.x,screen.y-this.screen.y)>=8)this.startedDragging=true;
+    this.preview.target={...map};
+  }
   public end(id:number,screen:Point,map:Point,ms:number):{start:Point;target:Point;unitIds:readonly string[]}|null {
     if(id!==this.finger||!this.preview)return null;
+    this.move(id,screen,map,ms);
     const result={start:this.preview.start,target:map,unitIds:this.preview.unitIds};
     const distance=Math.hypot(screen.x-this.screen.x,screen.y-this.screen.y);
     this.cancel(); if(distance<8)return null;

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>尸潮防线 · 战场统计设计稿</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --text: #f2f2f7; --muted: #919ba9; --line: #272d38; --human: #63d68f;
+      --zombie: #9f8be8; --flame: #f04438; --sniper: #55c5f4; --shield: #b9d7e8;
+      font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: #0b0d12; line-height: 1.65; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--human); outline-offset: 4px; }
+    .page-header { padding: 22px max(5vw, 20px); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { font-size: 15px; font-weight: 650; letter-spacing: .16em; }
+    .brand i { display: inline-block; width: 8px; height: 8px; margin-right: 12px; border-radius: 50%; background: var(--human); box-shadow: 0 0 14px #63d68f55; }
+    .version { color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+    main { max-width: 1150px; padding: 46px 28px 54px; margin: auto; display: grid; grid-template-columns: minmax(330px, 470px) minmax(0, 1fr); align-items: start; gap: 68px; }
+    .preview { position: sticky; top: 24px; }
+    .preview-surface { padding: 24px 28px; border: 1px solid var(--line); border-radius: 26px; background: radial-gradient(ellipse at 50% 40%, #232c2c88, transparent 70%), #11151c; }
+    #battle-preview { display: block; width: 100%; max-width: 390px; height: auto; margin: auto; border-radius: 28px; box-shadow: 0 20px 50px #0007; }
+    .preview-caption { margin: 14px 0 0; color: var(--muted); font-size: 11px; text-align: center; }
+    .eyebrow { margin: 0 0 10px; color: var(--human); font: 11px ui-monospace, monospace; letter-spacing: .18em; }
+    h1 { margin: 0 0 14px; font-size: clamp(30px, 4vw, 42px); line-height: 1.35; letter-spacing: -.03em; }
+    .intro { margin: 0 0 28px; color: var(--muted); font-size: 14px; }
+    .decisions { display: grid; gap: 17px; }
+    .decision { display: grid; grid-template-columns: 28px 1fr; gap: 13px; }
+    .number { margin-top: 3px; color: var(--human); font: 12px ui-monospace, monospace; }
+    .decision h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+    .decision p { margin: 0; color: var(--muted); font-size: 12px; }
+    .swatches { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px; }
+    .swatch { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
+    .swatch i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .controls { margin-top: 29px; padding-top: 24px; border-top: 1px solid var(--line); }
+    .controls-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .controls-title h2 { margin: 0; font-size: 14px; }
+    .text-button { border: 0; background: none; color: var(--human); font-size: 12px; padding: 6px; min-height: 36px; }
+    .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .preset { min-height: 39px; padding: 7px 4px; border-radius: 8px; background: #151a23; border: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    .preset:hover, .preset[aria-pressed="true"] { border-color: #63d68f88; background: #63d68f0d; color: var(--human); }
+    .input-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 17px; }
+    .field-label { display: grid; gap: 5px; font-size: 11px; color: var(--muted); }
+    .field-label input { width: 100%; min-height: 39px; padding: 7px 9px; border: 1px solid var(--line); background: #11151d; color: var(--text); border-radius: 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
+    .zombie-control { display: grid; grid-template-columns: 1fr 90px; gap: 14px; align-items: end; margin-top: 12px; }
+    .range-label { display: grid; gap: 6px; font-size: 11px; color: var(--zombie); }
+    input[type="range"] { accent-color: var(--zombie); width: 100%; min-height: 28px; margin: 0; cursor: pointer; }
+    .ratio-note { padding: 11px 0; color: var(--muted); font: 11px/1.6 ui-monospace, "Microsoft YaHei", monospace; font-variant-numeric: tabular-nums; }
+    .ratio-note b { font-weight: 500; }
+    .scope { padding-top: 16px; border-top: 1px solid var(--line); color: #727e8f; font-size: 11px; }
+    .spec-link { display: inline-block; margin-top: 10px; color: var(--muted); text-decoration-color: #555f6c; text-underline-offset: 4px; font-size: 12px; }
+    @media (max-width: 900px) { main { gap: 32px; padding: 32px 20px; grid-template-columns: minmax(300px, 390px) minmax(0, 1fr); } .preview-surface { padding: 14px; } .presets { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px) { .page-header { padding: 18px 20px; } .version { font-size: 10px; letter-spacing: 0; } main { grid-template-columns: 1fr; max-width: 470px; gap: 32px; } .preview { position: static; } .preview-surface { padding: 12px; border-radius: 22px; } .presets { grid-template-columns: repeat(3, 1fr); } }
+    @media (prefers-reduced-motion: reduce) { #battle-preview .ratio-animation { transition: none; } }
+  </style>
+</head>
+<body>
+  <header class="page-header"><div class="brand"><i></i>尸潮防线</div><span class="version">战场统计 / 设计预览 v1</span></header>
+  <main>
+    <section class="preview" aria-label="战斗界面设计预览">
+      <div class="preview-surface">
+        <svg id="battle-preview" xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844" role="img" aria-labelledby="preview-title preview-desc">
+          <title id="preview-title">大屋守卫 · 战场统计设计</title>
+          <desc id="preview-desc">战场上方显示场景名称，下方第一行显示彩色兵种数量，其下显示绿色士兵与紫色僵尸的总量和比例。</desc>
+          <style>
+            .game-text { font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+            .tabular { font-variant-numeric: tabular-nums; }
+            .ratio-animation { transition: width 220ms ease-out, transform 220ms ease-out; }
+            @media (prefers-reduced-motion: reduce) { .ratio-animation { transition: none; } }
+          </style>
+          <defs>
+            <pattern id="map-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#c3d0db" stroke-opacity=".035"/></pattern>
+            <clipPath id="screen-clip"><rect width="390" height="844" rx="28"/></clipPath>
+            <clipPath id="field-clip"><rect x="20" y="130" width="350" height="460" rx="12"/></clipPath>
+            <clipPath id="bar-clip"><rect width="342" height="12" rx="6"/></clipPath>
+          </defs>
+          <g class="game-text" clip-path="url(#screen-clip)">
+            <rect width="390" height="844" fill="#0b0e14"/>
+            <text x="24" y="38" fill="#83909f" font-size="10" letter-spacing="2">尸潮防线</text>
+            <rect x="297" y="23" width="69" height="23" rx="11.5" fill="#63d68f12" stroke="#63d68f33"/>
+            <circle cx="310" cy="34.5" r="2.5" fill="#63d68f"/><text x="320" y="38" fill="#9de4b7" font-size="10">战斗中</text>
+            <!-- A: scene name stands above the battlefield. -->
+            <text x="24" y="83" fill="#f2f2f7" font-size="28" font-weight="650" letter-spacing="1">大屋守卫</text>
+            <text x="24" y="109" fill="#919ba9" font-size="11">故事模式 · 第一幕</text>
+            <text x="366" y="109" text-anchor="end" fill="#919ba9" font-size="11" class="tabular">第 2 / 3 波 · 00:28</text>
+            <!-- Existing cabin geometry, contained in the field without cropping. -->
+            <rect x="20" y="130" width="350" height="460" rx="12" fill="#10151d" stroke="#29313d"/>
+            <g clip-path="url(#field-clip)">
+              <rect x="20" y="130" width="350" height="460" fill="url(#map-grid)"/>
+              <g transform="translate(91.5 130) scale(.1916666667)">
+                <rect width="1080" height="2400" fill="#17191e"/>
+                <rect x="124" y="704" width="832" height="1336" fill="#252a30"/>
+                <rect x="440" y="704" width="200" height="1336" fill="#343338"/>
+                <rect x="490" y="820" width="100" height="1100" fill="#454047" opacity=".6"/>
+                <rect x="60" y="180" width="960" height="1980" fill="none" stroke="#454752" stroke-width="3"/>
+                <g fill="#7a7a85" stroke="#a4a4af" stroke-width="3">
+                  <rect x="100" y="680" width="24" height="1384"/><rect x="956" y="680" width="24" height="1384"/>
+                  <rect x="100" y="680" width="377" height="24"/><rect x="603" y="680" width="377" height="24"/>
+                  <rect x="100" y="2040" width="377" height="24"/><rect x="603" y="2040" width="377" height="24"/>
+                </g>
+                <g fill="#95653e" stroke="#e4b575" stroke-width="4"><rect x="477" y="680" width="126" height="24"/><rect x="477" y="2040" width="126" height="24"/></g>
+                <g fill="#63d68f"><rect x="477" y="653" width="126" height="7"/><rect x="477" y="2085" width="126" height="7"/></g>
+                <g fill="#9f8be8" opacity=".12"><ellipse cx="540" cy="360" rx="170" ry="160"/><ellipse cx="540" cy="2160" rx="160" ry="110"/></g>
+                <g id="map-zombies" fill="#9f8be8" stroke="#9f8be8" stroke-opacity=".16" stroke-width="16">
+                  <circle cx="496" cy="266" r="16"/><circle cx="538" cy="280" r="16"/><circle cx="580" cy="258" r="16"/>
+                  <circle cx="510" cy="325" r="16"/><circle cx="560" cy="340" r="16"/><circle cx="590" cy="385" r="16"/>
+                  <circle cx="488" cy="398" r="16"/><circle cx="535" cy="416" r="16"/><circle cx="565" cy="458" r="16"/>
+                  <circle cx="506" cy="490" r="16"/><circle cx="588" cy="510" r="16"/><circle cx="545" cy="550" r="16"/><circle cx="495" cy="590" r="16"/>
+                  <circle cx="495" cy="2110" r="16"/><circle cx="537" cy="2113" r="16"/><circle cx="579" cy="2115" r="16"/>
+                  <circle cx="504" cy="2135" r="16"/><circle cx="551" cy="2145" r="16"/><circle cx="594" cy="2140" r="16"/>
+                  <circle cx="488" cy="2174" r="16"/><circle cx="535" cy="2182" r="16"/><circle cx="581" cy="2175" r="16"/>
+                  <circle cx="504" cy="2210" r="16"/><circle cx="552" cy="2220" r="16"/><circle cx="594" cy="2210" r="16"/><circle cx="541" cy="2260" r="16"/>
+                </g>
+                <g id="map-soldiers" stroke-width="15" stroke-opacity=".17">
+                  <g fill="#63d68f" stroke="#63d68f"><circle cx="430" cy="1390" r="14"/><circle cx="485" cy="1360" r="14"/><circle cx="540" cy="1400" r="14"/><circle cx="595" cy="1360" r="14"/><circle cx="650" cy="1390" r="14"/><circle cx="470" cy="1460" r="14"/><circle cx="610" cy="1460" r="14"/></g>
+                  <g fill="#f04438" stroke="#f04438"><circle cx="425" cy="1510" r="16"/><circle cx="540" cy="1500" r="16"/><circle cx="655" cy="1510" r="16"/></g>
+                  <circle cx="540" cy="1580" r="14" fill="#55c5f4" stroke="#55c5f4"/>
+                  <g fill="#b9d7e8" stroke="#b9d7e8"><circle cx="490" cy="1310" r="18"/><circle cx="590" cy="1310" r="18"/></g>
+                </g>
+              </g>
+            </g>
+            <text x="346" y="152" text-anchor="middle" fill="#6e7a8a" font-size="9" letter-spacing="1">N</text>
+            <text x="195" y="249" text-anchor="middle" fill="#85818d" font-size="9">北门</text>
+            <text x="195" y="540" text-anchor="middle" fill="#85818d" font-size="9">南门</text>
+            <!-- B: the first row under the field is a single line of colored types and counts. -->
+            <rect x="12" y="610" width="366" height="145" rx="18" fill="#141923" stroke="#2b3340"/>
+            <g font-size="12" font-weight="500">
+              <g fill="#63d68f"><circle cx="28" cy="633" r="3"/><text x="38" y="638">枪兵</text><text id="count-rifle" x="73" y="639" font-size="17" font-weight="700" class="tabular">7</text></g>
+              <g fill="#f04438"><circle cx="109" cy="633" r="3"/><text x="119" y="638">喷火兵</text><text id="count-flame" x="164" y="639" font-size="17" font-weight="700" class="tabular">3</text></g>
+              <g fill="#55c5f4"><circle cx="208" cy="633" r="3"/><text x="218" y="638">狙击兵</text><text id="count-sniper" x="263" y="639" font-size="17" font-weight="700" class="tabular">1</text></g>
+              <g fill="#b9d7e8"><circle cx="303" cy="633" r="3"/><text x="313" y="638">盾兵</text><text id="count-shield" x="366" y="639" text-anchor="end" font-size="17" font-weight="700" class="tabular">2</text></g>
+            </g>
+            <path d="M24 654H366" stroke="#ffffff" stroke-opacity=".07"/>
+            <!-- C: totals and the division both use the same live ratio. -->
+            <g fill="#63d68f"><text x="24" y="681" font-size="12">士兵</text><text id="human-total" x="60" y="682" font-size="19" font-weight="650" class="tabular">13</text></g>
+            <text x="366" y="682" text-anchor="end" fill="#9f8be8" class="tabular"><tspan font-size="12">僵尸 </tspan><tspan id="zombie-total" font-size="19" font-weight="650">26</tspan></text>
+            <g transform="translate(24 699)">
+              <g clip-path="url(#bar-clip)">
+                <rect width="342" height="12" fill="#272e3b"/>
+                <rect id="zombie-segment" width="342" height="12" fill="#9f8be8"/>
+                <rect id="human-segment" class="ratio-animation" style="width:114px" width="114" height="12" fill="#63d68f"/>
+              </g>
+              <g id="division" class="ratio-animation" style="transform:translateX(114px)">
+                <rect x="-2.5" y="-4" width="5" height="20" rx="2.5" fill="#10151d"/>
+                <rect x="-1" y="-3" width="2" height="18" rx="1" fill="#f2f2f7"/>
+              </g>
+            </g>
+            <text id="bar-status" x="24" y="738" fill="#758191" font-size="10">当前存活单位</text>
+            <circle cx="313" cy="734.5" r="2" fill="#758191"/><text x="322" y="738" fill="#758191" font-size="10">实时</text>
+            <!-- Existing actions, kept below the statistics with 44 px touch targets. -->
+            <g font-size="12" text-anchor="middle">
+              <rect x="24" y="777" width="70" height="44" rx="10" fill="#151b25" stroke="#2b3340"/><text x="59" y="804" fill="#919ba9">首页</text>
+              <rect x="104" y="777" width="108" height="44" rx="10" fill="#151b25" stroke="#2b3340"/><text x="158" y="804" fill="#d8dfe8">暂停</text>
+              <rect x="222" y="777" width="144" height="44" rx="10" fill="#1c2b2e" stroke="#6ed4db55"/><text x="294" y="804" fill="#b6e1e4">重新开始</text>
+            </g>
+          </g>
+          <rect x=".5" y=".5" width="389" height="843" rx="27.5" fill="none" stroke="#333c49"/>
+        </svg>
+      </div>
+      <p class="preview-caption">竖屏设计 · 大屋守卫示意 · 可在右侧调整统计</p>
+    </section>
+    <section aria-labelledby="design-heading">
+      <p class="eyebrow">BATTLE HUD / 01</p>
+      <h1 id="design-heading">场景在上，<br>兵力在下。</h1>
+      <p class="intro">黑灰战场搭配柔和亮色。场景名独立呈现，兵种与总量紧凑排列，让战斗时的数量变化更清楚。</p>
+      <div class="decisions">
+        <article class="decision"><span class="number">01</span><div><h2>战场上方显示当前场景名</h2><p>场景名称作为主标题；模式、波次与计时使用次级文字，留出清晰的层级。</p></div></article>
+        <article class="decision"><span class="number">02</span><div><h2>战场下方第一行显示兵种数量</h2><p>“枪兵 7　喷火兵 3　狙击兵 1　盾兵 2”。兵种名称、色点和数字都沿用单位当前颜色。</p><div class="swatches"><span class="swatch" style="color:var(--human)"><i></i>枪兵</span><span class="swatch" style="color:var(--flame)"><i></i>喷火兵</span><span class="swatch" style="color:var(--sniper)"><i></i>狙击兵</span><span class="swatch" style="color:var(--shield)"><i></i>盾兵</span></div></div></article>
+        <article class="decision"><span class="number">03</span><div><h2>一条绿紫色带，实时反映双方总量</h2><p>绿色士兵在左，紫色僵尸在右。僵尸减少时分割线向右，士兵减少时向左；色块与分割线同步过渡。</p></div></article>
+      </div>
+      <section class="controls" aria-label="统计状态演示控制">
+        <div class="controls-title"><h2>试试数量变化</h2><button type="button" class="text-button" id="play-demo" aria-pressed="false">播放变化</button></div>
+        <div class="presets">
+          <button type="button" class="preset" data-preset="sample" aria-pressed="true">初始示例</button>
+          <button type="button" class="preset" data-preset="balanced" aria-pressed="false">双方相等</button>
+          <button type="button" class="preset" data-preset="fewer_zombies" aria-pressed="false">僵尸减少</button>
+          <button type="button" class="preset" data-preset="fewer_soldiers" aria-pressed="false">士兵减员</button>
+          <button type="button" class="preset" data-preset="clear" aria-pressed="false">僵尸清零</button>
+          <button type="button" class="preset" data-preset="empty" aria-pressed="false">双方为零</button>
+        </div>
+        <div class="input-grid">
+          <label class="field-label" style="color:var(--human)">枪兵<input id="input-rifle" type="number" min="0" max="99" step="1" value="7" inputmode="numeric"></label>
+          <label class="field-label" style="color:var(--flame)">喷火兵<input id="input-flame" type="number" min="0" max="99" step="1" value="3" inputmode="numeric"></label>
+          <label class="field-label" style="color:var(--sniper)">狙击兵<input id="input-sniper" type="number" min="0" max="99" step="1" value="1" inputmode="numeric"></label>
+          <label class="field-label" style="color:var(--shield)">盾兵<input id="input-shield" type="number" min="0" max="99" step="1" value="2" inputmode="numeric"></label>
+        </div>
+        <div class="zombie-control">
+          <label class="range-label">拖动调整僵尸数量<input id="zombie-range" type="range" min="0" max="300" step="1" value="26"></label>
+          <label class="field-label" style="color:var(--zombie)">僵尸<input id="input-zombie" type="number" min="0" max="9999" step="1" value="26" inputmode="numeric"></label>
+        </div>
+        <div class="ratio-note" id="ratio-note" role="status" aria-live="polite">士兵 33.3% / 僵尸 66.7% · 13 : 26</div>
+      </section>
+      <p class="scope">本稿完成视觉与交互设计。战场画面为静态示意，示例人数沿用本次需求；场景编制、生成参数及战斗实现保持现状。预览中的首页、暂停与重开按钮用于展示位置。</p>
+      <a class="spec-link" href="hud-statistics-design.md">查看完整设计规格 →</a>
+    </section>
+  </main>
+  <script>
+    const unitTypes = ['rifle', 'flame', 'sniper', 'shield'];
+    const sample = { rifle: 7, flame: 3, sniper: 1, shield: 2, zombie: 26 };
+    const presets = {
+      sample,
+      balanced: { ...sample, zombie: 13 },
+      fewer_zombies: { ...sample, zombie: 3 },
+      fewer_soldiers: { rifle: 2, flame: 1, sniper: 0, shield: 1, zombie: 26 },
+      clear: { ...sample, zombie: 0 },
+      empty: { rifle: 0, flame: 0, sniper: 0, shield: 0, zombie: 0 }
+    };
+    const state = { ...sample };
+    let demoTimer = null;
+    const $ = id => document.getElementById(id);
+    const integer = (value, max) => Math.max(0, Math.min(max, Math.floor(Number(value) || 0)));
+
+    function render(updateInputs = true) {
+      const human = unitTypes.reduce((total, type) => total + state[type], 0);
+      const total = human + state.zombie;
+      const humanRatio = total > 0 ? human / total : 0;
+      const zombieRatio = total > 0 ? state.zombie / total : 0;
+      const split = 342 * humanRatio;
+      for (const type of unitTypes) {
+        $(`count-${type}`).textContent = state[type];
+        if (updateInputs) $(`input-${type}`).value = state[type];
+      }
+      if (updateInputs) $('input-zombie').value = state.zombie;
+      // Expand the slider's range for custom values above the initial 300.
+      $('zombie-range').max = Math.max(300, state.zombie);
+      $('zombie-range').value = state.zombie;
+      $('human-total').textContent = human;
+      $('zombie-total').textContent = state.zombie;
+      $('human-segment').style.width = `${split}px`;
+      $('division').style.transform = `translateX(${split}px)`;
+      $('division').style.display = human > 0 && state.zombie > 0 ? '' : 'none';
+      $('zombie-segment').style.display = total > 0 ? '' : 'none';
+      $('bar-status').textContent = total > 0 ? '当前存活单位' : '暂无存活单位';
+      $('ratio-note').textContent = total > 0
+        ? `士兵 ${(humanRatio * 100).toFixed(1)}% / 僵尸 ${(zombieRatio * 100).toFixed(1)}% · ${human} : ${state.zombie}`
+        : '双方均为 0 · 对比条显示中性底色';
+      $('preview-desc').textContent = `大屋守卫。枪兵 ${state.rifle}、喷火兵 ${state.flame}、狙击兵 ${state.sniper}、盾兵 ${state.shield}。士兵总计 ${human}，僵尸 ${state.zombie}。`;
+    }
+
+    function markPreset(name) {
+      document.querySelectorAll('[data-preset]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.preset === name)));
+    }
+    function stopDemo() {
+      clearInterval(demoTimer);
+      demoTimer = null;
+      $('play-demo').textContent = '播放变化';
+      $('play-demo').setAttribute('aria-pressed', 'false');
+    }
+    function applyPreset(name) {
+      Object.assign(state, presets[name]);
+      markPreset(name);
+      render();
+    }
+    document.querySelectorAll('[data-preset]').forEach(button => button.addEventListener('click', () => {
+      stopDemo();
+      applyPreset(button.dataset.preset);
+    }));
+    for (const type of [...unitTypes, 'zombie']) {
+      const input = $(`input-${type}`);
+      input.addEventListener('input', () => {
+        stopDemo();
+        state[type] = integer(input.value, type === 'zombie' ? 9999 : 99);
+        markPreset(null);
+        render(false);
+      });
+      input.addEventListener('change', () => render());
+    }
+    $('zombie-range').addEventListener('input', event => {
+      stopDemo();
+      state.zombie = integer(event.target.value, 9999);
+      markPreset(null);
+      render();
+    });
+    $('play-demo').addEventListener('click', () => {
+      if (demoTimer !== null) { stopDemo(); return; }
+      const sequence = ['sample', 'balanced', 'fewer_zombies', 'sample', 'fewer_soldiers', 'clear'];
+      let index = 0;
+      applyPreset(sequence[index++]);
+      $('play-demo').textContent = '停止演示';
+      $('play-demo').setAttribute('aria-pressed', 'true');
+      demoTimer = setInterval(() => {
+        if (index >= sequence.length) { stopDemo(); return; }
+        applyPreset(sequence[index++]);
+      }, 1600);
+    });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopDemo(); });
+    render();
+  </script>
+</body>
+</html>
