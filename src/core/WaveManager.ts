@@ -3,6 +3,7 @@ import { ALL_SCENES } from '../scenes/index.js';
 import type { BattleEvent, WaveSpawnEventData } from './types.js';
 import type { MapModel } from './MapModel.js';
 import type { ZombieUnitType } from './types.js';
+import type { ContinuousSpawnDefinition } from './SpawnSystem.js';
 
 export interface WaveSpawn {
   unitType: ZombieUnitType;
@@ -21,18 +22,19 @@ export interface WaveDefinition {
 export interface LevelDefinition {
   mapId: string;
   waves: WaveDefinition[];
+  continuousSpawn?: ContinuousSpawnDefinition;
 }
 
 /**
- * Scheduling boundary for level content. The MVP implementation below is a
- * fixed-time wave list; a future interval or continuous-spawn scheduler can
- * preserve the same update/allWavesSpawned contract without touching combat.
+ * Level content boundary. SpawnSystem handles admissions using either the
+ * continuous configuration or the scheduled wave events exposed here.
  */
 export interface WaveScheduler {
   update(battleTime: number): BattleEvent[];
   allWavesSpawned(): boolean;
   getMapId(): string;
   getWaveCount(): number;
+  getContinuousSpawn?(): ContinuousSpawnDefinition | undefined;
   validateMap(map: MapModel): void;
 }
 
@@ -76,6 +78,10 @@ export class WaveManager implements WaveScheduler {
 
   public getMapId(): string {
     return this.level.mapId;
+  }
+
+  public getContinuousSpawn(): ContinuousSpawnDefinition | undefined {
+    return this.level.continuousSpawn;
   }
 
   public validateMap(map: MapModel): void {

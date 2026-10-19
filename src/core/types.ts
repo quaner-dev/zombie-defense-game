@@ -40,6 +40,8 @@ export interface Unit {
   flameLength_px: number;
   facing: Point;
   storedGutUnitIds: string[];
+  /** Pending retaliation follows a soldier ID until the gut can spit nearby. */
+  gutRetaliationTargetId: string | null;
   storedInGutById: string | null;
   suicideTriggerId: string | null;
   active: boolean;

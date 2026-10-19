@@ -92,17 +92,11 @@ export class CombatSystem {
       data: { sourceId, targetId, amount, appliedAmount, hp: target.hp, damageKind } }];
     const source = this.store.get(sourceId);
     this.stats?.recordDamage(sourceId, source?.unitType ?? 'rifleman', appliedAmount);
-    if (target.unitType === 'gut_zombie' && target.storedGutUnitIds.length && target.weaponCooldown_s <= 0) {
-      const thrownId = target.storedGutUnitIds.shift()!;
-      const thrown = this.store.get(thrownId);
-      if (thrown) {
-        thrown.state = 'Suicidal'; thrown.storedInGutById = null; thrown.stateElapsed_s = 0;
-        thrown.suicideTriggerId = target.id;
-        thrown.position = sourcePosition ? { ...sourcePosition } : { ...target.position };
-        target.weaponCooldown_s = 1.2;
-        events.push({ type: 'gut_thrown', time_s, data: { gutId: target.id, zombieId: thrown.id,
-          targetPosition: { ...thrown.position } } });
-      }
+    if (target.unitType === 'gut_zombie' && target.hp > 0 && source?.faction === 'human' &&
+        source.active && source.hp > 0 && source.state !== 'Dead') {
+      // A hit requests retaliation; navigation must bring the gut to the live
+      // attacker before it can release anything. Shot origins are never spawns.
+      target.gutRetaliationTargetId = source.id;
     }
     if (target.hp === 0) {
       // Release before kill() clears the gut inventory. Released zombies remain real
@@ -165,6 +159,13 @@ export class CombatSystem {
           unit.breached = true;
           events.push({ type: 'route_breached', time_s, data: { routeId: unit.routeId, unitId: unit.id } });
         }
+      }
+    }
+    // Release after all AI updates so even a zombie swallowed this frame starts
+    // its full suicide countdown on the next tick, independently of array order.
+    for (const unit of this.zombies) {
+      if (unit.unitType === 'gut_zombie' && unit.active && unit.hp > 0 && unit.state !== 'Dead') {
+        this.spitGut(unit, time_s, events);
       }
     }
     // Zombies are intentionally allowed to overlap as a crowd. Keep wall and
@@ -278,12 +279,17 @@ export class CombatSystem {
   private updateEngineer(unit: Unit, dt: number, time_s: number, events: BattleEvent[]): void {
     const stats = getUnitModule('engineer').getStats();
     this.coolWeapon(unit, dt, stats.gun_heat_max ?? 100, stats.gun_cooling_rate_s ?? 45, stats.gun_cooling_threshold ?? 25);
+    if (unit.state === 'Idle') {
+      this.state(unit, 'Deploying', time_s, events);
+      unit.stateElapsed_s = 0; unit.attackElapsed_s = 0;
+      unit.targetId = null; unit.velocity = { x: 0, y: 0 };
+      return;
+    }
     if (unit.state === 'Deploying' || unit.state === 'Dismantling') {
       unit.stateElapsed_s += dt;
       const duration = unit.state === 'Deploying' ? (stats.deploy_duration_s ?? 2) : (stats.dismantle_duration_s ?? 1.5);
       if (unit.stateElapsed_s + 1e-9 >= duration) {
-        if (unit.state === 'Deploying') unit.state = 'Deployed';
-        else unit.state = unit.moveTarget ? 'Moving' : 'Idle';
+        this.state(unit, unit.state === 'Deploying' ? 'Deployed' : unit.moveTarget ? 'Moving' : 'Idle', time_s, events);
         unit.stateElapsed_s = 0; unit.targetId = null;
       }
       return;
@@ -332,6 +338,53 @@ export class CombatSystem {
       target.state = 'StoredInGut'; target.storedInGutById = unit.id; target.active = true;
       unit.storedGutUnitIds.push(target.id);
       events.push({ type: 'gut_swallowed', time_s, data: { gutId: unit.id, zombieId: target.id } });
+    }
+  }
+
+  private gutRetaliationTarget(unit: Unit): Unit | undefined {
+    if (unit.unitType !== 'gut_zombie' || !unit.gutRetaliationTargetId) return undefined;
+    const target = this.store.get(unit.gutRetaliationTargetId);
+    if (!target || !target.active || target.hp <= 0 || target.state === 'Dead' || target.faction !== 'human') {
+      unit.gutRetaliationTargetId = null;
+      return undefined;
+    }
+    return target;
+  }
+
+  private spitGut(unit: Unit, time_s: number, events: BattleEvent[]): void {
+    const target = this.gutRetaliationTarget(unit);
+    if (!target || unit.climbingWallId || !unit.storedGutUnitIds.length || unit.weaponCooldown_s > 1e-9 ||
+        this.distance(unit, target) > config.gut_zombie.attack_range_px + 1e-9 ||
+        this.map.firstBlockingTerrain(unit.position, target.position)) return;
+    const swallowed = this.store.get(unit.storedGutUnitIds[0]);
+    if (!swallowed || !swallowed.active || swallowed.hp <= 0 || swallowed.state !== 'StoredInGut' ||
+        swallowed.storedInGutById !== unit.id) return;
+    const offset = unit.radius_px + swallowed.radius_px + 2;
+    const direction = Math.atan2(target.position.y - unit.position.y, target.position.x - unit.position.x);
+    const { left, top, right, bottom } = this.map.battle_bounds;
+    // Start beside the gut, then search its immediate surroundings. Never use a
+    // distant walkable-point projection that could put the body across a wall.
+    for (let index = 0; index < 8; index++) {
+      const angle = direction + Math.PI / 2 + index * Math.PI / 4;
+      const position = { x: unit.position.x + Math.cos(angle) * offset,
+        y: unit.position.y + Math.sin(angle) * offset };
+      const radius = swallowed.radius_px;
+      if (position.x - radius < left || position.x + radius > right ||
+          position.y - radius < top || position.y + radius > bottom ||
+          this.map.firstBlockingTerrain(unit.position, position, radius) ||
+          this.humans.some(human => human.active && human.hp > 0 &&
+            Math.hypot(human.position.x - position.x, human.position.y - position.y) < radius + human.radius_px + 2)) continue;
+      unit.storedGutUnitIds.shift();
+      unit.gutRetaliationTargetId = null;
+      unit.weaponCooldown_s = config.gut_zombie.throw_cooldown_s;
+      swallowed.position = position;
+      swallowed.velocity = { x: 0, y: 0 };
+      swallowed.targetId = null; swallowed.moveTarget = null; swallowed.attackElapsed_s = 0;
+      swallowed.stateElapsed_s = 0; swallowed.storedInGutById = null; swallowed.suicideTriggerId = unit.id;
+      this.state(swallowed, 'Suicidal', time_s, events);
+      events.push({ type: 'gut_thrown', time_s, data: { gutId: unit.id, zombieId: swallowed.id,
+        targetPosition: { ...position } } });
+      return;
     }
   }
 
@@ -388,6 +441,7 @@ export class CombatSystem {
       if (!moving) this.state(unit, 'Idle', time_s, events);
       return;
     }
+    if (unit.unitType === 'sniper') unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
     if (moving) {
       // A moving soldier keeps its movement state while independently firing.
       // Briefly publishing Firing preserves the muzzle/animation event
@@ -416,7 +470,7 @@ export class CombatSystem {
       this.climb(unit, dt, time_s, events);
       return;
     }
-    let target = this.nearest(unit, 'human');
+    let target = this.gutRetaliationTarget(unit) ?? this.nearest(unit, 'human');
     unit.velocity = { x: 0, y: 0 };
     if (!target) {
       unit.attackElapsed_s = 0;
@@ -543,7 +597,7 @@ export class CombatSystem {
       Math.hypot(a.position.x - unit.position.x, a.position.y - unit.position.y) -
       Math.hypot(b.position.x - unit.position.x, b.position.y - unit.position.y));
     const civilian = civilians[0];
-    const target = reachableDefender ?? civilian ?? this.nearest(unit, 'human');
+    const target = this.gutRetaliationTarget(unit) ?? reachableDefender ?? civilian ?? this.nearest(unit, 'human');
     if (!target) { unit.targetId = null; this.state(unit, 'Idle', time_s, events); return; }
     const waypoint = this.map.nextWaypoint(unit.position, target.position, radius, true);
     if (!waypoint) { unit.targetId = null; unit.attackElapsed_s = 0; return; }

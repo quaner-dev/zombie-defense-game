@@ -89,7 +89,7 @@ for (const [side,position,entranceId,kind] of [
 test('all 240 admissions reuse bounded edge slots and never spawn within the villa', () => {
   const map=MapModel.load(level), units=new UnitStore(), spawn=new SpawnSystem(units,map);
   const definition=getScene('villa-rescue').level.continuousSpawn!;
-  spawn.configureContinuous({...definition,interval_s:definition.initialInterval_s,continuousEventsOnly:true,distribution:{north:.25,east:.25,south:.25,west:.25}});
+  spawn.configureContinuous(definition);
   const events=spawn.update(1000);
   assert.equal(units.all().length,240);
   assert.equal(events.filter(e=>e.type==='generation_complete').length,1);

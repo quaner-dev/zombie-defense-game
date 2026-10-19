@@ -43,7 +43,8 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 | [map.json](../config/map.json) | 1080×2400、战场边界、防线、112px 选择半径、四边出生点、墙体 terrain；地图默认注册键为 default，map_id 是描述字段 |
 | [levels.json](../config/levels.json) | 大屋兼容关卡 LV01_zombie_wave 的 mapId、按时排序的 waves、南北出生点与单位数量；0/7/20s 共 100/300/300 只，总计 700 |
 | [scenes/cabin.json](../config/scenes/cabin.json) | 大屋外围墙体、南北两扇 600 HP 大门、南北出生点、三波与场景文案 |
-| [scenes/courtyard.json](../config/scenes/courtyard.json) | 第二关的矩形建筑、出生点、三波、文案与配色；由 src/scenes/index.ts 的列表接入 |
+| [scenes/courtyard.json](../config/scenes/courtyard.json) | 第二关的矩形建筑、出生区域与连续生成：每 0.35s 一批 10 只，共 720 只；南北各 30%、东西各 20%，巨胃占 5%；保留的旧 waves 不参与当前连续模式 |
+| [scenes/villa-rescue.json](../config/scenes/villa-rescue.json) | 保护平民场景：连续生成 240 只，每次 1 只，间隔从 0.6s 在 60s 内缩短到 0.2s；四边均衡，包含平民和士兵的固定站位 |
 | [units.json](../config/units.json) | 生命、速度、攻击、弹道与阵形；当前步枪0.35s一发、僵尸60HP/41.9px/s/0.13s |
 | [core/config.ts](../src/core/config.ts) | 3s 布阵、当前默认 7 初始人类（4 步枪兵、2 喷火兵、1 盾兵）；不是所有参数都在 JSON |
 
@@ -58,6 +59,50 @@ runner 的“失败也写 JSON”只指场景断言，不包括未捕获的 I/O�
 路线可覆盖旧式 `spawn_layout`；关卡波次可通过 `spawnPoint` 从 north/south/east/west 四边出生。terrain 中 `blocksMovement` 墙体会阻挡移动，`stackRequired: 3` 表示墙边至少三只僵尸才能翻越。新增地图/兵种还须更新注册、类型和行为，不能只加任意 JSON 就保证扩展。当前未知关卡/地图 ID 会回落默认，不应拿成功加载当作 ID 校验。
 
 改配置后同步核心、跑相关测试和报告，对比确定字段并说明测量改变的规则原因。不要为了通过测试放宽胜利/减员目标；原型夹具中的 300px射程 / 0.5s射击 / 40HP / 60px/s僵尸 / 1s近战用于旧规则边界测试，当前默认射程260px、士兵速度48px/s、僵尸41.9px/s / 0.13s 有独立回归。子弹视觉不能自行造成伤害。
+
+### 按地图配置僵尸生成
+
+`WaveManager` 读取关卡的生成配置，`BattleTestHarness` 负责接线，`SpawnSystem` 统一执行。存在 `level.continuousSpawn` 时使用连续模式，否则使用 `level.waves`；战斗主流程不再根据具体地图 ID 填入速度、出生点或权重。
+
+| 字段 | 含义 |
+|---|---|
+| `continuousSpawn.totalTarget` | 总生成上限，非负整数；达到后停止，不因僵尸死亡补充 |
+| `continuousSpawn.batchSize / interval_s` | 每批数量与间隔；批量为正整数，间隔为有限正数；首批在战斗时间 0 生成 |
+| `continuousSpawn.minInterval_s / rampDuration_s` | 可选的最终间隔与渐变时长；间隔按战斗时间线性变化；未设置时保持固定间隔 |
+| `continuousSpawn.initialInterval_s` | 可选的初始间隔覆盖值；一般直接使用 `interval_s` 即可 |
+| `continuousSpawn.spawnPoints / distribution` | 引用当前地图的出生点 ID，并按相对权重分配；ID 不限于方向名；全部权重为 0 时轮流生成 |
+| `continuousSpawn.specialRatios.gut_zombie` | 可选的巨胃僵尸占比，范围 0 到 1 |
+| `continuousSpawn.continuousEventsOnly` | 仅发布连续生成事件，不发布带波次号的批次事件；保护平民场景使用此项 |
+| `map.spawnPoints[].spawnArea / side` | 出生区域坐标与方向；有界区域循环复用槽位，不能让后续批次逐排延伸进室内 |
+| `waves[].battleTime_s / batchSize / batchInterval_s / spawns` | 波次模式的开始时间、每批数量、批次间隔，以及各兵种、路线、出生点和总数 |
+
+连续模式在配置时校验间隔、批量、目标数量、出生点、权重和特殊僵尸比例。保护平民本次由 `1.2s → 0.45s / 120s` 调整为 `0.6s → 0.2s / 60s`，总数仍为 240，只提高入场节奏；楼下原有连续参数迁入 JSON。
+
+### 新增场景前的确认
+
+新增场景前必须先提问并记录用户决定，确认后再编写场景配置或实现。已有对话中明确给出的内容可直接记录，不必重复询问；没有给出的内容不得默认为上一张地图的参数。此要求也记录在根目录 [AGENTS.md](../AGENTS.md)，供后续开发遵循。
+
+| 必须确认 | 需要记录的具体决定 | 对应配置或实现 |
+|---|---|---|
+| 生成模式与节奏 | 波次还是连续；首批何时出现；每批几只、间隔多久；是否逐渐加速，多久达到什么速度 | `level.waves` 或 `level.continuousSpawn`；非零连续首批延迟需要额外实现 |
+| 僵尸生成位置 | 从哪几侧、哪个入口或区域出现；区域范围；各入口占比；是否随时间变化 | `map.spawnPoints`、`spawnArea`、`spawnPoints / distribution` |
+| 敌人构成与总量 | 总计多少只、各兵种比例、是否有特殊僵尸、达到上限后是否停止 | `totalTarget / specialRatios` 或 `waves[].spawns` |
+| 士兵编制与位置 | 士兵总数、兵种、每名士兵的初始位置或阵形；与入口、掩体和保护目标的关系 | 当前默认编制配置；显式站位使用 `initialSoldiers / soldierPositions`，新场景需接入部署读取 |
+| 开场与目标 | 是否有布阵时间；平民或其他保护目标的数量、位置；胜利和失败条件 | `scenarioKind`、`civilians` 及相应部署、结算规则 |
+
+每张新场景的设计 MD 使用以下记录模板，填入实际答案；存在待定关键项时继续确认，不先生成具体场景：
+
+```md
+## 场景前置确认
+
+- 生成模式、首批时机：待确认
+- 每批数量、初始间隔、最终间隔、加速时长：待确认
+- 总生成数、敌人种类与比例：待确认
+- 出生入口、区域范围、各入口权重：待确认
+- 士兵编制、逐人站位或阵形：待确认
+- 布阵时间：待确认
+- 保护目标、位置与胜负条件：待确认
+```
 
 ## 验证层级
 

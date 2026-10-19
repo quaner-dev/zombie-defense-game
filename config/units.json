@@ -46,6 +46,7 @@
     "attack_interval_s": 1.6,
     "attack_range_px": 520,
     "projectile_speed_px_per_s": 1200,
+    "projectile_max_flight_time_s": 0.5,
     "penetration_count": 3,
     "penetration_damage_multiplier": 0.8
   },

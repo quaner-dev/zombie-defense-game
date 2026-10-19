@@ -9,10 +9,65 @@ export class UnitView {
   private readonly selectionStarted=new Map<string,number>();
   private readonly meleePulses=new Map<string,{x:number;y:number;started:number}>();
   private readonly infectionPulses=new Map<string,{x:number;y:number;started:number}>();
+  private readonly shots=new Map<string,number>();
   public constructor(parent:Node){this.g=graphics('Units',parent);}
-  public releaseTransient():void {this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();}
+  public releaseTransient():void {this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();this.shots.clear();}
   public get retainedDeaths():number {return this.deaths.size;}
-  public clear():void {this.deaths.clear();this.selectionStarted.clear();this.meleePulses.clear();this.infectionPulses.clear();this.g.clear();}
+  public clear():void {this.releaseTransient();this.g.clear();}
+  private weapon(u:Unit,time:number,fade:number):void {
+    if(u.unitType!=='sniper'&&u.unitType!=='engineer')return;
+    const g=this.g,engineer=u.unitType==='engineer';
+    const facing=engineer&&u.state==='Moving'?u.velocity:u.facing;
+    const length=Math.hypot(facing.x,facing.y);
+    const dx=length>1e-6?facing.x/length:0,dy=length>1e-6?-facing.y/length:1;
+    const x=u.position.x,y=-u.position.y;
+    const point=(along:number,across:number)=>({x:x+dx*along-dy*across,y:y+dy*along+dx*across});
+    const segment=(a:number,b:number,c:number,d:number)=>{
+      const start=point(a,b),end=point(c,d);g.moveTo(start.x,start.y);g.lineTo(end.x,end.y);g.stroke();
+    };
+    const shape=(points:readonly (readonly [number,number])[],tint:string)=>{
+      g.fillColor=color(tint,Math.round(255*fade));
+      points.forEach(([along,across],index)=>{const p=point(along,across);if(index===0)g.moveTo(p.x,p.y);else g.lineTo(p.x,p.y);});
+      g.close();g.fill();
+    };
+    const shotAge=time-(this.shots.get(u.id)??-Infinity);
+    const recoil=u.hp>0?Math.max(0,1-shotAge/(engineer?.1:.2))*4:0;
+    if(!engineer){
+      shape([[-10-recoil,-4],[12-recoil,-4],[12-recoil,4],[-10-recoil,6]],'#244866');
+      g.strokeColor=color('#B8EFFF',Math.round(255*fade));g.lineWidth=4;
+      segment(10-recoil,0,35-recoil,0);
+      shape([[0-recoil,5],[13-recoil,5],[13-recoil,9],[0-recoil,9]],'#182D42');
+      g.strokeColor=color(palette.sniper,Math.round(255*fade));g.lineWidth=2;segment(3-recoil,7,10-recoil,7);
+    }else{
+      const progress=u.state==='Deploying'?u.stateElapsed_s/unitConfig.engineer.deploy_duration_s:
+        u.state==='Dismantling'?1-u.stateElapsed_s/unitConfig.engineer.dismantle_duration_s:
+        ['Deployed','Overheated','Cooling'].includes(u.state)?1:0;
+      const clamped=Math.max(0,Math.min(1,progress)),spread=clamped*clamped*(3-2*clamped);
+      if(spread>0){
+        const legs=[[-10,23*spread],[-10,-23*spread],[26*spread,0]] as const;
+        for(const [width,tint] of [[5,'#29383D'],[2.5,'#B7C2C6']] as const){
+          g.strokeColor=color(tint,Math.round(255*fade));g.lineWidth=width;
+          for(const [along,across] of legs)segment(8,0,along,across);
+        }
+      }
+      if(u.state==='Moving'&&u.hp>0){
+        const stride=Math.sin(time*16)*5;
+        g.fillColor=color('#FBC86A',Math.round(245*fade));
+        for(const side of [-1,1]){const p=point(side*stride-7,side*10);g.circle(p.x,p.y,4);g.fill();}
+      }
+      const lift=-7*(1-spread),end=24+10*spread-recoil;
+      shape([[-15,-10],[-5,-10],[-5,8],[-15,8]],'#8B631E');
+      shape([[2-recoil,lift-5],[17-recoil,lift-5],[17-recoil,lift+5],[2-recoil,lift+5]],'#35454A');
+      g.strokeColor=color('#D2DDE0',Math.round(255*fade));g.lineWidth=5;segment(16-recoil,lift,end,lift);
+      shape([[3,lift-6],[13,lift-6],[13,lift-14],[3,lift-14]],palette.engineer);
+      g.strokeColor=color('#FCE2A0',Math.round(255*fade));g.lineWidth=2;segment(6,lift-8,10,lift-8);
+    }
+    if(recoil>0){
+      const muzzle=point((engineer?34:35)-recoil,0);
+      g.fillColor=color(engineer?'#FFE2A1':'#B8F3FF',Math.round(255*recoil/4*fade));
+      g.circle(muzzle.x,muzzle.y,3+recoil);g.fill();
+    }
+  }
   private waitingProgress(u:Unit,r:number):void {
     if(u.hp<=0||u.faction!=='human'||(u.unitType!=='engineer'&&u.unitType!=='flamethrower'))return;
     const engineer=u.unitType==='engineer';
@@ -20,7 +75,7 @@ export class UnitView {
     let progress:number|undefined;
     let tint=unitColor(u);
     if(u.state==='Deploying')progress=u.stateElapsed_s/cfg.engineer.deploy_duration_s;
-    else if(u.state==='Dismantling')progress=u.stateElapsed_s/cfg.engineer.dismantle_duration_s;
+    else if(u.state==='Dismantling'){progress=u.stateElapsed_s/cfg.engineer.dismantle_duration_s;tint=palette.command;}
     else if(u.state==='RetractingFlame')progress=u.stateElapsed_s/cfg.flamethrower.retract_duration_s;
     else if(u.state==='ReleasingFlame')progress=u.stateElapsed_s/cfg.flamethrower.release_duration_s;
     else if(u.weaponCooldown_s>0){
@@ -31,10 +86,10 @@ export class UnitView {
       tint=u.weaponCooldown_s>cooling+1e-9?palette.warning:palette.command;
     }
     if(progress===undefined)return;
-    const g=this.g,w=Math.max(44,r*2+12),x=u.position.x-w/2,y=-u.position.y-r-13;
-    g.fillColor=color('#101923',240);g.roundRect(x-2,y-2,w+4,9,3);g.fill();
-    g.fillColor=color('#455363',230);g.rect(x,y,w,5);g.fill();
-    g.fillColor=color(tint);g.rect(x,y,w*Math.max(0,Math.min(1,progress)),5);g.fill();
+    const g=this.g,w=Math.max(engineer?64:44,r*2+12),h=engineer?7:5,x=u.position.x-w/2,y=-u.position.y-r-(engineer?24:13);
+    g.fillColor=color('#101923',240);g.roundRect(x-2,y-2,w+4,h+4,3);g.fill();
+    g.fillColor=color('#455363',230);g.rect(x,y,w,h);g.fill();
+    g.fillColor=color(tint);g.rect(x,y,w*Math.max(0,Math.min(1,progress)),h);g.fill();
   }
   public render(units:Unit[],selection:readonly string[]|null,time:number,events:readonly BattleEvent[]=[],civilians:readonly CivilianEntity[]=[]):void {
     const g=this.g;g.clear();
@@ -56,8 +111,12 @@ export class UnitView {
       }
     }
     const byId=new Map(units.map(u=>[u.id,u]));
+    for(const [id,started] of Array.from(this.shots))if(time-started>=.22||!byId.has(id))this.shots.delete(id);
     for(const event of events){
-      if(event.type==='damage'){
+      if(event.type==='projectile_spawned'){
+        const data=event.data as {sourceId:string;projectileKind:string};
+        if(data.projectileKind==='sniper'||data.projectileKind==='machine_gun')this.shots.set(data.sourceId,time);
+      }else if(event.type==='damage'){
         const data=event.data as {sourceId?:string;targetId?:string};
         const source=data.sourceId?byId.get(data.sourceId):undefined;
         const target=data.targetId?byId.get(data.targetId):undefined;
@@ -102,6 +161,7 @@ export class UnitView {
       g.fillColor=color(c,Math.round(52*fade));g.circle(u.position.x,-u.position.y,r*1.5);g.fill();
       const selected=selection!==null&&u.hp>0&&selectedIds.has(u.id);
       g.fillColor=color(c,Math.round((selected?230:180)*fade));g.circle(u.position.x,-u.position.y,r);g.fill();
+      this.weapon(u,time,fade);
       if(u.unitType==='shield'&&fade>0){
         // Shield direction follows the soldier's current target, then motion,
         // so it remains readable while aiming and during player commands.
@@ -143,11 +203,11 @@ export class UnitView {
         const glow=Math.min(1,Math.max(0,(time-this.selectionStarted.get(u.id)!)/.15));
         g.strokeColor=color(palette.command,Math.round(80+140*glow));g.lineWidth=2;g.circle(u.position.x,-u.position.y,r+2+2*glow);g.stroke();
       }
-      if(u.state==='Moving'&&u.moveTarget){
+      if((u.state==='Moving'||u.state==='Dismantling')&&u.moveTarget&&u.hp>0){
         const d=Math.hypot(u.moveTarget.x-u.position.x,u.moveTarget.y-u.position.y);
         if(d>0){
           const target={x:u.position.x+(u.moveTarget.x-u.position.x)*8/d,y:u.position.y+(u.moveTarget.y-u.position.y)*8/d};
-          arrow(g,u.position,target,false,5);
+          arrow(g,u.position,target,u.state==='Dismantling',5);
           g.strokeColor=color(palette.command,150);g.lineWidth=1;g.circle(u.moveTarget.x,-u.moveTarget.y,3);g.stroke();
         }
       }

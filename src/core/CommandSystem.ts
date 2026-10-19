@@ -69,9 +69,13 @@ export class CommandSystem {
           (unit.unitType === 'flamethrower' && unit.state === 'RetractingFlame')) {
         unit.moveTarget = positions[i]; return;
       }
-      if (unit.unitType === 'engineer' && (unit.state === 'Deployed' || unit.state === 'Cooling' || unit.state === 'Overheated')) {
+      if (unit.unitType === 'engineer' && (unit.state === 'Deploying' || unit.state === 'Deployed' || unit.state === 'Cooling' || unit.state === 'Overheated')) {
+        const from = unit.state;
         unit.moveTarget = positions[i];
-        if (unit.state === 'Deployed' || unit.state === 'Cooling') { unit.state = 'Dismantling'; unit.stateElapsed_s = 0; unit.targetId = null; }
+        unit.state = 'Dismantling'; unit.stateElapsed_s = 0; unit.targetId = null;
+        unit.attackElapsed_s = 0; unit.velocity = { x: 0, y: 0 };
+        this.emit({ type: 'unit_state_changed', time_s,
+          data: { unitId: unit.id, from, to: 'Dismantling' } });
         return;
       }
       if (unit.unitType === 'flamethrower' && (unit.state === 'Firing' || unit.state === 'Aiming' || unit.state === 'ReleasingFlame')) {

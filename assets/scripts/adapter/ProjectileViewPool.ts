@@ -1,6 +1,6 @@
 import { Graphics, Node } from 'cc';
 import { unitConfig, type BattleEvent, type Unit, type MapModel } from '../generated/core.js';
-import { ProjectileTracks } from './contracts';
+import { ProjectileTracks, projectileFeedbackDuration } from './contracts';
 import { color, graphics, line, palette } from './drawing';
 /** Reuses one engine mesh stream. Core owns hit timing/damage; this pool only draws. */
 export class ProjectileViewPool {
@@ -56,13 +56,17 @@ export class ProjectileViewPool {
     for(const unit of units)this.anchoredFlame(unit,time,map);
     const flying=this.tracks.positions(time,unitConfig.projectile.speed_px_per_s);
     for(const t of this.tracks.trails){
-      const fade=1-Math.max(0,time-t.time)/.10;
-      if(this.tracks.kindForTrail(t)==='flame'){
+      const kind=this.tracks.kindForTrail(t);
+      const fade=1-Math.max(0,time-t.time)/projectileFeedbackDuration(kind,.10);
+      if(kind==='flame'){
         this.flame(t.origin,t.position,time,fade);
         g.lineWidth=6;g.strokeColor=color(palette.flame,Math.round(190*fade));line(g,t.origin,t.position);
         g.lineWidth=2;g.strokeColor=color(palette.flameGlow,Math.round(220*fade));line(g,t.origin,t.position);
+      }else if(kind==='sniper'){
+        g.lineWidth=10;g.strokeColor=color(palette.sniper,Math.round(90*fade));line(g,t.origin,t.position);
+        g.lineWidth=4;g.strokeColor=color('#7BE7FF',Math.round(240*fade));line(g,t.origin,t.position);
+        g.lineWidth=1.5;g.strokeColor=color('#EDFCFF',Math.round(255*fade));line(g,t.origin,t.position);
       }else{
-        const kind=this.tracks.kindForTrail(t);
         g.lineWidth=kind==='machine_gun'?7:kind==='bullet'?6:3;g.strokeColor=color('#FFE2A1',Math.round(170*fade));
         line(g,t.origin,t.position);
       }
@@ -78,6 +82,12 @@ export class ProjectileViewPool {
         line(g,{x:p.position.x-(d?dx/d*tailLength:0),y:p.position.y-(d?dy/d*tailLength:0)},p.position);
         g.fillColor=color(palette.flameGlow,110);g.circle(p.position.x,-p.position.y,7);g.fill();
         g.fillColor=color(palette.flame);g.circle(p.position.x,-p.position.y,4);g.fill();
+      }else if(p.kind==='sniper'){
+        g.lineWidth=10;g.strokeColor=color(palette.sniper,85);line(g,p.origin,p.position);
+        g.lineWidth=4;g.strokeColor=color('#7BE7FF',230);line(g,p.origin,p.position);
+        g.lineWidth=2;g.strokeColor=color('#EDFCFF');
+        line(g,{x:p.position.x-(d?dx/d*Math.min(d,70):0),y:p.position.y-(d?dy/d*Math.min(d,70):0)},p.position);
+        g.fillColor=color('#EDFCFF');g.circle(p.position.x,-p.position.y,4);g.fill();
       }else{
         g.lineWidth=p.kind==='machine_gun'?5:p.kind==='bullet'?4.5:2.5;g.strokeColor=color('#FFE2A1',150);line(g,p.origin,p.position);
         g.lineWidth=p.kind==='machine_gun'?7:p.kind==='bullet'?6:4;g.strokeColor=color('#FFF4CC');
@@ -86,8 +96,8 @@ export class ProjectileViewPool {
       }
     }
     for(const m of this.tracks.muzzles){
-      const progress=Math.max(0,time-m.time)/.08;
       const kind=this.tracks.kindForMuzzle(m);
+      const progress=Math.max(0,time-m.time)/projectileFeedbackDuration(kind,.08);
       g.fillColor=color(kind==='flame'?palette.flameGlow:kind==='sniper'?'#7BE7FF':'#FFD477',Math.round(220*(1-progress)));
       g.circle(m.position.x,-m.position.y,(kind==='flame'?7:5)+progress*(kind==='flame'?5:3));g.fill();
       if(kind==='flame'){
@@ -96,10 +106,19 @@ export class ProjectileViewPool {
       }
     }
     for(const h of this.tracks.hits){
-      const age=Math.max(0,time-h.time),progress=Math.min(1,age/.12);
-      if(this.tracks.kindForHit(h)==='flame'){
+      const kind=this.tracks.kindForHit(h);
+      const age=Math.max(0,time-h.time),progress=Math.min(1,age/projectileFeedbackDuration(kind,.12));
+      if(kind==='flame'){
         g.fillColor=color(palette.flameGlow,Math.round(230*(1-progress)));g.circle(h.position.x,-h.position.y,5+progress*15);g.fill();
         g.fillColor=color(palette.flame,Math.round(250*(1-progress)));g.circle(h.position.x,-h.position.y,3+progress*8);g.fill();
+      }else if(kind==='sniper'){
+        const x=h.position.x,y=-h.position.y,r=5+progress*15;
+        g.strokeColor=color(h.blocked?'#FFC46B':'#7BE7FF',Math.round(255*(1-progress)));g.lineWidth=2.5;
+        g.circle(x,y,r);g.stroke();
+        for(const [dx,dy] of [[1,1],[-1,1],[1,-1],[-1,-1]]){
+          g.moveTo(x+dx*r*.7,y+dy*r*.7);g.lineTo(x+dx*(r+6),y+dy*(r+6));g.stroke();
+        }
+        g.fillColor=color('#EDFCFF',Math.round(255*(1-progress)));g.circle(x,y,4+progress*3);g.fill();
       }else{
         g.fillColor=color(h.blocked?'#FFC46B':'#FFFFFF',Math.round(255*(1-progress)));
         g.circle(h.position.x,-h.position.y,3+progress*7);g.fill();

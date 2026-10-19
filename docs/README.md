@@ -1,17 +1,18 @@
 # 文档索引与阅读约定
 
-> 当前实现：七人小队、大屋大厅与南北两扇耐久门、喷火范围攻击、沿墙角寻路，以及大屋 700/楼下 270 只僵尸的分批尸潮。Creator 导入、构建和设备表现仍待人工验证；详见 [当前场景验证记录](testing/scenes-test-report.md) 与 [Cocos 手测表](testing/cocos-manual-checklist.md)。
+> 当前实现：七人小队、大屋大厅与南北两扇耐久门、喷火范围攻击、沿墙角寻路；大屋为 700 只僵尸的分批波次，楼下与别墅分别连续生成 720/240 只僵尸。Creator 导入、构建和设备表现仍待人工验证；详见 [当前场景验证记录](testing/scenes-test-report.md) 与 [Cocos 手测表](testing/cocos-manual-checklist.md)。
 
 [返回首页](../README.md)
 
 ## 当前使用与实现
 
-- [故事与场景设计稿](10-story-scenes-design.md)：模式入口、大屋→大楼楼下、每关三波、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入两个场景，旧文档中的“只有一关、没有菜单”描述已被本次实现替代。
-- [别墅解救平民场景设计](12-villa-civilian-rescue-scene-design.md)：四面首尾相连的封闭外墙、中央 6 名绿色平民、开局环绕保护的士兵，以及从墙外持续生成的僵尸；当前仅为设计稿，尚未接入战斗代码。
-- [别墅解救平民实现规格](13-villa-civilian-rescue-implementation-spec.md)：基于别墅设计稿的实现边界、平民/墙体数据模型、连续生成调度、变身与胜负契约、Cocos 适配和验收矩阵；当前仅为实现文档，尚未开发。
+- [故事与场景设计稿](10-story-scenes-design.md)：模式入口、后续场景提案和模块扩展方法；配套 [交互设计预览](design/scenes-preview.html)。当前已接入大屋、楼下和别墅三个场景；前文保留历史三波设计，实际生成模式以各场景配置和扩展章节为准。
+- [别墅解救平民场景设计](12-villa-civilian-rescue-scene-design.md)：已接入的第三场景，紧凑别墅、四窗一门、中央 6 名蓝色平民及环绕保护的士兵；僵尸从四边持续生成，间隔从 0.6s 加快到 0.2s。
+- [别墅解救平民实现规格](13-villa-civilian-rescue-implementation-spec.md)：当前平民、门窗、连续生成、变身与胜负契约、Cocos 适配和验收矩阵；引擎与设备显示仍需人工复核。
 - [上手与操作](getting-started.md)：Node 无渲染运行、Creator 首次导入、手势与后撤。
 - [实际架构](architecture.md)：以当前源码为依据的模块和数据流。
 - [开发指南](development.md)：配置、命令、测试、构建和排错。
+- [新增场景前的确认](development.md#新增场景前的确认)：新增场景前先确认生成速度、出生位置、士兵站位与目标；协作要求同步记录在 [AGENTS.md](../AGENTS.md)。
 - [限制与发布清单](release-checklist.md)：复审未关闭项和平台/授权门槛。
 - [页面与流程未完成项](页面与流程未完成项.md)：按当前实现梳理页面、玩家流程、验证缺口与待讨论决定。
 - [验证与自动审核](验证与自动审核.md)：Node 自动审核、完整测试、Cocos 运行入口和关卡扩展回归步骤。

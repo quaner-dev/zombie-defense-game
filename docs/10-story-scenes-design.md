@@ -108,16 +108,18 @@ flowchart TD
 
 ## 5. 场景扩展方式
 
+新增场景前，必须先按 [开发指南的确认清单](development.md#新增场景前的确认) 向用户确认生成速度、出生位置与比例、士兵编制与站位、布阵时间和场景目标，并记录到该场景的设计文档；未确认的关键项不能自行沿用旧地图默认值。
+
 场景模块在 `src/scenes/`，统一实现 `SceneDefinition`：
 
 - `id / title / subtitle / briefing / objective`：入口、卡片、HUD 与结算文案。
 - `mapId / map`：设计尺寸、战斗边界、选兵半径、初始部署点、出生点、矩形地形。
-- `levelId / level`：场景自己的三波时间、敌人类型、来源、数量、分批大小与间隔。
+- `levelId / level`：场景自己的波次或连续生成配置、敌人类型、来源、数量、分批大小与间隔；连续模式读取 `continuousSpawn`，出生位置读取 `map.spawnPoints`。
 - `presentation`：地面、墙体、轮廓颜色与无碰撞装饰。
 
-第一关集中于 `config/scenes/cabin.json`，由 `src/scenes/cabin.ts` 导出。兼容关卡配置 `config/levels.json` 同步保留第一关波次；`config/map.json` 用于基础地图回归。第二关集中于 `config/scenes/courtyard.json`，由 `src/scenes/courtyard.ts` 导出。增加第三关时：
+第一关集中于 `config/scenes/cabin.json`，由 `src/scenes/cabin.ts` 导出。兼容关卡配置 `config/levels.json` 同步保留第一关波次；`config/map.json` 用于基础地图回归。第二关集中于 `config/scenes/courtyard.json`，由 `src/scenes/courtyard.ts` 导出；第三关为 `config/scenes/villa-rescue.json`。楼下和别墅现已使用各自的连续生成配置，本稿前文的楼下三波描述保留为历史设计。新增后续场景时：
 
-1. 在 `config/scenes/` 新建场景 JSON，定义三波、地图和文案。
+1. 完成前置确认后，在 `config/scenes/` 新建场景 JSON，按确认结果定义波次或连续生成、地图和文案。
 2. 在 `src/scenes/` 增加对应模块，并加入 `index.ts` 的 `SCENES` 列表；顺序即故事推进顺序。
 3. 地图加载、波次加载、场景卡片、下一关判断都从列表派生；地图绘制与输入从当前战斗的 `MapModel` 读取。
 4. 执行 `npm run sync:core`、本次场景回归、两项类型检查和 bundle 检查。生成目录不手工修改。

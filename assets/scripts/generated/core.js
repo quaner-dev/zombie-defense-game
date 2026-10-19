@@ -742,6 +742,14 @@ var courtyard_default = {
   },
   level: {
     mapId: "LV02_building_courtyard",
+    continuousSpawn: {
+      totalTarget: 720,
+      interval_s: 0.35,
+      batchSize: 10,
+      spawnPoints: ["north", "south", "east", "west"],
+      distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 },
+      specialRatios: { gut_zombie: 0.05 }
+    },
     waves: [
       {
         battleTime_s: 0,
@@ -1126,10 +1134,12 @@ var villa_rescue_default = {
     waves: [],
     continuousSpawn: {
       totalTarget: 240,
-      initialInterval_s: 1.2,
-      minInterval_s: 0.45,
-      rampDuration_s: 120,
+      interval_s: 0.6,
+      minInterval_s: 0.2,
+      rampDuration_s: 60,
       batchSize: 1,
+      distribution: { north: 0.25, east: 0.25, south: 0.25, west: 0.25 },
+      continuousEventsOnly: true,
       spawnPoints: [
         "north",
         "east",
@@ -1834,6 +1844,9 @@ var WaveManager = class _WaveManager {
   getMapId() {
     return this.level.mapId;
   }
+  getContinuousSpawn() {
+    return this.level.continuousSpawn;
+  }
   validateMap(map) {
     for (const wave of this.level.waves) {
       if (wave.batchSize !== void 0 && (!Number.isInteger(wave.batchSize) || wave.batchSize < 1)) {
@@ -1918,6 +1931,7 @@ var units_default = {
     attack_interval_s: 1.6,
     attack_range_px: 520,
     projectile_speed_px_per_s: 1200,
+    projectile_max_flight_time_s: 0.5,
     penetration_count: 3,
     penetration_damage_multiplier: 0.8
   },
@@ -2181,6 +2195,7 @@ var UnitStore = class {
       flameLength_px: 0,
       facing: { x: 0, y: -1 },
       storedGutUnitIds: [],
+      gutRetaliationTargetId: null,
       storedInGutById: null,
       suicideTriggerId: null,
       active: true
@@ -2224,6 +2239,7 @@ var UnitStore = class {
     unit.flameLength_px = 0;
     unit.facing = { x: 0, y: -1 };
     unit.storedGutUnitIds = [];
+    unit.gutRetaliationTargetId = null;
     unit.storedInGutById = null;
     unit.suicideTriggerId = null;
     return unit;
@@ -2243,6 +2259,7 @@ var UnitStore = class {
     unit.flameLength_px = 0;
     unit.weaponCooldown_s = 0;
     unit.storedGutUnitIds = [];
+    unit.gutRetaliationTargetId = null;
     unit.storedInGutById = null;
     unit.suicideTriggerId = null;
     return true;
@@ -2315,13 +2332,19 @@ var CommandSystem = class {
         unit.moveTarget = positions[i];
         return;
       }
-      if (unit.unitType === "engineer" && (unit.state === "Deployed" || unit.state === "Cooling" || unit.state === "Overheated")) {
+      if (unit.unitType === "engineer" && (unit.state === "Deploying" || unit.state === "Deployed" || unit.state === "Cooling" || unit.state === "Overheated")) {
+        const from2 = unit.state;
         unit.moveTarget = positions[i];
-        if (unit.state === "Deployed" || unit.state === "Cooling") {
-          unit.state = "Dismantling";
-          unit.stateElapsed_s = 0;
-          unit.targetId = null;
-        }
+        unit.state = "Dismantling";
+        unit.stateElapsed_s = 0;
+        unit.targetId = null;
+        unit.attackElapsed_s = 0;
+        unit.velocity = { x: 0, y: 0 };
+        this.emit({
+          type: "unit_state_changed",
+          time_s,
+          data: { unitId: unit.id, from: from2, to: "Dismantling" }
+        });
         return;
       }
       if (unit.unitType === "flamethrower" && (unit.state === "Firing" || unit.state === "Aiming" || unit.state === "ReleasingFlame")) {
@@ -2574,22 +2597,8 @@ var CombatSystem = class {
     }];
     const source = this.store.get(sourceId);
     (_b = this.stats) == null ? void 0 : _b.recordDamage(sourceId, (_a = source == null ? void 0 : source.unitType) != null ? _a : "rifleman", appliedAmount);
-    if (target.unitType === "gut_zombie" && target.storedGutUnitIds.length && target.weaponCooldown_s <= 0) {
-      const thrownId = target.storedGutUnitIds.shift();
-      const thrown = this.store.get(thrownId);
-      if (thrown) {
-        thrown.state = "Suicidal";
-        thrown.storedInGutById = null;
-        thrown.stateElapsed_s = 0;
-        thrown.suicideTriggerId = target.id;
-        thrown.position = sourcePosition ? { ...sourcePosition } : { ...target.position };
-        target.weaponCooldown_s = 1.2;
-        events.push({ type: "gut_thrown", time_s, data: {
-          gutId: target.id,
-          zombieId: thrown.id,
-          targetPosition: { ...thrown.position }
-        } });
-      }
+    if (target.unitType === "gut_zombie" && target.hp > 0 && (source == null ? void 0 : source.faction) === "human" && source.active && source.hp > 0 && source.state !== "Dead") {
+      target.gutRetaliationTargetId = source.id;
     }
     if (target.hp === 0) {
       if (target.unitType === "gut_zombie") events.push(...this.releaseGut(target, time_s));
@@ -2648,6 +2657,11 @@ var CombatSystem = class {
           unit.breached = true;
           events.push({ type: "route_breached", time_s, data: { routeId: unit.routeId, unitId: unit.id } });
         }
+      }
+    }
+    for (const unit of this.zombies) {
+      if (unit.unitType === "gut_zombie" && unit.active && unit.hp > 0 && unit.state !== "Dead") {
+        this.spitGut(unit, time_s, events);
       }
     }
     return events;
@@ -2762,12 +2776,19 @@ var CombatSystem = class {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v;
     const stats = getUnitModule("engineer").getStats();
     this.coolWeapon(unit, dt, (_a = stats.gun_heat_max) != null ? _a : 100, (_b = stats.gun_cooling_rate_s) != null ? _b : 45, (_c = stats.gun_cooling_threshold) != null ? _c : 25);
+    if (unit.state === "Idle") {
+      this.state(unit, "Deploying", time_s, events);
+      unit.stateElapsed_s = 0;
+      unit.attackElapsed_s = 0;
+      unit.targetId = null;
+      unit.velocity = { x: 0, y: 0 };
+      return;
+    }
     if (unit.state === "Deploying" || unit.state === "Dismantling") {
       unit.stateElapsed_s += dt;
       const duration = unit.state === "Deploying" ? (_d = stats.deploy_duration_s) != null ? _d : 2 : (_e = stats.dismantle_duration_s) != null ? _e : 1.5;
       if (unit.stateElapsed_s + 1e-9 >= duration) {
-        if (unit.state === "Deploying") unit.state = "Deployed";
-        else unit.state = unit.moveTarget ? "Moving" : "Idle";
+        this.state(unit, unit.state === "Deploying" ? "Deployed" : unit.moveTarget ? "Moving" : "Idle", time_s, events);
         unit.stateElapsed_s = 0;
         unit.targetId = null;
       }
@@ -2816,6 +2837,51 @@ var CombatSystem = class {
       events.push({ type: "gut_swallowed", time_s, data: { gutId: unit.id, zombieId: target.id } });
     }
   }
+  gutRetaliationTarget(unit) {
+    if (unit.unitType !== "gut_zombie" || !unit.gutRetaliationTargetId) return void 0;
+    const target = this.store.get(unit.gutRetaliationTargetId);
+    if (!target || !target.active || target.hp <= 0 || target.state === "Dead" || target.faction !== "human") {
+      unit.gutRetaliationTargetId = null;
+      return void 0;
+    }
+    return target;
+  }
+  spitGut(unit, time_s, events) {
+    const target = this.gutRetaliationTarget(unit);
+    if (!target || unit.climbingWallId || !unit.storedGutUnitIds.length || unit.weaponCooldown_s > 1e-9 || this.distance(unit, target) > units_default.gut_zombie.attack_range_px + 1e-9 || this.map.firstBlockingTerrain(unit.position, target.position)) return;
+    const swallowed = this.store.get(unit.storedGutUnitIds[0]);
+    if (!swallowed || !swallowed.active || swallowed.hp <= 0 || swallowed.state !== "StoredInGut" || swallowed.storedInGutById !== unit.id) return;
+    const offset = unit.radius_px + swallowed.radius_px + 2;
+    const direction = Math.atan2(target.position.y - unit.position.y, target.position.x - unit.position.x);
+    const { left, top, right, bottom } = this.map.battle_bounds;
+    for (let index = 0; index < 8; index++) {
+      const angle = direction + Math.PI / 2 + index * Math.PI / 4;
+      const position = {
+        x: unit.position.x + Math.cos(angle) * offset,
+        y: unit.position.y + Math.sin(angle) * offset
+      };
+      const radius = swallowed.radius_px;
+      if (position.x - radius < left || position.x + radius > right || position.y - radius < top || position.y + radius > bottom || this.map.firstBlockingTerrain(unit.position, position, radius) || this.humans.some((human) => human.active && human.hp > 0 && Math.hypot(human.position.x - position.x, human.position.y - position.y) < radius + human.radius_px + 2)) continue;
+      unit.storedGutUnitIds.shift();
+      unit.gutRetaliationTargetId = null;
+      unit.weaponCooldown_s = units_default.gut_zombie.throw_cooldown_s;
+      swallowed.position = position;
+      swallowed.velocity = { x: 0, y: 0 };
+      swallowed.targetId = null;
+      swallowed.moveTarget = null;
+      swallowed.attackElapsed_s = 0;
+      swallowed.stateElapsed_s = 0;
+      swallowed.storedInGutById = null;
+      swallowed.suicideTriggerId = unit.id;
+      this.state(swallowed, "Suicidal", time_s, events);
+      events.push({ type: "gut_thrown", time_s, data: {
+        gutId: unit.id,
+        zombieId: swallowed.id,
+        targetPosition: { ...position }
+      } });
+      return;
+    }
+  }
   nearest(unit, faction, range = Infinity, clearShot = false) {
     let nearest;
     let bestDistance = range * range;
@@ -2859,6 +2925,7 @@ var CombatSystem = class {
       if (!moving) this.state(unit, "Idle", time_s, events);
       return;
     }
+    if (unit.unitType === "sniper") unit.facing = { x: target.position.x - unit.position.x, y: target.position.y - unit.position.y };
     if (moving) {
       unit.attackElapsed_s += dt;
       if (unit.attackElapsed_s + 1e-9 >= profile.interval_s) {
@@ -2879,12 +2946,12 @@ var CombatSystem = class {
     }
   }
   zombie(unit, dt, time_s, events) {
-    var _a, _b;
+    var _a, _b, _c;
     if (unit.climbingWallId && unit.climbTarget) {
       this.climb(unit, dt, time_s, events);
       return;
     }
-    let target = this.nearest(unit, "human");
+    let target = (_a = this.gutRetaliationTarget(unit)) != null ? _a : this.nearest(unit, "human");
     unit.velocity = { x: 0, y: 0 };
     if (!target) {
       unit.attackElapsed_s = 0;
@@ -2892,12 +2959,12 @@ var CombatSystem = class {
       this.state(unit, "Idle", time_s, events);
       return;
     }
-    const radius = (_a = unit.radius_px) != null ? _a : 8;
+    const radius = (_b = unit.radius_px) != null ? _b : 8;
     if (this.map.terrain.some((terrain) => this.map.isBlocking(terrain) && this.map.terrainContains(unit.position, terrain, radius))) {
       unit.position = this.map.walkablePoint(unit.position, radius);
     }
     const obstruction = this.map.firstBlockingTerrain(unit.position, target.position, radius);
-    const required = (_b = obstruction == null ? void 0 : obstruction.terrain.stackRequired) != null ? _b : Infinity;
+    const required = (_c = obstruction == null ? void 0 : obstruction.terrain.stackRequired) != null ? _c : Infinity;
     const stack = obstruction && Number.isFinite(required) && Math.hypot(obstruction.point.x - unit.position.x, obstruction.point.y - unit.position.y) <= 40 ? this.wallStack(unit, target, obstruction.terrain, obstruction.point) : [];
     let approach = this.map.walkablePoint(target.position, radius);
     let waypoint = stack.length >= required ? target.position : this.map.nextWaypoint(unit.position, approach, radius, true);
@@ -2993,7 +3060,7 @@ var CombatSystem = class {
   }
   /** Plan through entrances, collide with closed leaves, and break them before entering. */
   rescueZombie(unit, dt, time_s, events) {
-    var _a;
+    var _a, _b, _c;
     const radius = unit.radius_px;
     unit.velocity = { x: 0, y: 0 };
     if (this.map.terrain.some((t) => this.map.isBlocking(t) && this.map.terrainContains(unit.position, t, radius))) {
@@ -3004,7 +3071,7 @@ var CombatSystem = class {
     const reachableDefender = defender && !this.map.firstBlockingTerrain(unit.position, defender.position) ? defender : void 0;
     const civilians = this.civilians.living().sort((a, b) => Math.hypot(a.position.x - unit.position.x, a.position.y - unit.position.y) - Math.hypot(b.position.x - unit.position.x, b.position.y - unit.position.y));
     const civilian = civilians[0];
-    const target = (_a = reachableDefender != null ? reachableDefender : civilian) != null ? _a : this.nearest(unit, "human");
+    const target = (_c = (_b = (_a = this.gutRetaliationTarget(unit)) != null ? _a : reachableDefender) != null ? _b : civilian) != null ? _c : this.nearest(unit, "human");
     if (!target) {
       unit.targetId = null;
       this.state(unit, "Idle", time_s, events);
@@ -3368,7 +3435,41 @@ var SpawnSystem = class {
     return this.pending.length > 0;
   }
   configureContinuous(definition) {
-    this.continuous = definition;
+    var _a, _b, _c, _d, _e;
+    if (!Number.isSafeInteger(definition.totalTarget) || definition.totalTarget < 0) {
+      throw new Error("Continuous spawn target must be a non-negative integer");
+    }
+    if (!Number.isSafeInteger(definition.batchSize) || definition.batchSize < 1) {
+      throw new Error("Continuous spawn batch size must be a positive integer");
+    }
+    const intervals = [
+      definition.interval_s,
+      (_a = definition.initialInterval_s) != null ? _a : definition.interval_s,
+      (_b = definition.minInterval_s) != null ? _b : definition.interval_s
+    ];
+    if (intervals.some((interval) => !Number.isFinite(interval) || interval <= 0)) {
+      throw new Error("Continuous spawn intervals must be finite and positive");
+    }
+    const ramp = (_c = definition.rampDuration_s) != null ? _c : 0;
+    if (!Number.isFinite(ramp) || ramp < 0) {
+      throw new Error("Continuous spawn ramp duration must be finite and non-negative");
+    }
+    if (!definition.spawnPoints.length || new Set(definition.spawnPoints).size !== definition.spawnPoints.length) {
+      throw new Error("Continuous spawn points must be non-empty and unique");
+    }
+    for (const point of definition.spawnPoints) {
+      if (!this.map.getSpawnPoint(point)) throw new Error(`Unknown continuous spawn point: ${point}`);
+    }
+    for (const [point, weight] of Object.entries(definition.distribution)) {
+      if (!definition.spawnPoints.includes(point) || !Number.isFinite(weight) || weight < 0) {
+        throw new Error(`Invalid continuous spawn distribution: ${point}`);
+      }
+    }
+    const gutRatio = (_e = (_d = definition.specialRatios) == null ? void 0 : _d.gut_zombie) != null ? _e : 0;
+    if (!Number.isFinite(gutRatio) || gutRatio < 0 || gutRatio > 1) {
+      throw new Error("Continuous spawn gut zombie ratio must be between zero and one");
+    }
+    this.continuous = cloneData(definition);
     this.nextContinuousTime_s = 0;
     this.continuousGenerated = 0;
     this.continuousGutSpawned = 0;
@@ -3658,7 +3759,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.movement = new MovementSystem(this.units);
   }
   start(levelId, _seed) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     this.started = false;
     this.snapshot = this.initialSnapshot();
     this.events = [];
@@ -3674,17 +3775,8 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
-    if (this.scenarioKind === "villa_rescue") {
-      const continuous = villaScene.level.continuousSpawn;
-      this.spawnSystem.configureContinuous({
-        ...continuous,
-        interval_s: continuous.initialInterval_s,
-        continuousEventsOnly: true,
-        distribution: { north: 0.25, east: 0.25, south: 0.25, west: 0.25 }
-      });
-    } else if (this.waveManager.getMapId() === "LV02_building_courtyard") {
-      this.spawnSystem.configureContinuous({ totalTarget: 720, interval_s: 0.35, batchSize: 10, spawnPoints: ["north", "south", "east", "west"], distribution: { north: 0.3, south: 0.3, east: 0.2, west: 0.2 }, specialRatios: { gut_zombie: 0.05 } });
-    }
+    const continuous = (_c = (_b = this.waveManager).getContinuousSpawn) == null ? void 0 : _c.call(_b);
+    if (continuous) this.spawnSystem.configureContinuous(continuous);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.stats.reset();
@@ -3694,7 +3786,7 @@ var _BattleTestHarness = class _BattleTestHarness {
     this.commands = new CommandSystem(this.units, this.mapModel, (event) => this.events.push(event));
     const routes = this.mapModel.routeIds();
     if (!routes.length) throw new Error(`Level ${levelId} map ${this.waveManager.getMapId()} must define at least one route`);
-    const humanTypes = this.scenarioKind === "villa_rescue" ? (_b = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _b : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
+    const humanTypes = this.scenarioKind === "villa_rescue" ? (_d = villaScene == null ? void 0 : villaScene.level.initialSoldiers) != null ? _d : ["rifleman", "rifleman", "rifleman", "rifleman", "flamethrower", "flamethrower", "shield"] : this.humanSpawnTypes(this.initialHumanCount);
     const routeId = routes[Math.floor(routes.length / 2)];
     const route = this.mapModel.getRoute(routeId);
     if (!route) {
@@ -3711,7 +3803,7 @@ var _BattleTestHarness = class _BattleTestHarness {
       unit.position = this.mapModel.walkablePoint(unit.position, unit.radius_px);
     }
     if (this.scenarioKind === "villa_rescue") {
-      for (const civilian of (_c = villaScene == null ? void 0 : villaScene.level.civilians) != null ? _c : []) this.civilians.spawn(civilian.position);
+      for (const civilian of (_e = villaScene == null ? void 0 : villaScene.level.civilians) != null ? _e : []) this.civilians.spawn(civilian.position);
       this.deploymentTime_s = this.config.deploymentDuration_s;
       this.runWaves();
     }
@@ -3985,4 +4077,4 @@ export {
   units_default as unitConfig
 };
 
-export const CORE_BUILD_ID = "core-919ca11ec342";
+export const CORE_BUILD_ID = "core-c2084cb23ff1";

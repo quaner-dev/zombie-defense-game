@@ -3,6 +3,7 @@ import type { WaveSpawnEventData } from './WaveManager.js';
 import type { BattleEvent } from './types.js';
 import type { UnitStore } from './UnitStore.js';
 import { getZombieModule } from './units/index.js';
+import { cloneData } from './cloneData.js';
 
 interface PendingSpawn { spawn: WaveSpawnEventData['spawns'][number]; remaining: number }
 interface PendingWave {
@@ -50,7 +51,37 @@ export class SpawnSystem {
   public get spawnedCount(): number { return this.spawned; }
   public hasPending(): boolean { return this.pending.length > 0; }
   public configureContinuous(definition: ContinuousSpawnDefinition): void {
-    this.continuous = definition;
+    if (!Number.isSafeInteger(definition.totalTarget) || definition.totalTarget < 0) {
+      throw new Error('Continuous spawn target must be a non-negative integer');
+    }
+    if (!Number.isSafeInteger(definition.batchSize) || definition.batchSize < 1) {
+      throw new Error('Continuous spawn batch size must be a positive integer');
+    }
+    const intervals = [definition.interval_s, definition.initialInterval_s ?? definition.interval_s,
+      definition.minInterval_s ?? definition.interval_s];
+    if (intervals.some(interval => !Number.isFinite(interval) || interval <= 0)) {
+      throw new Error('Continuous spawn intervals must be finite and positive');
+    }
+    const ramp = definition.rampDuration_s ?? 0;
+    if (!Number.isFinite(ramp) || ramp < 0) {
+      throw new Error('Continuous spawn ramp duration must be finite and non-negative');
+    }
+    if (!definition.spawnPoints.length || new Set(definition.spawnPoints).size !== definition.spawnPoints.length) {
+      throw new Error('Continuous spawn points must be non-empty and unique');
+    }
+    for (const point of definition.spawnPoints) {
+      if (!this.map.getSpawnPoint(point)) throw new Error(`Unknown continuous spawn point: ${point}`);
+    }
+    for (const [point, weight] of Object.entries(definition.distribution)) {
+      if (!definition.spawnPoints.includes(point) || !Number.isFinite(weight) || weight < 0) {
+        throw new Error(`Invalid continuous spawn distribution: ${point}`);
+      }
+    }
+    const gutRatio = definition.specialRatios?.gut_zombie ?? 0;
+    if (!Number.isFinite(gutRatio) || gutRatio < 0 || gutRatio > 1) {
+      throw new Error('Continuous spawn gut zombie ratio must be between zero and one');
+    }
+    this.continuous = cloneData(definition);
     this.nextContinuousTime_s = 0;
     this.continuousGenerated = 0;
     this.continuousGutSpawned = 0;

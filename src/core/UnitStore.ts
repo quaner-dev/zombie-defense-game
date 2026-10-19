@@ -22,7 +22,7 @@ export class UnitStore {
       attackElapsed_s: 0, breached: false, spawnPointId, climbingWallId: null,
       climbTarget: null, stackLevel: 0, weaponHeat: 0, weaponCooldown_s: 0,
       stateElapsed_s: 0, flameLength_px: 0, facing: { x: 0, y: -1 }, storedGutUnitIds: [],
-      storedInGutById: null, suicideTriggerId: null, active: true,
+      gutRetaliationTargetId: null, storedInGutById: null, suicideTriggerId: null, active: true,
     };
     const unit = Object.assign(this.pool.pop() ?? {}, fresh) as Unit;
     this.units.set(unit.id, unit);
@@ -60,6 +60,7 @@ export class UnitStore {
     unit.flameLength_px = 0;
     unit.facing = { x: 0, y: -1 };
     unit.storedGutUnitIds = [];
+    unit.gutRetaliationTargetId = null;
     unit.storedInGutById = null;
     unit.suicideTriggerId = null;
     return unit;
@@ -80,6 +81,7 @@ export class UnitStore {
     unit.flameLength_px = 0;
     unit.weaponCooldown_s = 0;
     unit.storedGutUnitIds = [];
+    unit.gutRetaliationTargetId = null;
     unit.storedInGutById = null;
     unit.suicideTriggerId = null;
     return true;

@@ -34,6 +34,9 @@ export class DragCommand {
 }
 interface Event {type:string;time_s:number;data:unknown}
 export type ProjectileTrackKind = 'bullet' | 'flame' | 'sniper' | 'machine_gun';
+export function projectileFeedbackDuration(kind:ProjectileTrackKind,normal_s:number):number {
+  return kind==='sniper'?.24:normal_s;
+}
 interface Track {
   id:string;
   origin:Point;
@@ -77,9 +80,9 @@ export class ProjectileTracks {
     }
   }
   public positions(time:number,speed:number):{id:string;position:Point;origin:Point;kind:ProjectileTrackKind}[]{
-    this.hits=this.hits.filter(h=>time-h.time<.12);
-    this.trails=this.trails.filter(t=>time-t.time<.10);
-    this.muzzles=this.muzzles.filter(m=>time-m.time<.08);
+    this.hits=this.hits.filter(h=>time-h.time<projectileFeedbackDuration(this.kindForHit(h),.12));
+    this.trails=this.trails.filter(t=>time-t.time<projectileFeedbackDuration(this.kindForTrail(t),.10));
+    this.muzzles=this.muzzles.filter(m=>time-m.time<projectileFeedbackDuration(this.kindForMuzzle(m),.08));
     return Array.from(this.active.values(),t=>{
       const distance=Math.hypot(t.destination.x-t.origin.x,t.destination.y-t.origin.y);
       const effectiveSpeed=t.speed_px_per_s??speed;

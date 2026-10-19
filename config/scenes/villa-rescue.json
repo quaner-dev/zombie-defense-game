@@ -280,10 +280,12 @@
     "waves": [],
     "continuousSpawn": {
       "totalTarget": 240,
-      "initialInterval_s": 1.2,
-      "minInterval_s": 0.45,
-      "rampDuration_s": 120,
+      "interval_s": 0.6,
+      "minInterval_s": 0.2,
+      "rampDuration_s": 60,
       "batchSize": 1,
+      "distribution": { "north": 0.25, "east": 0.25, "south": 0.25, "west": 0.25 },
+      "continuousEventsOnly": true,
       "spawnPoints": [
         "north",
         "east",

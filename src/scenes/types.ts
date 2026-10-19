@@ -1,6 +1,6 @@
 import type { MapDefinition } from '../core/MapModel.js';
 import type { LevelDefinition } from '../core/WaveManager.js';
-import type { ScenarioKind, HumanUnitType, WallSide } from '../core/types.js';
+import type { ScenarioKind, HumanUnitType } from '../core/types.js';
 
 export interface SceneDecoration {
   kind: 'floor' | 'stripe';
@@ -19,7 +19,11 @@ export interface SceneDefinition {
   levelId: string;
   map: MapDefinition;
   scenarioKind?: ScenarioKind;
-  level: LevelDefinition & { continuousSpawn?: { totalTarget: number; initialInterval_s: number; minInterval_s: number; rampDuration_s: number; batchSize: number; spawnPoints: WallSide[] }; initialSoldiers?: HumanUnitType[]; soldierPositions?: { x: number; y: number }[]; civilians?: { position: { x: number; y: number } }[] };
+  level: LevelDefinition & {
+    initialSoldiers?: HumanUnitType[];
+    soldierPositions?: { x: number; y: number }[];
+    civilians?: { position: { x: number; y: number } }[];
+  };
   presentation: {
     floorColor: string;
     wallColor: string;

@@ -103,7 +103,8 @@ test('startup identifies the level and map when no deployment routes exist', () 
 function shortBattle(initialHumans = 3) {
   return new BattleTestHarness({deploymentDuration_s:3, initialHumans}, levelId => {
     const scene = SCENES.find(scene => scene.levelId === levelId)!;
-    return new WaveManager({mapId:scene.mapId, waves:[0,.05,.1].map(battleTime_s => ({battleTime_s,spawns:[]}))});
+    return new WaveManager({mapId:scene.mapId, continuousSpawn:scene.level.continuousSpawn,
+      waves:[0,.05,.1].map(battleTime_s => ({battleTime_s,spawns:[]}))});
   });
 }
 

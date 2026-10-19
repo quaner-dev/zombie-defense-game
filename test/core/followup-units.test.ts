@@ -56,7 +56,7 @@ test('courtyard continuous generation stops exactly at 720', () => {
   assert.equal(harness.getUnits().filter(unit => unit.unitType === 'gut_zombie').length, 36);
 });
 
-test('gut zombie throws only after a hit and releases its remaining inventory on death', () => {
+test('gut zombie spits nearby after approaching its attacker and releases its remaining inventory on death', () => {
   const store = new UnitStore();
   const combat = new CombatSystem(store, MapModel.load());
   const gut = store.spawn('gut_zombie', { x: 500, y: 500 }, 'B');
@@ -68,12 +68,16 @@ test('gut zombie throws only after a hit and releases its remaining inventory on
   assert.equal(attacker.targetId, gut.id, 'stored zombies cannot be targeted from an earlier frame snapshot');
   assert.deepEqual(combat.applyDamage(swallowed.id, 1, attacker.id, .1), [], 'in-flight shots cannot hit stored zombies');
   const hit = combat.applyDamage(gut.id, 1, attacker.id, .1, 'bullet', attacker.position);
-  assert.ok(hit.some(event => event.type === 'gut_thrown'));
-  assert.equal(swallowed.state, 'Suicidal');
-  combat.update(.05, .15);
+  assert.ok(!hit.some(event => event.type === 'gut_thrown'));
+  assert.equal(swallowed.state, 'StoredInGut');
+  const approached = combat.update(.05, .15);
+  assert.ok(approached.some(event => event.type === 'gut_thrown'));
+  assert.notDeepEqual(swallowed.position, attacker.position);
+  assert.ok(Math.hypot(swallowed.position.x - gut.position.x, swallowed.position.y - gut.position.y) <= 46 + 1e-8);
+  combat.update(.05, .20);
   assert.equal(swallowed.state, 'Suicidal', 'a thrown zombie cannot be swallowed again');
   assert.equal(gut.storedGutUnitIds.length, 0);
-  for (let i = 0; i < 20; i++) combat.update(.05, .20 + i * .05);
+  for (let i = 0; i < 20; i++) combat.update(.05, .25 + i * .05);
   assert.equal(swallowed.state, 'Dead');
   const remaining = store.spawn('normal_zombie', { x: 512, y: 500 }, 'B');
   gut.storedGutUnitIds.push(remaining.id);

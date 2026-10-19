@@ -241,6 +241,14 @@
   },
   "level": {
     "mapId": "LV02_building_courtyard",
+    "continuousSpawn": {
+      "totalTarget": 720,
+      "interval_s": 0.35,
+      "batchSize": 10,
+      "spawnPoints": ["north", "south", "east", "west"],
+      "distribution": { "north": 0.3, "south": 0.3, "east": 0.2, "west": 0.2 },
+      "specialRatios": { "gut_zombie": 0.05 }
+    },
     "waves": [
       {
         "battleTime_s": 0,

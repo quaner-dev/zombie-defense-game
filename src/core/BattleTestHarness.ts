@@ -69,13 +69,8 @@ export class BattleTestHarness {
     this.mapModel = MapModel.load(this.waveManager.getMapId());
     this.movement = new MovementSystem(this.units, this.mapModel);
     this.spawnSystem = new SpawnSystem(this.units, this.mapModel);
-    if (this.scenarioKind === 'villa_rescue') {
-      const continuous = villaScene!.level.continuousSpawn!;
-      this.spawnSystem.configureContinuous({ ...continuous, interval_s: continuous.initialInterval_s,
-        continuousEventsOnly: true, distribution: { north: .25, east: .25, south: .25, west: .25 } });
-    } else if (this.waveManager.getMapId() === 'LV02_building_courtyard') {
-      this.spawnSystem.configureContinuous({ totalTarget: 720, interval_s: 0.35, batchSize: 10, spawnPoints: ['north', 'south', 'east', 'west'], distribution: { north: .3, south: .3, east: .2, west: .2 }, specialRatios: { gut_zombie: .05 } });
-    }
+    const continuous = this.waveManager.getContinuousSpawn?.();
+    if (continuous) this.spawnSystem.configureContinuous(continuous);
     this.waveManager.validateMap(this.mapModel);
     this.units.clear();
     this.stats.reset();

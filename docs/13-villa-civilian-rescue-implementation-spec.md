@@ -19,10 +19,10 @@
 
 四个 `spawnPoints` 使用 `spawnArea` 有界窄条，详见设计文档。`MapModel.edgeSpawnPositions()` 在每侧条带内循环复用槽位；不能使用无限增大的行号向室内延伸。
 
-`BattleTestHarness` 从场景的 `continuousSpawn` 读取参数配置 `SpawnSystem`：
+`WaveManager` 读取场景的 `level.continuousSpawn`，`BattleTestHarness` 将它交给通用 `SpawnSystem`，不再按场景类型或地图 ID 补写生成参数：
 
-- 总数 `240`，单次 `1`，间隔从 `1.20s` 线性下降至 `0.45s`，渐变时长 `120s`。
-- 四侧初始权重相同，现有确定性加权调度保证均衡且可复现。
+- 总数 `240`，单次 `1`，`interval_s=0.60`、`minInterval_s=0.20`、`rampDuration_s=60`；替代旧的 `1.20s → 0.45s / 120s`，加快保护平民场景的入场节奏。
+- JSON 中的 `spawnPoints` 引用地图出生点，`distribution` 配置四侧各 `0.25`；现有确定性加权调度保证均衡且可复现。
 - 别墅开启 `continuousEventsOnly`，只发布 `continuous_zombie_spawn` 和一次 `generation_complete`，不发布 `wave_spawn` 或带波次号的 `zombie_batch_spawn`。
 - 连续模式的完成状态只来自 `SpawnSystem.isGenerationComplete()`；不能因为配置的旧 `waves=[]` 而提前完成。
 - 达到上限后不补生成，不以当前存活僵尸数决定新生成数量。

@@ -139,6 +139,67 @@ test('engineer dismantling never attacks or turns, and redeploying cannot skip c
   assert.equal(engineer.state, 'Deployed');
 });
 
+test('an idle engineer automatically sets up for two seconds before firing', () => {
+  const f = setup(), engineer = f.store.spawn('engineer', { x: 300, y: 500 }, 'A');
+  f.zombie(450);
+  const start = { ...engineer.position };
+  const deploying = f.advance(40);
+  assert.equal(engineer.state, 'Deploying');
+  assert.ok(Math.abs(engineer.stateElapsed_s - 1.95) < 1e-8);
+  assert.deepEqual(engineer.position, start);
+  assert.ok(!deploying.some(event => event.type === 'projectile_spawned'));
+  const deployed = f.advance(1);
+  assert.equal(engineer.state, 'Deployed');
+  assert.ok(deployed.some(event => event.type === 'unit_state_changed' && (event.data as { to: string }).to === 'Deployed'));
+  assert.ok(f.advance(2).some(event => event.type === 'projectile_spawned' && (event.data as { projectileKind: string }).projectileKind === 'machine_gun'));
+});
+
+test('dragging a deployed engineer dismantles, moves and automatically sets up again', () => {
+  const f = setup(), engineer = f.store.spawn('engineer', { x: 300, y: 500 }, 'A');
+  f.zombie(450);
+  f.advance(41);
+  const start = { ...engineer.position };
+  f.commands.issueMoveGroup([engineer.id], 300, 580, 2.05);
+  assert.equal(engineer.state, 'Dismantling');
+  const first = f.advance(10);
+  const elapsed = engineer.stateElapsed_s;
+  f.commands.issueMoveGroup([engineer.id], 300, 600, 2.55);
+  assert.equal(engineer.stateElapsed_s, elapsed, 'replacing the destination preserves progress');
+  const rest = f.advance(19);
+  assert.deepEqual(engineer.position, start, 'the gun must be packed before moving');
+  assert.ok(![...first, ...rest].some(event => event.type === 'projectile_spawned'));
+  f.advance(1);
+  assert.equal(engineer.state, 'Moving');
+  assert.ok(engineer.position.y > start.y);
+  for (let i = 0; i < 60 && engineer.state === 'Moving'; i++) f.advance(1);
+  assert.equal(engineer.state, 'Idle');
+  assert.ok(Math.abs(engineer.position.y - 600) <= config.movement.arrival_tolerance_px);
+  f.advance(1);
+  assert.equal(engineer.state, 'Deploying');
+  assert.equal(engineer.stateElapsed_s, 0);
+  assert.ok(!f.advance(40).some(event => event.type === 'projectile_spawned'));
+  assert.equal(engineer.state, 'Deployed');
+  assert.ok(f.advance(2).some(event => event.type === 'projectile_spawned'));
+});
+
+test('setup and overheating can be interrupted by a move without skipping dismantling or cooling', () => {
+  for (const state of ['Deploying', 'Overheated', 'Cooling'] as const) {
+    const f = setup(), engineer = f.store.spawn('engineer', { x: 300, y: 500 }, 'A');
+    engineer.state = state; engineer.stateElapsed_s = .5;
+    engineer.weaponCooldown_s = 4; engineer.weaponHeat = 100;
+    f.commands.issueMoveGroup([engineer.id], 300, 650, 1);
+    assert.equal(engineer.state, 'Dismantling');
+    assert.equal(engineer.stateElapsed_s, 0);
+    assert.equal(engineer.weaponCooldown_s, 4);
+    f.advance(29);
+    assert.deepEqual(engineer.position, { x: 300, y: 500 });
+    f.advance(1);
+    assert.equal(engineer.state, 'Moving');
+    assert.ok(Math.abs(engineer.weaponCooldown_s - 2.5) < 1e-8);
+    assert.ok(engineer.position.y > 500);
+  }
+});
+
 test('a rifle shot reaches a target at its new 460px range before expiring', () => {
   const f = setup(), rifle = f.store.spawn('rifleman', { x: 300, y: 500 }, 'A');
   const target = f.zombie(760), projectiles = new ProjectileSystem(f.store, f.combat, f.map);
@@ -147,4 +208,22 @@ test('a rifle shot reaches a target at its new 460px range before expiring', () 
   const hits = projectiles.update(.55, .9);
   assert.ok(hits.some(event => event.type === 'damage'));
   assert.equal(target.hp, 10000 - config.rifleman.damagePerHit);
+});
+
+test('a sniper shot travels its full range before its impact and damage', () => {
+  const f = setup(), sniper = f.store.spawn('sniper', { x: 300, y: 500 }, 'A');
+  const target = f.zombie(300 + config.sniper.attack_range_px);
+  const projectiles = new ProjectileSystem(f.store, f.combat, f.map);
+  const shot = f.advance(32).find(event => event.type === 'projectile_spawned');
+  assert.ok(shot); assert.equal(sniper.targetId, target.id);
+  assert.deepEqual(sniper.facing, { x: config.sniper.attack_range_px, y: 0 });
+  const inFlight = projectiles.update(.35, shot.time_s + .35);
+  assert.ok(!inFlight.some(event => event.type === 'projectile_hit' || event.type === 'damage'));
+  assert.equal(target.hp, 10000);
+  const events = projectiles.update(.1, shot.time_s + .45);
+  const hit = events.find(event => event.type === 'projectile_hit');
+  assert.ok(hit);
+  assert.deepEqual((hit.data as { position: { x: number; y: number } }).position, target.position);
+  assert.equal(target.hp, 10000 - config.sniper.damagePerHit);
+  assert.equal(projectiles.getProjectiles().length, 0);
 });
